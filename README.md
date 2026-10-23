@@ -67,10 +67,12 @@ Connect the GitHub repository; every pull request gets a preview deployment, and
 
 Environment variables, in both Production and Preview:
 
-| Variable                   | Value     | Why                                                                |
-| -------------------------- | --------- | ------------------------------------------------------------------ |
-| `PNPM_VERSION`             | `12.10.1` | The build image defaults to pnpm 10; this matches `packageManager` |
-| `ASTRO_TELEMETRY_DISABLED` | `1`       | Optional                                                           |
+| Variable                   | Value     | Why                                                                                                            |
+| -------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `PNPM_VERSION`             | `12.10.1` | Required: the default pnpm 10.11.1 cannot switch to pnpm 12 and fails with "Failed to switch pnpm to v12.10.1" |
+| `ASTRO_TELEMETRY_DISABLED` | `1`       | Optional                                                                                                       |
+
+If the first build log does not show pnpm 12.10.1 being installed (or shows a corepack `Cannot find module ... pnpm.cjs` error), set `SKIP_DEPENDENCY_INSTALL=1` in both environments and change the build command to `npx -y pnpm@12.10.1 install --frozen-lockfile && npx -y pnpm@12.10.1 build`.
 
 The build image reads the Node version from `.node-version`; no `NODE_VERSION` variable is needed.
 
