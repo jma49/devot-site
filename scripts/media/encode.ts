@@ -4,6 +4,19 @@ import sharp from 'sharp'
 
 export type Codec = 'h264' | 'av1' | 'vp9'
 
+export interface PixelRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** The frame outside `rect` painted one colour (hex, no #), so it costs the encoder nothing. */
+export interface Fill {
+  rect: PixelRect
+  color: string
+}
+
 export interface ClipInput {
   /** Folder of numbered PNG frames (frameFile). */
   frames: string
@@ -13,6 +26,9 @@ export interface ClipInput {
   fade: number
   width: number
   height: number
+  /** The part of each frame the clip shows, in frame pixels; all of it when absent. */
+  crop?: PixelRect
+  fill?: Fill
 }
 
 export const frameFile = (dir: string, index: number) =>
@@ -38,11 +54,18 @@ const CODEC_ARGS: Record<Codec, (quality: number, fps: number) => string[]> = {
 
 /** ffmpeg arguments that encode a clip's frames for one codec. */
 export function videoArgs(clip: ClipInput, codec: Codec, quality: number, out: string): string[] {
-  const { frames, count, fps, fade, width, height } = clip
+  const { frames, count, fps, fade, width, height, crop, fill } = clip
   const input = ['-framerate', String(fps), '-i', join(frames, '%05d.png')]
+  const cut = crop ? `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y},` : ''
+  const right = fill && fill.rect.x + fill.rect.width
+  const below = fill && fill.rect.y + fill.rect.height
+  const painted = fill
+    ? `drawbox=x=${right}:y=0:w=iw-${right}:h=ih:color=0x${fill.color}:t=fill,` +
+      `drawbox=x=0:y=${below}:w=iw:h=ih-${below}:color=0x${fill.color}:t=fill,`
+    : ''
   // Screenshots are sRGB: convert with the BT.709 matrix and say so, or players shift the colours.
   const scale =
-    `scale=${width}:${height}:flags=lanczos:out_color_matrix=bt709:out_range=tv,` +
+    `${cut}${painted}scale=${width}:${height}:flags=lanczos:out_color_matrix=bt709:out_range=tv,` +
     'setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709,format=yuv420p'
   const loop =
     fade > 0
@@ -78,6 +101,38 @@ export async function withinBudget(
     if (bytes < budget) return { quality, bytes }
   }
   throw new Error(`E_MEDIA_BUDGET ${bytes} bytes at quality ${last}, budget ${budget}`)
+}
+
+/** The frame a poster is taken from: the one at `time`, or the last when the clip is shorter. */
+export const posterFrame = ({ count, fps }: { count: number; fps: number }, time: number) =>
+  Math.min(count - 1, Math.round(time * fps))
+
+/** A frame cut and filled as `videoArgs` does it, so a poster matches its clip. */
+export async function cutFrame(
+  png: Buffer | string,
+  { crop, fill }: { crop?: PixelRect; fill?: Fill },
+): Promise<Buffer> {
+  let image = sharp(png)
+  if (crop) {
+    image = image.extract({ left: crop.x, top: crop.y, width: crop.width, height: crop.height })
+  }
+  if (fill) {
+    const { width = 0, height = 0 } = await sharp(png).metadata()
+    const colour = `#${fill.color}`
+    const right = fill.rect.x + fill.rect.width
+    const below = fill.rect.y + fill.rect.height
+    const block = (w: number, h: number) =>
+      sharp({ create: { width: w, height: h, channels: 3, background: colour } })
+        .png()
+        .toBuffer()
+    const blocks = []
+    if (right < width)
+      blocks.push({ input: await block(width - right, height), left: right, top: 0 })
+    if (below < height)
+      blocks.push({ input: await block(width, height - below), left: 0, top: below })
+    image = image.composite(blocks)
+  }
+  return image.removeAlpha().png().toBuffer()
 }
 
 /** The frame as a WebP at the slot size, at the best quality under `maxBytes`. */

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { initClips } from '../../src/scripts/clips.ts'
 import { fakeEnv, FakeSource, FakeVideo, rootOf } from '../support/dom-fakes.ts'
 
+const DARK = '(prefers-color-scheme: dark)'
+
 const setup = (
   options: { reduced?: boolean; hidden?: boolean } = {},
   videos = [new FakeVideo()],
@@ -128,6 +130,37 @@ describe('initClips', () => {
     expect(observers.every((observer) => observer.disconnected)).toBe(true)
     expect(video.paused).toBe(true)
     expect([reducedListeners.size, visibilityListeners.size]).toEqual([0, 0])
+  })
+
+  it('loads a clip again when the scheme or width its sources are for changes', () => {
+    const fake = fakeEnv()
+    const listeners = new Map<string, (event: { matches: boolean }) => void>()
+    const env = {
+      ...fake.env,
+      matchMedia: (query: string) =>
+        query.includes('reduced-motion')
+          ? fake.env.matchMedia(query)
+          : {
+              matches: false,
+              addEventListener: (_: string, listener: unknown) =>
+                listeners.set(query, listener as (event: { matches: boolean }) => void),
+              removeEventListener: () => listeners.delete(query),
+            },
+    }
+    const dark = Object.assign(new FakeSource('/a-dark.webm'), { media: DARK })
+    const near = new FakeVideo([dark, new FakeSource('/a.webm')])
+    const far = new FakeVideo([Object.assign(new FakeSource('/b-dark.webm'), { media: DARK })])
+    const stop = initClips(rootOf([near, far]), {}, env)
+    const [warm, watch] = fake.observers
+    warm?.deliver({ target: near, isIntersecting: true })
+    watch?.deliver({ target: near, isIntersecting: true })
+
+    listeners.get(DARK)?.({ matches: true })
+
+    expect([near.loads, near.plays, near.paused]).toEqual([2, 2, false])
+    expect([far.loads, far.plays]).toEqual([0, 0])
+    stop()
+    expect(listeners.size).toBe(0)
   })
 
   it('selects video[data-clip] only', () => {

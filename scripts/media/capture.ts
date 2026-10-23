@@ -2,18 +2,28 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { loadavg } from 'node:os'
 import { join } from 'node:path'
 import type { Browser } from '@playwright/test'
-import { slotPaths, type Edge, type SlotName } from '../../src/media.ts'
+import sharp from 'sharp'
+import {
+  slotPaths,
+  variantName,
+  type Measured,
+  type Scheme,
+  type SlotName,
+} from '../../src/media.ts'
 import { launch, openApp, SymbolRenderer } from './browser.ts'
 import {
+  cutFrame,
   ffmpeg,
   fitPoster,
   frameFile,
+  posterFrame,
   START_QUALITY,
   videoArgs,
   withinBudget,
   type ClipInput,
+  type PixelRect,
 } from './encode.ts'
-import { pageActions, renderFrames } from './frames.ts'
+import { pageActions, renderFrames, type Rect } from './frames.ts'
 import { edgesOf } from './manifest.ts'
 import { mp4Info } from './mp4.ts'
 import { installOverlay } from './overlay.ts'
@@ -26,16 +36,17 @@ export interface CaptureContext {
   devotDir: string
   baseURL: string
   fps: number
+  schemes: readonly Scheme[]
+  /** Above 1, writes only every sample-th frame, to a folder of its own, to look at a scene. */
+  sample: number
   log: (line: string) => void
 }
 
 const KB = 1024
-/** Under the limits in tests/unit/media.test.ts, with room to spare. */
-const POSTER_BUDGET = 78 * KB
-const CLIP_BUDGET = 690 * KB
-const HERO_BUDGET = 2020 * KB
 
-const framesDir = (cache: string, slot: SlotName) => join(cache, 'frames', slot)
+/** Where a scene's frames go for one colour scheme; `sample` runs go elsewhere. */
+export const framesDir = (cache: string, slot: SlotName, scheme: Scheme, sample = false) =>
+  join(cache, 'frames', slot, sample ? `${scheme}-sample` : scheme)
 
 /** Waits while the machine is busy (one-minute load of 24 or more), for at most 15 minutes. */
 export async function waitForQuietMachine(log: (line: string) => void): Promise<void> {
@@ -48,9 +59,18 @@ export async function waitForQuietMachine(log: (line: string) => void): Promise<
   log('still busy after 15 minutes: capturing anyway')
 }
 
+/** What a capture leaves beside a scene's frames for the encoder: clip.json. */
+export interface Captured extends ClipInput {
+  posterTime: number
+  /** The smallest text in the clip and in the phone cut, in points. */
+  minText: number
+  phoneMinText?: number
+}
+
 async function captureScene(
   browser: Browser,
   scene: Scene,
+  scheme: Scheme,
   ctx: CaptureContext,
   symbols: SymbolRenderer,
 ) {
@@ -58,11 +78,12 @@ async function captureScene(
     baseURL: ctx.baseURL,
     devotDir: ctx.devotDir,
     symbols,
-    scheme: 'light',
+    scheme,
     viewport: scene.viewport,
     settings: { sidebarMaterial: false, theme: 'tide', ...scene.settings },
     motion: scene.motion,
   })
+  const label = `${scene.slot} ${scheme}`
   try {
     await page.goto('/')
     await page.locator('.window[data-ready]').waitFor()
@@ -70,31 +91,41 @@ async function captureScene(
     await scene.prepare(page)
     await installOverlay(page)
     const timeline = await scene.script(page, pageActions(page))
-    const dir = framesDir(ctx.cache, scene.slot)
-    const count = await renderFrames(page, timeline, {
+    const dir = framesDir(ctx.cache, scene.slot, scheme, ctx.sample > 1)
+    const rendered = await renderFrames(page, timeline, {
       dir,
       fps: ctx.fps,
       clip: scene.clip,
       motion: scene.motion,
-      log: (line) => ctx.log(`${scene.slot} ${line}`),
+      measure: scene.phone ? [scene.clip, scene.phone.rect] : [scene.clip],
+      sample: ctx.sample,
+      log: (line) => ctx.log(`${label} ${line}`),
     })
     await scene.check?.(page)
     const alerts = await page
       .locator('[role="alert"]:visible, .toast:visible, .island-error:visible')
       .count()
     if (problems.length > 0 || alerts > 0) {
-      throw new Error(`E_MEDIA_PAGE ${scene.slot}: ${alerts} alerts; ${problems.join(' | ')}`)
+      throw new Error(`E_MEDIA_PAGE ${label}: ${alerts} alerts; ${problems.join(' | ')}`)
     }
-    const clip: ClipInput = {
+    const [smallest, phoneSmallest] = rendered.minText
+    const captured: Captured = {
       frames: dir,
-      count,
+      count: rendered.count,
       fps: ctx.fps,
       fade: scene.fade,
       width: scene.output.width,
       height: scene.output.height,
+      posterTime: timeline.posterTime,
+      minText: smallest?.size ?? Infinity,
+      ...(phoneSmallest && { phoneMinText: phoneSmallest.size }),
     }
-    writeFileSync(join(dir, 'clip.json'), JSON.stringify(clip))
-    ctx.log(`${scene.slot} ${count} frames, ${(count / ctx.fps).toFixed(2)} s`)
+    writeFileSync(join(dir, 'clip.json'), JSON.stringify(captured))
+    ctx.log(
+      `${label} ${rendered.count} frames, ${(rendered.count / ctx.fps).toFixed(2)} s, ` +
+        `poster at ${timeline.posterTime.toFixed(2)} s, smallest text ` +
+        rendered.minText.map(({ size, text }) => `${size} pt "${text}"`).join(', '),
+    )
   } finally {
     await context.close()
   }
@@ -102,61 +133,128 @@ async function captureScene(
 
 export interface Encoded {
   slot: SlotName
-  width: number
-  height: number
-  duration: number
-  edges: Edge[]
+  measured: Measured
   files: { path: string; bytes: number; quality: number }[]
 }
 
-/** MP4 (H.264) and WebM (AV1) within the slot's budget, and the first frame as its WebP poster. */
+/** Under the limits in tests/unit/media.test.ts, with room to spare. */
+const LIMITS = {
+  // The hero's poster is its largest paint, a full window of text at twice its points.
+  hero: { clip: 980 * KB, poster: 118 * KB },
+  heroPhone: { clip: 395 * KB, poster: 48 * KB },
+  clip: { clip: 600 * KB, poster: 78 * KB },
+  phone: { clip: 600 * KB, poster: 48 * KB },
+}
+
+/** Frame pixels of a rect in window points, inside a clip captured at 2x from `clip`. */
+const inFrame = (rect: Rect, clip: Rect): PixelRect => ({
+  x: (rect.x - clip.x) * 2,
+  y: (rect.y - clip.y) * 2,
+  width: rect.width * 2,
+  height: rect.height * 2,
+})
+
+async function colourAt(png: string, x: number, y: number): Promise<string> {
+  const data = await sharp(png)
+    .extract({ left: x, top: y, width: 1, height: 1 })
+    .removeAlpha()
+    .raw()
+    .toBuffer()
+  return [...data].map((value) => value.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Each variant of a slot within its budget: MP4 (H.264) and WebM (AV1), and the frame at the
+ * scene's poster time as a WebP poster. The phone variant is cut from the same frames.
+ */
 export async function encodeSlot(slot: SlotName, ctx: CaptureContext): Promise<Encoded> {
-  const dir = framesDir(ctx.cache, slot)
-  const manifest = join(dir, 'clip.json')
-  if (!existsSync(manifest))
-    throw new Error(`E_MEDIA_NO_FRAMES ${slot}: run pnpm media:capture ${slot}`)
-  const clip = JSON.parse(readFileSync(manifest, 'utf8')) as ClipInput
-  const paths = slotPaths(slot)
+  const scene = SCENES[slot]
+  if (!scene) throw new Error(`E_MEDIA_NO_SCENE ${slot}`)
   const target = (path: string) => join(ctx.root, 'public', path)
   mkdirSync(join(ctx.root, 'public', 'media', slot), { recursive: true })
-
-  const encode = (codec: 'h264' | 'av1', path: string, budget: number) =>
-    withinBudget(
-      async (quality) => {
-        ffmpeg(videoArgs(clip, codec, quality, target(path)))
-        return statSync(target(path)).size
+  const files: Encoded['files'] = []
+  const bytes: Measured['bytes'] = {}
+  let captured: Captured | undefined
+  for (const scheme of ctx.schemes) {
+    const dir = framesDir(ctx.cache, slot, scheme)
+    const manifest = join(dir, 'clip.json')
+    if (!existsSync(manifest))
+      throw new Error(`E_MEDIA_NO_FRAMES ${slot} ${scheme}: run pnpm media:capture ${slot}`)
+    const run = JSON.parse(readFileSync(manifest, 'utf8')) as Captured
+    captured = run
+    const variants: { phone: boolean; clip: ClipInput }[] = [{ phone: false, clip: run }]
+    if (scene.phone) {
+      const { rect, output, fill } = scene.phone
+      const pixels = inFrame(rect, scene.clip)
+      const edge = { x: pixels.x + pixels.width - 2, y: pixels.y + pixels.height - 2 }
+      const cut = fill
+        ? { fill: { rect: pixels, color: await colourAt(frameFile(dir, 0), edge.x, edge.y) } }
+        : { crop: pixels }
+      variants.push({ phone: true, clip: { ...run, ...output, ...cut } })
+    }
+    for (const { phone, clip } of variants) {
+      const paths = slotPaths(slot, { scheme, phone })
+      const hero = slot === 'hero'
+      const limits = hero
+        ? phone
+          ? LIMITS.heroPhone
+          : LIMITS.hero
+        : phone
+          ? LIMITS.phone
+          : LIMITS.clip
+      const encode = async (codec: 'h264' | 'av1', path: string) => {
+        const result = await withinBudget(
+          async (quality) => {
+            ffmpeg(videoArgs(clip, codec, quality, target(path)))
+            return statSync(target(path)).size
+          },
+          {
+            start: START_QUALITY[codec],
+            step: 2,
+            last: START_QUALITY[codec] + 14,
+            budget: limits.clip,
+          },
+        )
+        files.push({ path, ...result })
+        return result.bytes
+      }
+      const webm = await encode('av1', paths.webm)
+      const mp4 = await encode('h264', paths.mp4)
+      const encoded = mp4Info(readFileSync(target(paths.mp4)))
+      if (encoded.width !== clip.width || encoded.height !== clip.height) {
+        throw new Error(`E_MEDIA_ENCODE ${paths.mp4} is ${encoded.width}x${encoded.height}`)
+      }
+      const frame = frameFile(clip.frames, posterFrame(clip, run.posterTime))
+      const poster = await fitPoster(await cutFrame(frame, clip), {
+        width: clip.width,
+        height: clip.height,
+        maxBytes: limits.poster,
+      })
+      writeFileSync(target(paths.poster), poster.data)
+      files.push({ path: paths.poster, bytes: poster.data.length, quality: poster.quality })
+      bytes[variantName({ scheme, phone })] = { mp4, webm, poster: poster.data.length }
+    }
+  }
+  if (!captured) throw new Error(`E_MEDIA_NO_SCHEME ${slot}`)
+  const { phone } = scene
+  const measured: Measured = {
+    width: scene.output.width,
+    height: scene.output.height,
+    points: scene.clip.width,
+    minText: captured.minText,
+    duration: Math.round((captured.count / captured.fps) * 100) / 100,
+    posterTime: Math.round(captured.posterTime * 100) / 100,
+    edges: edgesOf(scene.clip, scene.viewport),
+    ...(phone && {
+      phone: {
+        ...phone.output,
+        points: phone.fill ? scene.clip.width : phone.rect.width,
+        minText: (!phone.fill && captured.phoneMinText) || captured.minText,
       },
-      { start: START_QUALITY[codec], step: 2, last: START_QUALITY[codec] + 14, budget },
-    )
-  const webm = await encode('av1', paths.webm, slot === 'hero' ? HERO_BUDGET / 2.6 : CLIP_BUDGET)
-  const mp4 = await encode(
-    'h264',
-    paths.mp4,
-    slot === 'hero' ? HERO_BUDGET - webm.bytes : CLIP_BUDGET,
-  )
-  const encoded = mp4Info(readFileSync(target(paths.mp4)))
-  if (encoded.width !== clip.width || encoded.height !== clip.height) {
-    throw new Error(`E_MEDIA_ENCODE ${slot} is ${encoded.width}x${encoded.height}`)
+    }),
+    bytes,
   }
-  const poster = await fitPoster(frameFile(clip.frames, 0), {
-    width: clip.width,
-    height: clip.height,
-    maxBytes: POSTER_BUDGET,
-  })
-  writeFileSync(target(paths.poster), poster.data)
-  const scene = SCENES[slot]
-  return {
-    slot,
-    width: clip.width,
-    height: clip.height,
-    duration: Math.round((clip.count / clip.fps) * 100) / 100,
-    edges: scene ? edgesOf(scene.clip, scene.viewport) : [],
-    files: [
-      { path: paths.mp4, ...mp4 },
-      { path: paths.webm, ...webm },
-      { path: paths.poster, bytes: poster.data.length, quality: poster.quality },
-    ],
-  }
+  return { slot, measured, files }
 }
 
 export async function captureSlots(slots: SlotName[], ctx: CaptureContext): Promise<void> {
@@ -167,7 +265,7 @@ export async function captureSlots(slots: SlotName[], ctx: CaptureContext): Prom
     for (const slot of slots) {
       const scene = SCENES[slot]
       if (!scene) throw new Error(`E_MEDIA_NO_SCENE ${slot}`)
-      await captureScene(browser, scene, ctx, symbols)
+      for (const scheme of ctx.schemes) await captureScene(browser, scene, scheme, ctx, symbols)
     }
   } finally {
     symbols.stop()

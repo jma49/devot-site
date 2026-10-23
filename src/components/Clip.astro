@@ -5,46 +5,74 @@ interface Props {
   name: SlotName
   class?: string
   /**
-   * For a clip on the first screen: its poster loads with the page. Other clips get theirs from
-   * src/scripts/posters.ts as they come near, since a browser fetches every poster at once.
+   * For a clip on the first screen: its poster loads with the page. A poster attribute cannot vary
+   * by colour scheme or width, so this one comes from the stylesheet below and a preload per
+   * variant, which fetch only the reader's. Other clips get theirs from src/scripts/posters.ts as
+   * they come near.
    */
   priority?: boolean
 }
 
 const { name, class: className, priority = false } = Astro.props
 const slot = media[name]
+const posterMedia = JSON.stringify(
+  slot.variants.flatMap((variant) => (variant.media ? [[variant.media, variant.poster]] : [])),
+)
 ---
 
 {slot.clip ? (
   <>
+    {priority &&
+      slot.variants.map((variant) => (
+        <link
+          rel="preload"
+          as="image"
+          type="image/webp"
+          href={variant.poster}
+          media={variant.only}
+          fetchpriority="high"
+        />
+      ))}
     <video
-      class:list={['clip', className]}
+      class:list={['clip', className, { 'clip-deferred': !priority }]}
       data-clip={name}
       width={slot.width}
       height={slot.height}
-      poster={priority ? slot.poster : undefined}
-      data-poster={priority ? undefined : slot.poster}
+      data-poster={slot.poster}
+      data-poster-media={posterMedia}
       aria-label={slot.alt}
       preload="none"
       muted
       loop
       playsinline
     >
-      {slot.sources.map(({ src, type }) => (
-        <source data-src={src} type={type} />
+      {slot.sources.map(({ src, type, media: query }) => (
+        <source data-src={src} type={type} media={query} />
       ))}
     </video>
     {!priority && (
       <noscript>
-        <img
-          class:list={['clip', className]}
-          src={slot.poster}
-          width={slot.width}
-          height={slot.height}
-          alt={slot.alt}
-          loading="lazy"
-          decoding="async"
-        />
+        <picture>
+          {slot.variants
+            .filter((variant) => variant.media)
+            .map((variant) => (
+              <source
+                srcset={variant.poster}
+                media={variant.media}
+                width={variant.width}
+                height={variant.height}
+              />
+            ))}
+          <img
+            class:list={['clip', className]}
+            src={slot.poster}
+            width={slot.width}
+            height={slot.height}
+            alt={slot.alt}
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
       </noscript>
     )}
   </>
@@ -68,8 +96,33 @@ const slot = media[name]
   }
 
   @media (scripting: none) {
-    video[data-poster] {
+    .clip-deferred {
       display: none;
+    }
+  }
+
+  /* The hero's poster, the first screen's largest paint (see `priority`): the last rule that
+     matches wins, so only one file is fetched. tests/unit/media-posters.test.ts keeps these paths
+     in step with src/media.ts. */
+  video[data-clip='hero'] {
+    background: left top / cover no-repeat url('/media/hero/hero-poster.webp');
+  }
+
+  @media (prefers-color-scheme: dark) {
+    video[data-clip='hero'] {
+      background-image: url('/media/hero/hero-dark-poster.webp');
+    }
+  }
+
+  @media (max-width: 639.98px) {
+    video[data-clip='hero'] {
+      background-image: url('/media/hero/hero-phone-poster.webp');
+    }
+  }
+
+  @media (max-width: 639.98px) and (prefers-color-scheme: dark) {
+    video[data-clip='hero'] {
+      background-image: url('/media/hero/hero-phone-dark-poster.webp');
     }
   }
 </style>

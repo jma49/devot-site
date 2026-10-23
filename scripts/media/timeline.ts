@@ -29,6 +29,8 @@ export interface CursorFrame extends Point {
 
 export interface Timeline {
   duration: number
+  /** Seconds into the clip of the frame that shows its idea best, taken for the poster. */
+  posterTime: number
   events: ClipEvent[]
   cursor(t: number): CursorFrame
 }
@@ -112,7 +114,8 @@ const PRESSED = 0.88
 
 /**
  * Builds a clip step by step: `move` glides the pointer, `click` presses at the pointer, `type`
- * types with a person's rhythm while the pointer hides (as macOS hides it), `do` runs a scene step.
+ * types with a person's rhythm while the pointer hides (as macOS hides it), `do` runs a scene step,
+ * `poster` marks the moment the poster shows.
  * A target given as a function is looked up when its move begins, after every earlier step ran.
  */
 export class CursorScript {
@@ -123,6 +126,7 @@ export class CursorScript {
   private readonly moves: Move[] = []
   private readonly fades: Fade[] = []
   private readonly clicks: number[] = []
+  private posterAt = 0
 
   constructor(start: Point, actions: Actions) {
     this.start = start
@@ -196,6 +200,11 @@ export class CursorScript {
     return this
   }
 
+  poster(): this {
+    this.posterAt = this.t
+    return this
+  }
+
   hide(seconds = 0.15): this {
     this.fades.push({ at: this.t, duration: seconds, to: 0 })
     return this
@@ -209,6 +218,7 @@ export class CursorScript {
   build(): Timeline {
     return {
       duration: this.t,
+      posterTime: this.posterAt,
       events: [...this.events],
       cursor: (t) => {
         const at = this.positionAt(t)

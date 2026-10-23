@@ -1,10 +1,11 @@
 import type { Page } from '@playwright/test'
 import type { CursorFrame } from './timeline.ts'
 
-// What the window has on a Mac but the browser build does not draw: the traffic lights, which sit in
-// the 52 pt top bar on its centre line (tauri.conf.json trafficLightPosition), and a pointer. The
-// pointer is a soft dark arrow with a light rim and a ripple for clicks, moved frame by frame from
-// frames.ts so it follows the clip's clock. Neither takes pointer events.
+// What the window has on a Mac but the browser build does not draw, in the top layer so nothing in
+// the page covers it: the traffic lights, which sit in the 52 pt top bar on its centre line
+// (tauri.conf.json trafficLightPosition), and a pointer. The pointer is a soft dark arrow with a
+// light rim and a ripple for clicks (light on a dark window), moved frame by frame from frames.ts
+// so it follows the clip's clock. Neither takes pointer events.
 
 const ARROW =
   '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="-2 -2 22 28">' +
@@ -21,12 +22,20 @@ const LIGHTS = [
 export async function installOverlay(page: Page): Promise<void> {
   await page.evaluate(
     ({ arrow, dots }) => {
+      const dark = matchMedia('(prefers-color-scheme: dark)').matches
       document.getElementById('media-overlay')?.remove()
       const layer = document.createElement('div')
       layer.id = 'media-overlay'
+      layer.popover = 'manual'
       Object.assign(layer.style, {
         position: 'fixed',
         inset: '0',
+        width: '100%',
+        height: '100%',
+        margin: '0',
+        padding: '0',
+        border: '0',
+        background: 'transparent',
         pointerEvents: 'none',
         zIndex: '2147483647',
         overflow: 'hidden',
@@ -57,8 +66,10 @@ export async function installOverlay(page: Page): Promise<void> {
         marginLeft: '-17px',
         marginTop: '-17px',
         borderRadius: '50%',
-        background: 'rgba(28, 28, 30, 0.14)',
-        boxShadow: '0 0 0 1.5px rgba(28, 28, 30, 0.22)',
+        background: dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(28, 28, 30, 0.14)',
+        boxShadow: dark
+          ? '0 0 0 1.5px rgba(255, 255, 255, 0.3)'
+          : '0 0 0 1.5px rgba(28, 28, 30, 0.22)',
         opacity: '0',
       })
       const pointer = document.createElement('div')
@@ -77,6 +88,7 @@ export async function installOverlay(page: Page): Promise<void> {
       })
       layer.append(ripple, pointer)
       document.body.append(layer)
+      layer.showPopover()
     },
     { arrow: ARROW, dots: LIGHTS },
   )
@@ -84,9 +96,16 @@ export async function installOverlay(page: Page): Promise<void> {
 
 export async function drawCursor(page: Page, frame: CursorFrame): Promise<void> {
   await page.evaluate((f) => {
+    const layer = document.getElementById('media-overlay')
     const pointer = document.getElementById('media-pointer')
     const ripple = document.getElementById('media-ripple')
-    if (!pointer || !ripple) return
+    if (!layer || !pointer || !ripple) return
+    // A modal dialog (Revision History, the template picker) joins the top layer above the
+    // overlay; showing the overlay again puts it back on top, as the system pointer is.
+    if (document.querySelector('dialog:modal')) {
+      layer.hidePopover()
+      layer.showPopover()
+    }
     pointer.style.transform = `translate(${f.x}px, ${f.y}px) scale(${f.press})`
     pointer.style.opacity = String(f.opacity)
     if (f.ripple) {
