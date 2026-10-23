@@ -2,61 +2,323 @@
   "hero": {
     "width": 2048,
     "height": 1280,
+    "points": 1280,
+    "minText": 10,
     "duration": 16.7,
-    "edges": ["top", "right", "bottom", "left"]
+    "posterTime": 9.37,
+    "edges": ["top", "right", "bottom", "left"],
+    "phone": {
+      "width": 1600,
+      "height": 1000,
+      "points": 1280,
+      "minText": 10
+    },
+    "bytes": {
+      "light": {
+        "mp4": 746944,
+        "webm": 637447,
+        "poster": 120010
+      },
+      "light-phone": {
+        "mp4": 397159,
+        "webm": 324223,
+        "poster": 47740
+      },
+      "dark": {
+        "mp4": 730750,
+        "webm": 615467,
+        "poster": 118546
+      },
+      "dark-phone": {
+        "mp4": 384220,
+        "webm": 320104,
+        "poster": 48452
+      }
+    }
   },
   "write": {
-    "width": 1800,
-    "height": 1200,
+    "width": 1344,
+    "height": 896,
+    "points": 672,
+    "minText": 10.5,
     "duration": 7.8,
-    "edges": ["top", "left"]
+    "posterTime": 6.42,
+    "edges": ["top", "left"],
+    "phone": {
+      "width": 1104,
+      "height": 736,
+      "points": 552,
+      "minText": 10.5
+    },
+    "bytes": {
+      "light": {
+        "mp4": 142191,
+        "webm": 86606,
+        "poster": 69106
+      },
+      "light-phone": {
+        "mp4": 106440,
+        "webm": 71841,
+        "poster": 46154
+      },
+      "dark": {
+        "mp4": 132104,
+        "webm": 83298,
+        "poster": 67718
+      },
+      "dark-phone": {
+        "mp4": 103901,
+        "webm": 69088,
+        "poster": 44836
+      }
+    }
   },
   "organise": {
-    "width": 1800,
-    "height": 1200,
-    "duration": 7.83,
-    "edges": ["top", "left"]
+    "width": 1344,
+    "height": 896,
+    "points": 672,
+    "minText": 10,
+    "duration": 9.2,
+    "posterTime": 4.63,
+    "edges": ["top", "left"],
+    "phone": {
+      "width": 1104,
+      "height": 736,
+      "points": 552,
+      "minText": 10
+    },
+    "bytes": {
+      "light": {
+        "mp4": 192800,
+        "webm": 107472,
+        "poster": 51852
+      },
+      "light-phone": {
+        "mp4": 117288,
+        "webm": 76586,
+        "poster": 28700
+      },
+      "dark": {
+        "mp4": 187091,
+        "webm": 108086,
+        "poster": 50986
+      },
+      "dark-phone": {
+        "mp4": 123545,
+        "webm": 77895,
+        "poster": 27974
+      }
+    }
   },
   "find": {
-    "width": 1800,
-    "height": 1200,
-    "duration": 7.87,
-    "edges": ["top", "left"]
+    "width": 1344,
+    "height": 896,
+    "points": 672,
+    "minText": 10,
+    "duration": 9.83,
+    "posterTime": 8.83,
+    "edges": ["top", "left"],
+    "phone": {
+      "width": 1104,
+      "height": 736,
+      "points": 552,
+      "minText": 10
+    },
+    "bytes": {
+      "light": {
+        "mp4": 372031,
+        "webm": 223109,
+        "poster": 76430
+      },
+      "light-phone": {
+        "mp4": 262518,
+        "webm": 160679,
+        "poster": 45458
+      },
+      "dark": {
+        "mp4": 357189,
+        "webm": 213047,
+        "poster": 74360
+      },
+      "dark-phone": {
+        "mp4": 243500,
+        "webm": 154438,
+        "poster": 49046
+      }
+    }
   },
   "card-1": {
-    "width": 1720,
-    "height": 1080,
-    "duration": 7.83,
-    "edges": ["top", "left"]
+    "width": 1408,
+    "height": 880,
+    "points": 704,
+    "minText": 10,
+    "duration": 7.5,
+    "posterTime": 4,
+    "edges": ["top", "left"],
+    "phone": {
+      "width": 800,
+      "height": 500,
+      "points": 400,
+      "minText": 10
+    },
+    "bytes": {
+      "light": {
+        "mp4": 84415,
+        "webm": 65853,
+        "poster": 56530
+      },
+      "light-phone": {
+        "mp4": 38382,
+        "webm": 37131,
+        "poster": 23064
+      },
+      "dark": {
+        "mp4": 78424,
+        "webm": 59496,
+        "poster": 54136
+      },
+      "dark-phone": {
+        "mp4": 36127,
+        "webm": 33192,
+        "poster": 22296
+      }
+    }
   },
   "card-2": {
-    "width": 860,
-    "height": 1080,
-    "duration": 6.5,
-    "edges": ["top", "left"]
+    "width": 800,
+    "height": 1000,
+    "points": 400,
+    "minText": 10,
+    "duration": 5.7,
+    "posterTime": 2.5,
+    "edges": ["top", "left"],
+    "bytes": {
+      "light": {
+        "mp4": 188155,
+        "webm": 128603,
+        "poster": 49172
+      },
+      "dark": {
+        "mp4": 188051,
+        "webm": 121638,
+        "poster": 46464
+      }
+    }
   },
   "card-3": {
-    "width": 860,
-    "height": 1080,
-    "duration": 5.8,
-    "edges": ["top", "right"]
+    "width": 800,
+    "height": 1000,
+    "points": 400,
+    "minText": 13,
+    "duration": 5.47,
+    "posterTime": 4.47,
+    "edges": ["top", "left"],
+    "bytes": {
+      "light": {
+        "mp4": 74749,
+        "webm": 44677,
+        "poster": 41124
+      },
+      "dark": {
+        "mp4": 71347,
+        "webm": 43976,
+        "poster": 38920
+      }
+    }
   },
   "card-4": {
-    "width": 1720,
-    "height": 1080,
-    "duration": 5.57,
-    "edges": ["top"]
+    "width": 1408,
+    "height": 880,
+    "points": 704,
+    "minText": 10,
+    "duration": 7.17,
+    "posterTime": 2.47,
+    "edges": ["top"],
+    "phone": {
+      "width": 800,
+      "height": 500,
+      "points": 400,
+      "minText": 11
+    },
+    "bytes": {
+      "light": {
+        "mp4": 211188,
+        "webm": 125675,
+        "poster": 49722
+      },
+      "light-phone": {
+        "mp4": 93939,
+        "webm": 68149,
+        "poster": 17868
+      },
+      "dark": {
+        "mp4": 213151,
+        "webm": 119364,
+        "poster": 47452
+      },
+      "dark-phone": {
+        "mp4": 100730,
+        "webm": 67688,
+        "poster": 17338
+      }
+    }
   },
   "card-5": {
-    "width": 1720,
-    "height": 1080,
-    "duration": 7.9,
-    "edges": ["top"]
+    "width": 1408,
+    "height": 880,
+    "points": 704,
+    "minText": 10,
+    "duration": 7.2,
+    "posterTime": 2.8,
+    "edges": ["top"],
+    "phone": {
+      "width": 800,
+      "height": 500,
+      "points": 400,
+      "minText": 10
+    },
+    "bytes": {
+      "light": {
+        "mp4": 237954,
+        "webm": 163351,
+        "poster": 65366
+      },
+      "light-phone": {
+        "mp4": 125261,
+        "webm": 90748,
+        "poster": 26822
+      },
+      "dark": {
+        "mp4": 212476,
+        "webm": 148758,
+        "poster": 64242
+      },
+      "dark-phone": {
+        "mp4": 113418,
+        "webm": 82065,
+        "poster": 25506
+      }
+    }
   },
   "card-6": {
-    "width": 860,
-    "height": 1080,
+    "width": 800,
+    "height": 1000,
+    "points": 400,
+    "minText": 11,
     "duration": 5.67,
-    "edges": ["top", "left"]
+    "posterTime": 4.45,
+    "edges": ["top", "left"],
+    "bytes": {
+      "light": {
+        "mp4": 172387,
+        "webm": 121510,
+        "poster": 24294
+      },
+      "dark": {
+        "mp4": 157055,
+        "webm": 108323,
+        "poster": 24328
+      }
+    }
   }
 }
