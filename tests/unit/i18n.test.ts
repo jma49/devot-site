@@ -1,20 +1,22 @@
 import { expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
-import { cardsCopy } from '../../src/i18n/en/cards.ts'
-import { chromeCopy } from '../../src/i18n/en/chrome.ts'
-import { featuresCopy } from '../../src/i18n/en/features.ts'
-import { heroCopy } from '../../src/i18n/en/hero.ts'
-import { mediaCopy } from '../../src/i18n/en/media.ts'
-import { privacyCopy } from '../../src/i18n/en/privacy.ts'
 import { filesUnder } from '../support/source-files.ts'
 
-const namespaces = { chromeCopy, heroCopy, featuresCopy, cardsCopy, privacyCopy, mediaCopy }
+const modules: Record<string, Record<string, unknown>> = import.meta.glob(
+  '../../src/i18n/en/*.ts',
+  {
+    eager: true,
+  },
+)
+const namespaces = Object.fromEntries(
+  Object.entries(modules).flatMap(([file, exports]) =>
+    Object.entries(exports).map(([name, copy]) => [`${file}#${name}`, copy as object]),
+  ),
+)
 
-it('gives every package its own namespace file, so copy edits never share a file', () => {
-  const files = filesUnder('src/i18n/en').map((file) => file.replace('src/i18n/en/', ''))
-  expect(files.toSorted()).toEqual(
-    ['cards.ts', 'chrome.ts', 'features.ts', 'hero.ts', 'media.ts', 'privacy.ts'].toSorted(),
-  )
+it('loads every namespace file in src/i18n/en', () => {
+  expect(Object.keys(modules)).toHaveLength(filesUnder('src/i18n/en').length)
+  expect(Object.keys(namespaces).length).toBeGreaterThanOrEqual(6)
 })
 
 it('has no top-level key in two places, so one namespace cannot hide another', () => {
@@ -35,5 +37,13 @@ it('keeps the copy the page already used', () => {
   expect(en.download.label).toBe('Download for macOS')
   expect(en.meta.title).toBe('Devot: local-first Markdown notes for macOS')
   expect(en.notFound.heading).toBe('Page not found')
-  expect(en.footer.copyright(2026)).toBe('© 2026 Devot')
+})
+
+it('names the copyright holder the licence names', () => {
+  expect(en.footer.copyright(2026)).toBe('© 2026 jma49')
+})
+
+it('labels the navigation the way the footer does', () => {
+  expect(en.chrome.nav.write).toBe(en.footer.groups.product.links.features)
+  expect(en.chrome.nav.cards).toBe(en.footer.groups.product.links.cards)
 })

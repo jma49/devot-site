@@ -3,6 +3,8 @@ export type CardText = string | { code: string }
 
 export interface CardCopy {
   label: string
+  /** The card's heading: what the feature does for you, in a few words. */
+  title: string
   body: readonly CardText[]
   /** The key that opens the feature, as the Mac draws it and as a screen reader should say it. */
   keys?: { glyphs: string; spoken: string }
@@ -15,12 +17,14 @@ export const cardsCopy = {
     items: {
       'card-1': {
         label: 'Themes',
+        title: 'Four gradients, light or dark.',
         body: [
           'Tint the window with Dawn, Tide, Sage or Ember, four gradient themes that come in light and dark and can follow your Mac.',
         ],
       },
       'card-2': {
         label: 'Focus Mode',
+        title: 'Just the note, nothing else.',
         body: [
           'One keystroke hides the sidebar and the note list, so only the note you are writing stays on screen.',
         ],
@@ -28,6 +32,7 @@ export const cardsCopy = {
       },
       'card-3': {
         label: 'Tables',
+        title: 'Tables that keep their shape.',
         body: [
           'Tab moves between cells and shortcuts add, move and align rows and columns, so a Markdown table stays tidy as it grows.',
         ],
@@ -35,13 +40,15 @@ export const cardsCopy = {
       },
       'card-4': {
         label: 'Command palette',
+        title: 'Every command, a few keys away.',
         body: [
-          'Type a few letters to find any command, notebook, tag or note, and change any shortcut to the keys you prefer.',
+          'Type a few letters to find any command, notebook, tag or note, and change most shortcuts to the keys you prefer.',
         ],
         keys: { glyphs: '⌘K', spoken: 'Shortcut: Command K' },
       },
       'card-5': {
         label: 'Revision History',
+        title: 'Go back to any version.',
         body: [
           'Devot keeps a version whenever you pause typing, shows what changed since, and lets you restore any of them.',
         ],
@@ -49,6 +56,7 @@ export const cardsCopy = {
       },
       'card-6': {
         label: 'Templates',
+        title: 'Notes that start filled in.',
         body: [
           'Start a note from a template that sets its notebook, tags and status, and fills in placeholders such as ',
           { code: '{{date}}' },

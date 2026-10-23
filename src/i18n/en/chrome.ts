@@ -2,8 +2,10 @@ export const chromeCopy = {
   meta: {
     title: 'Devot: local-first Markdown notes for macOS',
     description:
-      'Local-first Markdown notes for macOS. Your notes stay on your Mac, in your hands.',
+      'Free, open-source Markdown notes for macOS: a live preview, nested notebooks, tags and full-text search. Your notes stay on your Mac, offline and without an account.',
     ogLocale: 'en_US',
+    imageAlt:
+      'The Devot window on a soft blue gradient: notebooks, statuses and tags in the sidebar, a list of notes, and an open note.',
   },
   notFound: {
     title: 'Devot: page not found',
@@ -19,7 +21,7 @@ export const chromeCopy = {
     menu: 'Menu',
     nav: {
       write: 'Features',
-      cards: 'Highlights',
+      cards: 'More features',
       localFirst: 'Local-first',
       download: 'Download',
       source: 'GitHub',

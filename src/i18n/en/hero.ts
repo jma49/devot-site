@@ -4,6 +4,6 @@ export const heroCopy = {
   hero: {
     title: titleLines.join(' '),
     titleLines,
-    lead: 'Local-first Markdown notes for macOS. Write, organise and find everything in one native window, offline and without an account.',
+    lead: 'Local-first Markdown notes for macOS. Write, organise and find everything in one Mac window, offline and without an account.',
   },
 }
