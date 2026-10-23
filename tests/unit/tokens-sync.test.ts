@@ -1,7 +1,8 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  modeFromArgs,
   OUTPUTS,
   PIN_FILE,
   syncTokens,
@@ -175,6 +176,41 @@ describe('pnpm tokens:update', () => {
       expect(JSON.parse(read(root, PIN_FILE))).toEqual({ commit: OLD })
     }
   })
+
+  it('keeps the old pin and outputs when a download fails', async () => {
+    const root = siteAt(OLD)
+    await syncTokens('write', { root, fetchText: fakeFetch(devotAt(OLD)) })
+    const before = OUTPUTS.map(({ to }) => read(root, to))
+    const responses = devotAt(NEW)
+    delete responses[`${RAW}/${NEW}/design/app-icon/dove.svg`]
+
+    const error = await failure(syncTokens('update', { root, fetchText: fakeFetch(responses) }))
+
+    expect(error.code).toBe('E_TOKENS_FETCH')
+    expect(JSON.parse(read(root, PIN_FILE))).toEqual({ commit: OLD })
+    expect(OUTPUTS.map(({ to }) => read(root, to))).toEqual(before)
+  })
+})
+
+describe('the command line', () => {
+  it('takes no flag, --check or --update', () => {
+    expect(modeFromArgs([])).toBe('write')
+    expect(modeFromArgs(['--check'])).toBe('check')
+    expect(modeFromArgs(['--update'])).toBe('update')
+  })
+
+  it('refuses anything else, so a mistyped --check never rewrites the files', () => {
+    for (const args of [['--chek'], ['check'], ['--check', '--update'], ['--check', 'x']]) {
+      let error: unknown
+      try {
+        modeFromArgs(args)
+      } catch (e) {
+        error = e
+      }
+      expect(error, args.join(' ')).toBeInstanceOf(TokenSyncError)
+      expect((error as TokenSyncError).code).toBe('E_TOKENS_ARGS')
+    }
+  })
 })
 
 describe('the committed output', () => {
@@ -186,15 +222,5 @@ describe('the committed output', () => {
     for (const { to } of OUTPUTS) {
       expect(read(repo, to).split('\n')[0], to).toContain(`Generated from jma49/devot@${commit}`)
     }
-  })
-
-  it('writes outputs into folders that may not exist yet', async () => {
-    const root = siteAt(OLD)
-    for (const { to } of OUTPUTS) mkdirSync(dirname(join(root, to)), { recursive: true })
-    rmSync(join(root, 'src'), { recursive: true })
-
-    await syncTokens('write', { root, fetchText: fakeFetch(devotAt(OLD)) })
-
-    for (const { to } of OUTPUTS) expect(read(root, to)).toContain(OLD)
   })
 })

@@ -42,7 +42,7 @@ The site uses Devot's design tokens and logo mark. `devot.pin.json` holds the De
 | `src/renderer/src/theme/tokens.css` | `src/theme/tokens.css` |
 | `design/app-icon/dove.svg`          | `src/assets/dove.svg`  |
 
-Each copy starts with a `Generated from jma49/devot@<sha>. Do not edit.` header. To take newer tokens, run `pnpm tokens:update` and commit the pin with the regenerated files. Errors carry a code: `E_TOKENS_STALE`, `E_TOKENS_FETCH` (download failed) or `E_TOKENS_PIN` (malformed pin file).
+Each copy starts with a `Generated from jma49/devot@<sha>. Do not edit.` header. To take newer tokens, run `pnpm tokens:update` and commit the pin with the regenerated files. Errors carry a code: `E_TOKENS_STALE`, `E_TOKENS_FETCH` (download failed), `E_TOKENS_PIN` (malformed pin file) or `E_TOKENS_ARGS` (unknown flag).
 
 Components use Devot's semantic tokens (`--color-text-*`, `--color-surface-*`, `--color-accent-*` and so on) or the site variables built on them in `src/styles/site-tokens.css`. A policy test refuses colour literals anywhere else in `src/`.
 

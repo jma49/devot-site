@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path'
 export const DEVOT_REPO = 'jma49/devot'
 export const PIN_FILE = 'devot.pin.json'
 
-/** Files copied from devot: `from` is the path in devot, `to` the generated file here. */
 export const OUTPUTS = [
   { from: 'src/renderer/src/theme/tokens.css', to: 'src/theme/tokens.css' },
   { from: 'design/app-icon/dove.svg', to: 'src/assets/dove.svg' },
@@ -15,7 +14,7 @@ export type FetchText = (url: string) => Promise<string>
 
 export type SyncMode = 'write' | 'check' | 'update'
 
-export type TokenSyncCode = 'E_TOKENS_STALE' | 'E_TOKENS_FETCH' | 'E_TOKENS_PIN'
+export type TokenSyncCode = 'E_TOKENS_STALE' | 'E_TOKENS_FETCH' | 'E_TOKENS_PIN' | 'E_TOKENS_ARGS'
 
 export class TokenSyncError extends Error {
   readonly code: TokenSyncCode
@@ -24,6 +23,15 @@ export class TokenSyncError extends Error {
     super(`${code} ${detail}`)
     this.code = code
   }
+}
+
+const FLAGS: Record<string, SyncMode> = { '--check': 'check', '--update': 'update' }
+
+export function modeFromArgs(args: string[]): SyncMode {
+  if (args.length === 0) return 'write'
+  const mode = args.length === 1 ? FLAGS[args[0] as string] : undefined
+  if (!mode) throw new TokenSyncError('E_TOKENS_ARGS', 'expected no flag, --check or --update')
+  return mode
 }
 
 const SHA = /^[0-9a-f]{40}$/

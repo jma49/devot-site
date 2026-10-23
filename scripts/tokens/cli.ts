@@ -1,11 +1,5 @@
 import { join } from 'node:path'
-import { syncTokens, TokenSyncError, type SyncMode } from './sync.ts'
-
-const mode: SyncMode = process.argv.includes('--check')
-  ? 'check'
-  : process.argv.includes('--update')
-    ? 'update'
-    : 'write'
+import { modeFromArgs, syncTokens, TokenSyncError } from './sync.ts'
 
 async function fetchText(url: string): Promise<string> {
   const headers: Record<string, string> = { 'user-agent': 'devot-site-tokens' }
@@ -19,6 +13,7 @@ async function fetchText(url: string): Promise<string> {
 }
 
 try {
+  const mode = modeFromArgs(process.argv.slice(2))
   console.log(await syncTokens(mode, { root: join(import.meta.dirname, '../..'), fetchText }))
 } catch (error) {
   if (!(error instanceof TokenSyncError)) throw error
