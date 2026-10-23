@@ -1,7 +1,127 @@
 ---
 import { messages } from '../../i18n/index.ts'
+import Clip from '../Clip.astro'
+import '../../styles/home/features.css'
 
 const t = messages()
+const { items } = t.features
+const number = (index: number) => String(index + 1).padStart(2, '0')
 ---
 
-<section id="write" aria-label={t.features.label}></section>
+<section id="write" class="features" aria-labelledby="features-title" data-features>
+  <header class="features-intro">
+    <h2 id="features-title" class="features-title">
+      {t.features.titleLines.map((line, index) => (
+        <>
+          {index > 0 && ' '}
+          <span class="features-title-line" data-reveal>
+            {line}
+          </span>
+        </>
+      ))}
+    </h2>
+    <p class="features-lead" data-reveal>
+      {t.features.lead}
+    </p>
+  </header>
+
+  <div class="features-body">
+    <nav class="features-list" aria-label={t.features.listLabel}>
+      <ol>
+        {items.map((item, index) => (
+          <li
+            class="feature-item"
+            data-feature-item
+            data-active={index === 0 ? '' : undefined}
+            data-reveal
+          >
+            <h3 class="feature-heading">
+              <button
+                type="button"
+                class="feature-button"
+                aria-controls={`feature-${item.slot}`}
+                aria-describedby={`feature-${item.slot}-text`}
+                aria-current={index === 0 ? 'true' : undefined}
+              >
+                <span class="feature-kicker">
+                  <span class="feature-number" aria-hidden="true">
+                    {number(index)}
+                  </span>
+                  <span class="feature-name">{item.name}</span>
+                </span>
+                <span class="feature-title">{item.title}</span>
+              </button>
+            </h3>
+            <div class="feature-detail">
+              <div>
+                <p class="feature-text" id={`feature-${item.slot}-text`}>
+                  {item.body.map((part) =>
+                    typeof part === 'string' ? part : <code>{part.code}</code>,
+                  )}
+                </p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
+    <div class="features-media">
+      {items.map((item, index) => (
+        <div
+          class="feature"
+          id={`feature-${item.slot}`}
+          data-feature
+          data-active={index === 0 ? '' : undefined}
+        >
+          <div class="feature-well" data-feature-well data-reveal="scale">
+            <span
+              class="feature-light feature-light-day"
+              data-theme-preview="tide"
+              data-appearance-preview="light"
+              aria-hidden="true"
+            />
+            <span
+              class="feature-light feature-light-night"
+              data-theme-preview="tide"
+              data-appearance-preview="dark"
+              aria-hidden="true"
+            />
+            <div class="feature-stage">
+              <div class="feature-window">
+                <Clip name={item.slot} class="feature-clip" />
+                <span class="feature-controls" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="feature-copy" data-reveal>
+            <h3 class="feature-heading">
+              <span class="feature-kicker">
+                <span class="feature-number" aria-hidden="true">
+                  {number(index)}
+                </span>
+                <span class="feature-name">{item.name}</span>
+              </span>
+              <span class="feature-title">{item.title}</span>
+            </h3>
+            <p class="feature-text">
+              {item.body.map((part) =>
+                typeof part === 'string' ? part : <code>{part.code}</code>,
+              )}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initFeatures } from '../../scripts/features.ts'
+
+  initFeatures()
+</script>
