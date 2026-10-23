@@ -1,0 +1,71 @@
+/* The play button src/scripts/clip-controls.ts gives each clip when reduced motion is on. */
+.clip-control {
+  position: absolute;
+  z-index: 2;
+  inset-block-end: var(--space-7);
+  inset-inline-start: var(--space-7);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-line-hairline);
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-surface-popover) 88%, transparent);
+  box-shadow:
+    0 1px 2px var(--color-shadow-popover-key),
+    0 6px 16px -6px var(--color-shadow-popover-ambient);
+  color: var(--site-color-text);
+  cursor: pointer;
+  backdrop-filter: blur(12px) saturate(1.4);
+  transition:
+    background-color var(--site-dur-quick) var(--site-ease-out),
+    color var(--site-dur-quick) var(--site-ease-out);
+}
+
+.clip-control[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--site-brand-fill);
+  color: var(--site-brand-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .clip-control[aria-pressed='false']:hover {
+    background: var(--color-surface-popover);
+  }
+}
+
+.clip-control-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.clip-control-play {
+  fill: currentColor;
+}
+
+.clip-control-pause {
+  display: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.clip-control[aria-pressed='true'] .clip-control-play {
+  display: none;
+}
+
+.clip-control[aria-pressed='true'] .clip-control-pause {
+  display: inline;
+}
+
+/* The hero window is cropped at the bottom, so its button sits in the title bar, after the
+   window controls: offsets are shares of the 1024 x 640 point window. */
+.clip-control[data-for='hero'] {
+  inset-block: calc(4.06% - 0.875rem) auto;
+  inset-inline-start: 8.2%;
+  width: 1.75rem;
+  height: 1.75rem;
+}

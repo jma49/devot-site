@@ -5,8 +5,18 @@
 :root {
   --site-color-page: var(--color-surface-editor);
   --site-color-text: var(--color-text-primary);
-  --site-color-text-muted: var(--color-text-secondary);
-  --site-color-text-faint: var(--color-text-tertiary);
+  /* Three text tiers. Devot's secondary and tertiary greys sit close together, so each is moved
+     apart (toward primary, toward placeholder) while both keep AA on the page and on cards. */
+  --site-color-text-muted: color-mix(
+    in oklab,
+    var(--color-text-secondary) 70%,
+    var(--color-text-primary)
+  );
+  --site-color-text-faint: color-mix(
+    in oklab,
+    var(--color-text-tertiary) 85%,
+    var(--color-text-placeholder)
+  );
   --site-color-link: var(--color-accent-text);
   --site-color-line: var(--color-line-separator);
   --site-color-action: var(--color-accent-fill);
@@ -17,13 +27,54 @@
   --site-focus-offset: 3px;
 
   --site-font: var(--font-family-ui);
-  --site-font-size-small: 0.875rem;
-  --site-font-size-body: 1.0625rem;
+
+  /*
+   * Type scale. The system face throughout (SF Pro on Apple devices), mono only for numbers and
+   * code. Each tier's size, weight, tracking and line height is defined here once:
+   *   display  the hero headline                                  36-60 px  bold
+   *   section  section headings (h2)                              32-48 px  bold
+   *   lead     the paragraph under a section heading              17-19 px  regular
+   *   card     feature titles and card headings (h3)              19-22 px  semibold
+   *   body     running text                                       17 px     regular
+   *   label    uppercase pills and kickers, tracked 0.08em        12 px     semibold
+   *   caption  small print, counts, chips and controls            14 px     regular
+   */
+  --site-type-display-size: clamp(2.25rem, min(1.2rem + 3.3vw, 6.8vh), 3.75rem);
+  --site-type-display-weight: var(--font-weight-bold);
+  --site-type-display-tracking: -0.022em;
+  --site-type-display-leading: 1.07;
+
+  --site-type-section-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --site-type-section-weight: var(--font-weight-bold);
+  --site-type-section-tracking: -0.02em;
+  --site-type-section-leading: 1.08;
+
+  --site-type-lead-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  --site-type-lead-weight: var(--font-weight-regular);
+  --site-type-lead-leading: 1.5;
+
+  --site-type-card-size: clamp(1.1875rem, 1.1rem + 0.3vw, 1.375rem);
+  --site-type-card-weight: var(--font-weight-semibold);
+  --site-type-card-tracking: -0.012em;
+  --site-type-card-leading: 1.25;
+
+  --site-type-body-size: 1.0625rem;
+  --site-type-body-weight: var(--font-weight-regular);
+  --site-type-body-leading: 1.55;
+
+  --site-type-label-size: 0.75rem;
+  --site-type-label-weight: var(--font-weight-semibold);
+  --site-type-label-tracking: 0.08em;
+
+  --site-type-caption-size: 0.875rem;
+  --site-type-caption-weight: var(--font-weight-regular);
+  --site-type-caption-leading: 1.45;
+
+  --site-font-size-small: var(--site-type-caption-size);
+  --site-font-size-body: var(--site-type-body-size);
   --site-font-size-brand: 1.125rem;
-  --site-font-size-lead: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
-  --site-font-size-display: clamp(2.5rem, 1.4rem + 4.6vw, 4.75rem);
-  --site-font-size-title: clamp(2rem, 1.5rem + 2vw, 3rem);
-  --site-line-height-body: 1.55;
+  --site-font-size-title: var(--site-type-section-size);
+  --site-line-height-body: var(--site-type-body-leading);
   --site-line-height-display: 1.04;
   --site-tracking-display: -0.025em;
   --site-tracking-brand: -0.01em;

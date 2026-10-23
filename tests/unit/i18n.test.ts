@@ -2,18 +2,35 @@ import { expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { cardsCopy } from '../../src/i18n/en/cards.ts'
 import { chromeCopy } from '../../src/i18n/en/chrome.ts'
+import { demoCopy } from '../../src/i18n/en/demo.ts'
 import { featuresCopy } from '../../src/i18n/en/features.ts'
 import { heroCopy } from '../../src/i18n/en/hero.ts'
 import { mediaCopy } from '../../src/i18n/en/media.ts'
 import { privacyCopy } from '../../src/i18n/en/privacy.ts'
 import { filesUnder } from '../support/source-files.ts'
 
-const namespaces = { chromeCopy, heroCopy, featuresCopy, cardsCopy, privacyCopy, mediaCopy }
+const namespaces = {
+  chromeCopy,
+  heroCopy,
+  featuresCopy,
+  cardsCopy,
+  privacyCopy,
+  mediaCopy,
+  demoCopy,
+}
 
 it('gives every package its own namespace file, so copy edits never share a file', () => {
   const files = filesUnder('src/i18n/en').map((file) => file.replace('src/i18n/en/', ''))
   expect(files.toSorted()).toEqual(
-    ['cards.ts', 'chrome.ts', 'features.ts', 'hero.ts', 'media.ts', 'privacy.ts'].toSorted(),
+    [
+      'cards.ts',
+      'chrome.ts',
+      'demo.ts',
+      'features.ts',
+      'hero.ts',
+      'media.ts',
+      'privacy.ts',
+    ].toSorted(),
   )
 })
 

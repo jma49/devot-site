@@ -72,7 +72,7 @@ test.describe('feature cards at 1440', () => {
     ).toBeGreaterThanOrEqual(12)
   })
 
-  test('gives each card a pill label, one sentence and media anchored to its bottom', async ({
+  test('gives each card a pill label, a heading, one sentence and media anchored to its bottom', async ({
     page,
   }) => {
     await page.goto('/')
@@ -81,13 +81,31 @@ test.describe('feature cards at 1440', () => {
     for (const card of await cards(page).all()) {
       const slot = (await card.getAttribute('data-slot')) as keyof typeof en.cards.items
       const copy = en.cards.items[slot]
-      const label = card.getByRole('heading', { level: 3 })
+      const label = card.locator('.card-label')
       await expect(label).toHaveText(copy.label)
+      expect(await label.evaluate((l) => l.tagName)).toBe('P')
       await expect(label).toHaveCSS('text-transform', 'uppercase')
       await expect(label).toHaveCSS('font-size', '12px')
       expect(
         parseFloat(await label.evaluate((l) => getComputedStyle(l).letterSpacing)),
       ).toBeCloseTo(0.96, 1)
+
+      const heading = card.getByRole('heading')
+      await expect(heading).toHaveCount(1)
+      await expect(heading).toHaveText(en.cardHeadings[slot])
+      expect(await heading.evaluate((h) => h.tagName)).toBe('H3')
+      expect(
+        parseFloat(await heading.evaluate((h) => getComputedStyle(h).fontSize)),
+      ).toBeGreaterThanOrEqual(17)
+      const [labelBox, headingBox] = await Promise.all([box(label), box(heading)])
+      expect(labelBox.y + labelBox.height, `${slot}: label above heading`).toBeLessThanOrEqual(
+        headingBox.y,
+      )
+
+      if ('keys' in copy) {
+        await expect(card.locator('.card-keys kbd')).toHaveAttribute('aria-hidden', 'true')
+        await expect(card.locator('.card-keys')).toHaveText(new RegExp(copy.keys.spoken))
+      }
 
       const lines = await card.locator('.card-body').evaluate((body) => {
         const perLine = new Map<number, number>()
@@ -208,6 +226,37 @@ test.describe('feature cards at 1440', () => {
     expect(back).toBeCloseTo(entering, 0)
   })
 
+  test('answers a pointer with a border and surface shift of 200 ms at most', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await revealAll(page)
+    const card = cards(page).nth(1)
+    await scrollIntoMiddle(card)
+    const look = () =>
+      card.evaluate((c) => {
+        const style = getComputedStyle(c)
+        return [style.borderTopColor, style.backgroundColor]
+      })
+    const rest = await look()
+    const durations = await card.evaluate((c) => {
+      const style = getComputedStyle(c)
+      const names = style.transitionProperty.split(', ')
+      const times = style.transitionDuration.split(', ').map(parseFloat)
+      return Object.fromEntries(names.map((name, i) => [name, times[i % times.length]]))
+    })
+    expect(durations['border-color']).toBeLessThanOrEqual(0.2)
+    expect(durations['background-color']).toBeLessThanOrEqual(0.2)
+
+    await card.hover()
+
+    await expect
+      .poll(async () => {
+        const [border, surface] = await look()
+        return [border === rest[0], surface === rest[1]]
+      })
+      .toEqual([false, false])
+  })
+
   test('lifts the window on hover without moving anything around it', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
@@ -296,18 +345,41 @@ test.describe('feature cards with reduced motion', () => {
       await expect(card.locator('.card-crop')).toHaveCSS('animation-name', 'none')
     }
     await scrollIntoMiddle(cards(page).nth(1))
-    await page.waitForTimeout(400)
     const videos = page.locator('#cards video[data-clip]')
     expect(await videos.count()).toBeGreaterThan(0)
     for (const video of await videos.all()) {
+      await scrollIntoMiddle(video)
+      await expect(video).toHaveAttribute('poster', /-poster\.webp$/)
       expect(await video.evaluate((v: HTMLVideoElement) => v.paused && v.currentSrc === '')).toBe(
         true,
       )
-      await expect(video).toHaveAttribute('poster', /-poster\.webp$/)
     }
 
     const card = cards(page).nth(1)
     await card.hover()
     await expect(card.locator('.card-window')).toHaveCSS('transform', 'none')
+  })
+})
+
+test.describe('feature cards on a touch screen', () => {
+  test.use({ viewport: phone, hasTouch: true, isMobile: true })
+
+  test('keeps its resting look when tapped', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'only Chromium emulates a touch-only screen')
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await revealAll(page)
+    const card = cards(page).nth(1)
+    await scrollIntoMiddle(card)
+    const look = () =>
+      card.evaluate((c) => [
+        getComputedStyle(c).borderTopColor,
+        getComputedStyle(c).backgroundColor,
+      ])
+    const rest = await look()
+
+    await card.tap()
+
+    expect(await look()).toEqual(rest)
   })
 })

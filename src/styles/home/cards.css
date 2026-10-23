@@ -11,6 +11,11 @@
   --cards-shadow-room: 2.5rem;
   --cards-rise: 3rem;
   --cards-lift: -6px;
+  --cards-surface-raised: color-mix(
+    in oklab,
+    var(--color-surface-list) 96%,
+    var(--site-color-text)
+  );
   /* Masks read only alpha, so any opaque token draws their solid part. */
   --cards-mask: var(--color-surface-window);
   --cards-window-shadow:
@@ -37,10 +42,10 @@
 
 .cards-head h2 {
   margin: 0;
-  font-size: var(--site-font-size-title);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
-  line-height: 1.08;
+  font-size: var(--site-type-section-size);
+  font-weight: var(--site-type-section-weight);
+  letter-spacing: var(--site-type-section-tracking);
+  line-height: var(--site-type-section-leading);
   text-wrap: balance;
 }
 
@@ -48,8 +53,8 @@
   max-width: 34rem;
   margin-block-start: 1rem;
   color: var(--site-color-text-muted);
-  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
-  line-height: 1.5;
+  font-size: var(--site-type-lead-size);
+  line-height: var(--site-type-lead-leading);
   text-wrap: pretty;
 }
 
@@ -78,17 +83,22 @@
 .cards .card {
   transition:
     border-color var(--site-dur-quick) var(--site-ease-out),
+    background-color var(--site-dur-quick) var(--site-ease-out),
     var(--site-reveal-transition);
 }
 
+/* The heading comes first for screen readers; the label and shortcut sit above it on screen. */
 .card-text {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
   padding: var(--cards-pad) var(--cards-pad) 1.75rem;
 }
 
 .card-meta {
   display: flex;
+  order: -1;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -103,11 +113,21 @@
   border-radius: var(--radius-capsule);
   background: color-mix(in oklab, var(--cards-brand) 10%, transparent);
   color: var(--cards-brand);
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.08em;
+  font-size: var(--site-type-label-size);
+  font-weight: var(--site-type-label-weight);
+  letter-spacing: var(--site-type-label-tracking);
   line-height: 1.2;
   text-transform: uppercase;
+}
+
+.card-heading {
+  margin: 1.125rem 0 0;
+  color: var(--site-color-text);
+  font-size: var(--site-type-card-size);
+  font-weight: var(--site-type-card-weight);
+  letter-spacing: var(--site-type-card-tracking);
+  line-height: var(--site-type-card-leading);
+  text-wrap: balance;
 }
 
 .card-keys {
@@ -122,9 +142,9 @@
   border-radius: var(--radius-button);
   background: var(--color-surface-editor);
   box-shadow: 0 1px 0 var(--color-line-separator);
-  color: var(--color-text-tertiary);
+  color: var(--site-color-text-faint);
   font-family: var(--site-font);
-  font-size: 0.8125rem;
+  font-size: var(--site-type-caption-size);
   letter-spacing: 0.06em;
   line-height: 1.2;
   text-align: center;
@@ -153,11 +173,10 @@
 
 .card-body {
   max-width: 40ch;
-  margin: 0.875rem 0 0;
-  color: var(--site-color-text);
-  font-size: 1.125rem;
-  letter-spacing: -0.006em;
-  line-height: 1.45;
+  margin: 0.5rem 0 0;
+  color: var(--site-color-text-muted);
+  font-size: var(--site-type-body-size);
+  line-height: 1.5;
   text-wrap: pretty;
 }
 
@@ -230,8 +249,8 @@
   background: var(--color-surface-window);
   box-shadow: var(--cards-window-shadow);
   transition:
-    transform var(--site-dur-reveal) var(--site-ease-media),
-    box-shadow var(--site-dur-reveal) var(--site-ease-media);
+    transform var(--site-dur-quick) var(--site-ease-media),
+    box-shadow var(--site-dur-quick) var(--site-ease-media);
 }
 
 .card[data-corner='right'] .card-window {
@@ -298,19 +317,22 @@
     --cards-window-width: min(100cqw - var(--cards-pad), 26rem);
     --cards-media-height: min(22rem, calc(var(--cards-window-width) / 0.8 * 0.84));
   }
-
-  .card-body {
-    font-size: 1.0625rem;
-  }
 }
 
-@media (hover: hover) {
+/* Hover on a pointer that hovers, and keyboard focus on anything inside, such as the play button. */
+.card:has(:focus-visible) {
+  border-color: var(--color-line-control);
+  background-color: var(--cards-surface-raised);
+}
+
+@media (hover: hover) and (pointer: fine) {
   .card:hover {
     border-color: var(--color-line-control);
+    background-color: var(--cards-surface-raised);
   }
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .card:hover .card-window {
     box-shadow: var(--cards-window-shadow-raised);
     transform: translate3d(0, var(--cards-lift), 0);
