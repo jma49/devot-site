@@ -1,0 +1,49 @@
+---
+import '../theme/tokens.css'
+import '../styles/site-tokens.css'
+import '../styles/global.css'
+import dove from '../assets/dove.svg'
+import SiteFooter from '../components/SiteFooter.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import { messages, type Locale } from '../i18n/index.ts'
+import { themeColors } from '../lib/theme-color.ts'
+import { SITE_URL } from '../site.ts'
+import tokensCss from '../theme/tokens.css?raw'
+
+const locale: Locale = 'en'
+const t = messages(locale)
+const canonical = new URL(Astro.url.pathname, SITE_URL).href
+const themeColor = themeColors(tokensCss)
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={dove.src} type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={themeColor.light} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={themeColor.dark} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={t.siteName} />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={t.meta.ogLocale} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={t.meta.title} />
+    <meta name="twitter:description" content={t.meta.description} />
+  </head>
+  <body>
+    <SiteHeader />
+    <main id="main">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

@@ -1,0 +1,38 @@
+---
+import dove from '../assets/dove.svg'
+import { messages } from '../i18n/index.ts'
+
+const t = messages()
+---
+
+<header class="site-header">
+  <a class="brand" href="/">
+    <img src={dove.src} width={dove.width} height={dove.height} alt="" />
+    <span>{t.siteName}</span>
+  </a>
+</header>
+
+<style>
+  .site-header {
+    width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+    margin-inline: auto;
+    padding-block: var(--space-9);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    border-radius: var(--radius-button);
+    color: var(--site-color-text);
+    font-size: var(--site-font-size-brand);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--site-tracking-brand);
+    text-decoration: none;
+  }
+
+  .brand img {
+    width: var(--site-size-mark);
+    height: auto;
+  }
+</style>
