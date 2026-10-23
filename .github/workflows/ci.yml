@@ -1,6 +1,6 @@
 name: CI
 
-# Runs on every pull request, or by hand. Changes reach main only through a PR that passed here.
+# Changes reach main only through a PR that passed here.
 # `check` and `e2e` are the required checks; keep their names stable.
 on:
   pull_request:
@@ -32,7 +32,6 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      # Downloads devot's files at the pinned commit and compares them with the committed copies.
       - run: pnpm tokens:check
       - run: pnpm test
 
