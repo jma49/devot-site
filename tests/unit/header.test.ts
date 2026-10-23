@@ -40,10 +40,12 @@ describe('pillShown', () => {
     expect(pillShown({ ctaBottom: -1, closingTop: 4000, viewport })).toBe(true)
   })
 
-  it('hands over to the closing call to action once that comes into view', () => {
-    expect(pillShown({ ctaBottom: -3000, closingTop: 800, viewport })).toBe(true)
-    expect(pillShown({ ctaBottom: -3000, closingTop: 700, viewport })).toBe(false)
+  it('gives way as soon as any of the closing section is on screen, and stays away past it', () => {
+    expect(pillShown({ ctaBottom: -3000, closingTop: 901, viewport })).toBe(true)
+    expect(pillShown({ ctaBottom: -3000, closingTop: 900, viewport })).toBe(false)
+    expect(pillShown({ ctaBottom: -3000, closingTop: 899, viewport })).toBe(false)
     expect(pillShown({ ctaBottom: -3000, closingTop: -200, viewport })).toBe(false)
+    expect(pillShown({ ctaBottom: -3000, closingTop: -5000, viewport })).toBe(false)
   })
 
   it('shows after the hero when the page has no closing call to action', () => {

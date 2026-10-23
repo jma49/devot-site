@@ -9,6 +9,7 @@ import {
   STAGGER_STEP,
   staggerDelay,
 } from '../../src/lib/motion.ts'
+import { SCRUB_SNAP, scrubStep } from '../../src/lib/scroll.ts'
 import { FakeElement, fakeEnv, rootOf } from '../support/dom-fakes.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
@@ -119,6 +120,41 @@ describe('revealOnScroll', () => {
 
     expect(fake.observers[0]?.disconnected).toBe(true)
     expect(fake.reducedListeners.size).toBe(0)
+  })
+})
+
+describe('scrubStep', () => {
+  const frame = 1 / 60
+  const run = (from: number, to: number, seconds: number, lag: number, step = frame) => {
+    let value = from
+    for (let t = 0; t < seconds - 1e-9; t += step) value = scrubStep(value, to, step, lag)
+    return value
+  }
+
+  it('trails the scroll and closes almost all of the gap within the lag', () => {
+    const first = scrubStep(0, 400, frame, 0.45)
+    expect(first).toBeGreaterThan(0)
+    expect(first).toBeLessThan(60)
+    expect(run(0, 400, 0.45 / 2, 0.45)).toBeLessThan(400 * 0.95)
+    expect(run(0, 400, 0.45, 0.45)).toBeGreaterThan(400 * 0.97)
+  })
+
+  it('lands exactly on the target once within the snap distance, and follows at once with no lag', () => {
+    expect(scrubStep(400 - SCRUB_SNAP / 2, 400, frame, 0.45)).toBe(400)
+    expect(run(0, 400, 1.5, 0.45)).toBe(400)
+    expect(scrubStep(0, 400, frame, 0)).toBe(400)
+  })
+
+  it('moves the same way up as down', () => {
+    expect(400 - run(400, 0, 0.2, 0.45)).toBeCloseTo(run(0, 400, 0.2, 0.45), 6)
+  })
+
+  it('does not depend on the frame rate', () => {
+    expect(run(0, 400, 0.3, 0.45, 1 / 120)).toBeCloseTo(run(0, 400, 0.3, 0.45, 1 / 30), 6)
+  })
+
+  it('does not overshoot a long frame', () => {
+    expect(scrubStep(0, 400, 5, 0.45)).toBe(400)
   })
 })
 

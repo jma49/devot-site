@@ -20,7 +20,7 @@ export interface Look {
 }
 
 export const BACKDROP_LOOK: Record<Scheme, Look> = {
-  light: { gain: 1.12, lift: -0.012, glow: 0.035 },
+  light: { gain: 1.15, lift: -0.03, glow: 0.05 },
   dark: { gain: 1.1, lift: 0.035, glow: 0.06 },
 }
 
@@ -165,7 +165,23 @@ interface Renderer {
   lost(): boolean
 }
 
-function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
+/**
+ * Resolves once the driver has finished building `program`. Where it can build in the background
+ * (KHR_parallel_shader_compile), this waits a frame at a time instead of blocking the main thread.
+ */
+function built(gl: WebGLRenderingContext, program: WebGLProgram): Promise<void> {
+  const parallel = gl.getExtension('KHR_parallel_shader_compile')
+  if (!parallel) return Promise.resolve()
+  return new Promise((resolve) => {
+    const poll = () => {
+      if (gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) === true) resolve()
+      else requestAnimationFrame(poll)
+    }
+    poll()
+  })
+}
+
+async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | null> {
   const gl = canvas.getContext('webgl', {
     alpha: false,
     antialias: false,
@@ -176,19 +192,26 @@ function createRenderer(canvas: HTMLCanvasElement): Renderer | null {
     failIfMajorPerformanceCaveat: true,
   })
   if (!gl) return null
-  const compile = (type: number, source: string) => {
-    const shader = gl.createShader(type)
-    if (!shader) throw new Error('E_HERO_SHADER_CREATE')
-    gl.shaderSource(shader, source)
-    gl.compileShader(shader)
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error('E_HERO_SHADER_COMPILE')
-    return shader
+  const shader = (type: number, source: string) => {
+    const created = gl.createShader(type)
+    if (!created) throw new Error('E_HERO_SHADER_CREATE')
+    gl.shaderSource(created, source)
+    gl.compileShader(created)
+    return created
   }
+  const vertex = shader(gl.VERTEX_SHADER, VERTEX)
+  const fragment = shader(gl.FRAGMENT_SHADER, FRAGMENT)
   const program = gl.createProgram()
-  gl.attachShader(program, compile(gl.VERTEX_SHADER, VERTEX))
-  gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAGMENT))
+  gl.attachShader(program, vertex)
+  gl.attachShader(program, fragment)
   gl.linkProgram(program)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('E_HERO_PROGRAM_LINK')
+  await built(gl, program)
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const compiled = [vertex, fragment].every((part) =>
+      gl.getShaderParameter(part, gl.COMPILE_STATUS),
+    )
+    throw new Error(compiled ? 'E_HERO_PROGRAM_LINK' : 'E_HERO_SHADER_COMPILE')
+  }
   gl.useProgram(program)
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
@@ -238,24 +261,22 @@ export interface BackdropParts {
   canvas: HTMLCanvasElement
   /** Elements whose computed `--backdrop` is the Tide gradient in each appearance. */
   sources: Record<Scheme, HTMLElement>
+  /** False keeps the CSS layers and only tracks whether they should move. */
+  webgl?: boolean
 }
 
 /**
  * Draws the hero's gradient with WebGL at up to 30 frames a second while the hero is on screen
- * and the tab is shown; with reduced motion it draws one still frame. Without WebGL the CSS layers
- * underneath stay. `data-backdrop` on the hero says which one shows (`webgl` or `css`) and
- * `data-backdrop-state` whether it moves (`running`, `idle` or `still`).
+ * and the tab is shown, once its shaders are built; with reduced motion it draws one still frame.
+ * Until then, and without WebGL, the CSS layers underneath show. `data-backdrop` on the hero says
+ * which one shows (`webgl` or `css`) and `data-backdrop-state` whether it moves (`running`,
+ * `idle` or `still`).
  */
-export function startBackdrop({ hero, canvas, sources }: BackdropParts): () => void {
+export function startBackdrop({ hero, canvas, sources, webgl = true }: BackdropParts): () => void {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
   let renderer: Renderer | null = null
-  try {
-    renderer = createRenderer(canvas)
-  } catch (error) {
-    console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
-  }
-
+  let stopped = false
   let visible = true
   let frame = 0
   let lastDraw = -1
@@ -314,11 +335,22 @@ export function startBackdrop({ hero, canvas, sources }: BackdropParts): () => v
     if (!frame) draw()
   }
 
-  if (renderer && palette()) {
-    draw()
-    hero.dataset['backdrop'] = 'webgl'
-  } else {
-    fallBack()
+  const begin = (created: Renderer | null) => {
+    if (stopped) return
+    renderer = created
+    if (renderer && palette()) {
+      draw()
+      hero.dataset['backdrop'] = 'webgl'
+    } else {
+      fallBack()
+    }
+    sync()
+  }
+  if (webgl) {
+    createRenderer(canvas).then(begin, (error: unknown) => {
+      console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
+      begin(null)
+    })
   }
 
   const observer = new IntersectionObserver(([entry]) => {
@@ -342,6 +374,7 @@ export function startBackdrop({ hero, canvas, sources }: BackdropParts): () => v
   sync()
 
   return () => {
+    stopped = true
     if (frame) cancelAnimationFrame(frame)
     frame = 0
     observer.disconnect()

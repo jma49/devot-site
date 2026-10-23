@@ -40,7 +40,11 @@
     transition: var(--site-reveal-transition);
   }
 
+  /* Only the reveal eases. Hiding is instant, so an element whose hiding styles apply after its
+     first style (a media query that settles late) never fades out in view. */
   [data-reveal]:not([data-revealed]) {
+    --site-reveal-transition: opacity 0s, transform 0s;
+
     opacity: 0;
     transform: translate3d(0, var(--site-reveal-rise), 0);
     will-change: opacity, transform;

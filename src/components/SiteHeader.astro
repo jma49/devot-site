@@ -524,6 +524,10 @@ const sections = [
       width: auto;
       max-width: 26rem;
     }
+
+    .download-pill .brand-button {
+      min-height: 2.75rem;
+    }
   }
 
   @media (max-width: 799.98px) and (prefers-reduced-motion: no-preference) {
@@ -578,7 +582,9 @@ const sections = [
     }
 
     .download-pill {
+      gap: var(--space-5);
       width: fit-content;
+      padding-inline-start: var(--space-6);
     }
   }
 </style>
