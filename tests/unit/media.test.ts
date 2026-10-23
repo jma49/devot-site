@@ -13,6 +13,7 @@ import {
   slotPaths,
   variantName,
 } from '../../src/media.ts'
+import { CUTS, SCENES } from '../../scripts/media/scenes.ts'
 import { REPO } from '../support/source-files.ts'
 
 // The contract between the page and its product media: src/media.ts names every slot, and
@@ -113,11 +114,13 @@ describe.each(SLOTS)('slot %s', (name) => {
     )
   })
 
-  it('keeps the phone cut at the shape of the desktop clip, so the layout holds', () => {
+  // A wide card's phone cut has the narrow cards' shape, which the cards stylesheet gives it.
+  it('keeps the phone cut at the shape the page lays it out at', () => {
     if (!slot.phone) return
-    expect(Math.abs(slot.phone.width / slot.phone.height - slot.width / slot.height)).toBeLessThan(
-      0.005,
-    )
+    const shape = SCENES[name]?.shape === 'wide' ? CUTS.narrow.clip : slot
+    expect(
+      Math.abs(slot.phone.width / slot.phone.height - shape.width / shape.height),
+    ).toBeLessThan(0.005)
     expect(slot.phone.width % 2).toBe(0)
     expect(slot.phone.height % 2).toBe(0)
   })

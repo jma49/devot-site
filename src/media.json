@@ -45,31 +45,31 @@
     "posterTime": 6.42,
     "edges": ["top", "left"],
     "phone": {
-      "width": 1104,
-      "height": 736,
-      "points": 552,
-      "minText": 10.5
+      "width": 792,
+      "height": 528,
+      "points": 396,
+      "minText": 13
     },
     "bytes": {
       "light": {
-        "mp4": 142191,
-        "webm": 86606,
-        "poster": 69106
+        "mp4": 143329,
+        "webm": 86965,
+        "poster": 69028
       },
       "light-phone": {
-        "mp4": 106440,
-        "webm": 71841,
-        "poster": 46154
+        "mp4": 41897,
+        "webm": 34608,
+        "poster": 22454
       },
       "dark": {
-        "mp4": 132104,
-        "webm": 83298,
-        "poster": 67718
+        "mp4": 130117,
+        "webm": 83219,
+        "poster": 67656
       },
       "dark-phone": {
-        "mp4": 103901,
-        "webm": 69088,
-        "poster": 44836
+        "mp4": 42039,
+        "webm": 33858,
+        "poster": 21356
       }
     }
   },
@@ -82,31 +82,31 @@
     "posterTime": 4.63,
     "edges": ["top", "left"],
     "phone": {
-      "width": 1104,
-      "height": 736,
-      "points": 552,
-      "minText": 10
+      "width": 792,
+      "height": 528,
+      "points": 396,
+      "minText": 12
     },
     "bytes": {
       "light": {
-        "mp4": 192800,
-        "webm": 107472,
+        "mp4": 175057,
+        "webm": 105749,
         "poster": 51852
       },
       "light-phone": {
-        "mp4": 117288,
-        "webm": 76586,
-        "poster": 28700
+        "mp4": 90282,
+        "webm": 59806,
+        "poster": 19752
       },
       "dark": {
-        "mp4": 187091,
-        "webm": 108086,
+        "mp4": 186551,
+        "webm": 107623,
         "poster": 50986
       },
       "dark-phone": {
-        "mp4": 123545,
-        "webm": 77895,
-        "poster": 27974
+        "mp4": 93890,
+        "webm": 62757,
+        "poster": 19212
       }
     }
   },
@@ -119,68 +119,68 @@
     "posterTime": 8.83,
     "edges": ["top", "left"],
     "phone": {
-      "width": 1104,
-      "height": 736,
-      "points": 552,
+      "width": 792,
+      "height": 528,
+      "points": 396,
       "minText": 10
     },
     "bytes": {
       "light": {
-        "mp4": 372031,
-        "webm": 223109,
-        "poster": 76430
+        "mp4": 347176,
+        "webm": 219251,
+        "poster": 76172
       },
       "light-phone": {
-        "mp4": 262518,
-        "webm": 160679,
-        "poster": 45458
+        "mp4": 114494,
+        "webm": 80970,
+        "poster": 28564
       },
       "dark": {
-        "mp4": 357189,
-        "webm": 213047,
-        "poster": 74360
+        "mp4": 351490,
+        "webm": 212316,
+        "poster": 74118
       },
       "dark-phone": {
-        "mp4": 243500,
-        "webm": 154438,
-        "poster": 49046
+        "mp4": 111459,
+        "webm": 78101,
+        "poster": 27478
       }
     }
   },
   "card-1": {
-    "width": 1408,
-    "height": 880,
-    "points": 704,
+    "width": 1312,
+    "height": 820,
+    "points": 656,
     "minText": 10,
     "duration": 7.5,
     "posterTime": 4,
-    "edges": ["top", "left"],
+    "edges": ["top"],
     "phone": {
       "width": 800,
-      "height": 500,
+      "height": 1000,
       "points": 400,
       "minText": 10
     },
     "bytes": {
       "light": {
-        "mp4": 84415,
-        "webm": 65853,
-        "poster": 56530
+        "mp4": 65830,
+        "webm": 47008,
+        "poster": 43220
       },
       "light-phone": {
-        "mp4": 38382,
-        "webm": 37131,
-        "poster": 23064
+        "mp4": 59580,
+        "webm": 44936,
+        "poster": 40716
       },
       "dark": {
-        "mp4": 78424,
-        "webm": 59496,
-        "poster": 54136
+        "mp4": 64483,
+        "webm": 45607,
+        "poster": 42296
       },
       "dark-phone": {
-        "mp4": 36127,
-        "webm": 33192,
-        "poster": 22296
+        "mp4": 56459,
+        "webm": 43965,
+        "poster": 39696
       }
     }
   },
@@ -227,76 +227,76 @@
     }
   },
   "card-4": {
-    "width": 1408,
-    "height": 880,
-    "points": 704,
-    "minText": 10,
+    "width": 1312,
+    "height": 820,
+    "points": 656,
+    "minText": 11,
     "duration": 7.17,
     "posterTime": 2.47,
     "edges": ["top"],
     "phone": {
       "width": 800,
-      "height": 500,
+      "height": 1000,
       "points": 400,
       "minText": 11
     },
     "bytes": {
       "light": {
-        "mp4": 211188,
-        "webm": 125675,
-        "poster": 49722
+        "mp4": 219284,
+        "webm": 124744,
+        "poster": 44170
       },
       "light-phone": {
-        "mp4": 93939,
-        "webm": 68149,
-        "poster": 17868
+        "mp4": 204352,
+        "webm": 118509,
+        "poster": 45356
       },
       "dark": {
-        "mp4": 213151,
-        "webm": 119364,
-        "poster": 47452
+        "mp4": 191045,
+        "webm": 112682,
+        "poster": 41662
       },
       "dark-phone": {
-        "mp4": 100730,
-        "webm": 67688,
-        "poster": 17338
+        "mp4": 181189,
+        "webm": 108353,
+        "poster": 48444
       }
     }
   },
   "card-5": {
-    "width": 1408,
-    "height": 880,
-    "points": 704,
+    "width": 1312,
+    "height": 820,
+    "points": 656,
     "minText": 10,
     "duration": 7.2,
     "posterTime": 2.8,
     "edges": ["top"],
     "phone": {
       "width": 800,
-      "height": 500,
+      "height": 1000,
       "points": 400,
       "minText": 10
     },
     "bytes": {
       "light": {
-        "mp4": 237954,
-        "webm": 163351,
-        "poster": 65366
+        "mp4": 229123,
+        "webm": 155638,
+        "poster": 63666
       },
       "light-phone": {
-        "mp4": 125261,
-        "webm": 90748,
-        "poster": 26822
+        "mp4": 191782,
+        "webm": 129124,
+        "poster": 44732
       },
       "dark": {
-        "mp4": 212476,
-        "webm": 148758,
-        "poster": 64242
+        "mp4": 205158,
+        "webm": 145919,
+        "poster": 63148
       },
       "dark-phone": {
-        "mp4": 113418,
-        "webm": 82065,
-        "poster": 25506
+        "mp4": 170179,
+        "webm": 118731,
+        "poster": 43894
       }
     }
   },

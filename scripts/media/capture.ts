@@ -27,7 +27,7 @@ import { pageActions, renderFrames, type Rect } from './frames.ts'
 import { edgesOf } from './manifest.ts'
 import { mp4Info } from './mp4.ts'
 import { installOverlay } from './overlay.ts'
-import { SCENES, type Scene } from './scenes.ts'
+import { frameRect, SCENES, type Scene } from './scenes.ts'
 import { seedLibrary, VIEW } from './seed.ts'
 
 export interface CaptureContext {
@@ -95,7 +95,7 @@ async function captureScene(
     const rendered = await renderFrames(page, timeline, {
       dir,
       fps: ctx.fps,
-      clip: scene.clip,
+      clip: frameRect(scene),
       motion: scene.motion,
       measure: scene.phone ? [scene.clip, scene.phone.rect] : [scene.clip],
       sample: ctx.sample,
@@ -146,13 +146,16 @@ const LIMITS = {
   phone: { clip: 600 * KB, poster: 48 * KB },
 }
 
-/** Frame pixels of a rect in window points, inside a clip captured at 2x from `clip`. */
-const inFrame = (rect: Rect, clip: Rect): PixelRect => ({
-  x: (rect.x - clip.x) * 2,
-  y: (rect.y - clip.y) * 2,
+/** Frame pixels of a rect in window points, inside frames captured at 2x from `frames`. */
+const inFrame = (rect: Rect, frames: Rect): PixelRect => ({
+  x: (rect.x - frames.x) * 2,
+  y: (rect.y - frames.y) * 2,
   width: rect.width * 2,
   height: rect.height * 2,
 })
+
+const sameRect = (a: Rect, b: Rect) =>
+  a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
 
 async function colourAt(png: string, x: number, y: number): Promise<string> {
   const data = await sharp(png)
@@ -182,10 +185,14 @@ export async function encodeSlot(slot: SlotName, ctx: CaptureContext): Promise<E
       throw new Error(`E_MEDIA_NO_FRAMES ${slot} ${scheme}: run pnpm media:capture ${slot}`)
     const run = JSON.parse(readFileSync(manifest, 'utf8')) as Captured
     captured = run
-    const variants: { phone: boolean; clip: ClipInput }[] = [{ phone: false, clip: run }]
+    const frames = frameRect(scene)
+    const whole: ClipInput = sameRect(frames, scene.clip)
+      ? run
+      : { ...run, crop: inFrame(scene.clip, frames) }
+    const variants: { phone: boolean; clip: ClipInput }[] = [{ phone: false, clip: whole }]
     if (scene.phone) {
       const { rect, output, fill } = scene.phone
-      const pixels = inFrame(rect, scene.clip)
+      const pixels = inFrame(rect, frames)
       const edge = { x: pixels.x + pixels.width - 2, y: pixels.y + pixels.height - 2 }
       const cut = fill
         ? { fill: { rect: pixels, color: await colourAt(frameFile(dir, 0), edge.x, edge.y) } }

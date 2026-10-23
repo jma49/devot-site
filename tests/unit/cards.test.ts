@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cardsCopy, type CardText } from '../../src/i18n/en/cards.ts'
+import { keyGlyphs, keySymbolsMarkup } from '../../src/components/home/card-keys.ts'
 import { media, SLOTS } from '../../src/media.ts'
 
 const { items } = cardsCopy.cards
@@ -60,5 +61,29 @@ describe('feature card copy', () => {
     expect(new Set(Object.values(items).map(({ title }) => title)).size).toBe(
       Object.keys(items).length,
     )
+  })
+})
+
+describe('shortcut glyphs', () => {
+  const shown = Object.values(items).flatMap((item) => ('keys' in item ? [item.keys.glyphs] : []))
+
+  it('draws every glyph a card shows from the sprite, so no font has to supply it', () => {
+    for (const glyphs of shown) {
+      const symbols = keyGlyphs(glyphs)
+      expect(symbols.length, glyphs).toBe([...glyphs].length)
+      for (const { id, viewBox } of symbols) {
+        expect(keySymbolsMarkup, glyphs).toContain(`id="${id}"`)
+        expect(viewBox, id).toMatch(/^0 0 \d+(\.\d+)? 16$/)
+      }
+    }
+  })
+
+  it('refuses a glyph the sprite has no symbol for', () => {
+    expect(() => keyGlyphs('\u2303')).toThrow(/^E_CARD_KEY_GLYPH/)
+  })
+
+  it('keeps the sprite to shapes, coloured and stroked by the stylesheet', () => {
+    expect(keySymbolsMarkup).toMatch(/<symbol\b/)
+    expect(keySymbolsMarkup).not.toMatch(/<svg|<text|<style|\sstyle=|\s(fill|stroke)=/)
   })
 })

@@ -9,6 +9,11 @@
   /* Container units: the card is the container, so this is the media width less the inset. */
   --cards-window-width: calc(100cqw - var(--cards-pad));
   --cards-shadow-room: 2.5rem;
+  /* Where a crop's side fades sit, across the crop and the shadow room at its start: in from the
+     left side when the crop cuts it, and out towards the cut side. */
+  --cards-fade-in-start: 0%;
+  --cards-fade-in: 10%;
+  --cards-fade-out: 84%;
   --cards-rise: 3rem;
   --cards-lift: -6px;
   --cards-surface-raised: color-mix(
@@ -135,7 +140,9 @@
 }
 
 .card-keys kbd {
-  display: inline-block;
+  display: inline-flex;
+  justify-content: center;
+  gap: 0.0625rem;
   min-width: 1.75rem;
   padding: 0.1875rem 0.5rem;
   border: 1px solid var(--color-line-hairline);
@@ -143,11 +150,25 @@
   background: var(--color-surface-editor);
   box-shadow: 0 1px 0 var(--color-line-separator);
   color: var(--site-color-text-faint);
-  font-family: var(--site-font);
   font-size: var(--site-type-caption-size);
-  letter-spacing: 0.06em;
-  line-height: 1.2;
-  text-align: center;
+}
+
+/* As tall as the caption's line, its letters as tall as the caption's capitals. */
+.card-key {
+  width: auto;
+  height: 1.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.3;
+}
+
+.cards-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
 .card-swatches {
@@ -230,8 +251,21 @@
   padding: var(--cards-shadow-room) 0 0 var(--cards-shadow-room);
   mask-image:
     linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
-    linear-gradient(to right, var(--cards-mask) 84%, transparent);
+    linear-gradient(to right, var(--cards-mask) var(--cards-fade-out), transparent);
   mask-composite: intersect;
+}
+
+/* Wide clips are cut close, so their subject reaches further to the right. */
+.card[data-shape='wide'] {
+  --cards-fade-out: 90%;
+}
+
+/* A clip whose subject fills its cut from side to side fades only over the subject's own padding
+   (scripts/media/scenes.ts, PALETTE_CUT), and not over the shadow room left of the window. */
+.card[data-fade='edge'] {
+  --cards-fade-in-start: var(--cards-shadow-room);
+  --cards-fade-in: calc(var(--cards-shadow-room) + 0.375rem);
+  --cards-fade-out: 98%;
 }
 
 .card[data-corner='right'] .card-crop {
@@ -239,7 +273,7 @@
   padding: var(--cards-shadow-room) var(--cards-shadow-room) 0 0;
   mask-image:
     linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
-    linear-gradient(to left, var(--cards-mask) 84%, transparent);
+    linear-gradient(to left, var(--cards-mask) var(--cards-fade-out), transparent);
 }
 
 .card-window {
@@ -263,9 +297,9 @@
     linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
     linear-gradient(
       to right,
-      transparent,
-      var(--cards-mask) 10%,
-      var(--cards-mask) 84%,
+      transparent var(--cards-fade-in-start),
+      var(--cards-mask) var(--cards-fade-in),
+      var(--cards-mask) var(--cards-fade-out),
       transparent
     );
 }
@@ -316,6 +350,25 @@
   .card[data-shape='narrow'] {
     --cards-window-width: min(100cqw - var(--cards-pad), 26rem);
     --cards-media-height: min(22rem, calc(var(--cards-window-width) / 0.8 * 0.84));
+  }
+}
+
+/* Phones get a wide card's phone cut, which has the narrow cards' 4:5 shape
+   (scripts/media/scenes.ts), so every card's media is as tall. The video's width and height give
+   the wide shape until the cut loads. */
+@media (max-width: 639.98px) {
+  .card[data-shape='wide'] {
+    --cards-window-width: min(100cqw - var(--cards-pad), 26rem);
+    --cards-media-height: min(22rem, calc(var(--cards-window-width) / 0.8 * 0.84));
+  }
+
+  .card[data-shape='wide'] .clip {
+    aspect-ratio: 4 / 5;
+  }
+
+  /* The phone cut ends inside the subject, which runs on past it. */
+  .card[data-fade='edge'] {
+    --cards-fade-out: 90%;
   }
 }
 

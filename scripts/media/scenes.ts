@@ -47,16 +47,37 @@ export interface Scene {
   check?(page: Page): Promise<void>
 }
 
+const NARROW = { width: 400, height: 500 }
+
 /**
  * Each shape's cut of the window in points, sized so the smallest text the app draws (10 pt) shows
  * at 9 px or more where the page is 1440 px wide and 8 px or more on a 390 px phone; clips are
- * encoded at twice these sizes. The ratios are the ones the page lays the media out at.
+ * encoded at twice these sizes. The ratios are the ones the page lays the media out at: a wide
+ * card's phone cut has the narrow cards' shape, as phones show every card alike, and a feature's
+ * phone cut is small enough to show whole.
  */
 export const CUTS = {
-  feature: { clip: { width: 672, height: 448 }, phone: { width: 552, height: 368 } },
-  wide: { clip: { width: 704, height: 440 }, phone: { width: 400, height: 250 } },
-  narrow: { clip: { width: 400, height: 500 } },
+  feature: { clip: { width: 672, height: 448 }, phone: { width: 396, height: 264 } },
+  wide: { clip: { width: 656, height: 410 }, phone: NARROW },
+  narrow: { clip: NARROW },
 } as const
+
+/**
+ * The part of the window each frame is a screenshot of: the clip, and the phone cut where it
+ * reaches past the clip (a wide card's phones get a cut of another shape). Both are cut from it.
+ */
+export function frameRect({ clip, phone }: Pick<Scene, 'clip' | 'phone'>): Rect {
+  if (!phone || phone.fill) return clip
+  const { rect } = phone
+  const x = Math.min(clip.x, rect.x)
+  const y = Math.min(clip.y, rect.y)
+  return {
+    x,
+    y,
+    width: Math.max(clip.x + clip.width, rect.x + rect.width) - x,
+    height: Math.max(clip.y + clip.height, rect.y + rect.height) - y,
+  }
+}
 
 const twice = ({ width, height }: Size): Size => ({ width: width * 2, height: height * 2 })
 const cut = (x: number, y: number, size: Size): Rect => ({ x, y, ...size })
@@ -271,8 +292,8 @@ const organise: Scene = {
   viewport: WINDOW,
   clip: cut(0, 0, CUTS.feature.clip),
   output: twice(CUTS.feature.clip),
-  // Phones see the note's header, where the filing happens, and the list's right half.
-  phone: { rect: cut(120, 0, CUTS.feature.phone), output: twice(CUTS.feature.phone) },
+  // Phones see the note's header and its status menu, where the filing happens.
+  phone: { rect: cut(276, 0, CUTS.feature.phone), output: twice(CUTS.feature.phone) },
   motion: true,
   fade: 0.5,
   async prepare(page) {
@@ -383,6 +404,9 @@ const find: Scene = {
 
 const SETTINGS_AT = { x: 40, y: 40 }
 const TITLE_BAR = 28
+// The four gradient themes span x 219 to 767 in the window; phones see the first three.
+const THEMES_CUT = 150
+const THEMES_PHONE_CUT = 215
 
 /**
  * The Settings window over the main window, as on a Mac: its page in a frame with the title bar
@@ -455,9 +479,9 @@ const themes: Scene = {
   slot: 'card-1',
   shape: 'wide',
   viewport: WINDOW,
-  clip: cut(0, 0, CUTS.wide.clip),
+  clip: cut(THEMES_CUT, 0, CUTS.wide.clip),
   output: twice(CUTS.wide.clip),
-  phone: { rect: cut(0, 0, CUTS.wide.phone), output: twice(CUTS.wide.phone) },
+  phone: { rect: cut(THEMES_PHONE_CUT, 0, CUTS.wide.phone), output: twice(CUTS.wide.phone) },
   motion: true,
   fade: 0,
   async prepare(page) {
@@ -483,7 +507,7 @@ const themes: Scene = {
     const card = (name: string) => at(cards.locator('.theme-card', { hasText: name }), 0.5, 0.4)
     const tide = await card('Tide')()
     const script = new CursorScript(tide, actions).wait(0.6)
-    // Ember sits in the fade at the cut's right edge; the other three show the change best.
+    // Ember is past the phone cut; the other three show the change on every screen.
     for (const name of ['Dawn', 'Sage', 'Tide']) {
       script
         .move(card(name), 0.7)
@@ -570,8 +594,9 @@ const tables: Scene = {
   },
 }
 
-// The palette (667 points wide, centred) starts past the fade at the cut's left side.
-const PALETTE_CUT = 255
+// The palette spans x 307 to 973: the cut takes it from its row icons (324) to past the end of its
+// shortcut column (957), and only the palette's padding sits in the card's short side fades.
+const PALETTE_CUT = 316
 
 const palette: Scene = {
   slot: 'card-4',
@@ -619,8 +644,10 @@ const palette: Scene = {
   },
 }
 
-// The sheet (835 points wide, centred) starts past the fade at the cut's left side.
-const HISTORY_CUT = 147
+// The sheet (836 points wide, centred, from x 222) starts past the fade at the cut's left side; on
+// phones its edge falls in the fade and its versions and the first changes show.
+const HISTORY_CUT = 150
+const HISTORY_PHONE_CUT = 196
 
 const history: Scene = {
   slot: 'card-5',
@@ -630,7 +657,7 @@ const history: Scene = {
   // The Revision History sheet, from its left edge: its versions and the changes they made.
   clip: cut(HISTORY_CUT, 0, CUTS.wide.clip),
   output: twice(CUTS.wide.clip),
-  phone: { rect: cut(HISTORY_CUT, 0, CUTS.wide.phone), output: twice(CUTS.wide.phone) },
+  phone: { rect: cut(HISTORY_PHONE_CUT, 0, CUTS.wide.phone), output: twice(CUTS.wide.phone) },
   motion: true,
   fade: 0.4,
   async prepare(page) {
