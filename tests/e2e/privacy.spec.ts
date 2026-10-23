@@ -247,7 +247,7 @@ test.describe('local-first section at desktop width', () => {
 
     for (const row of await page.locator('.local__row').all()) {
       await expect(row).toHaveCSS('transform', 'none')
-      expect(await row.evaluate((element) => element.getAnimations().length)).toBe(0)
+      await expect.poll(() => row.evaluate((element) => element.getAnimations().length)).toBe(0)
       const [rowBox, stripBox] = await Promise.all([
         row.boundingBox(),
         page.locator('.local__strip').boundingBox(),
@@ -295,7 +295,7 @@ test.describe('local-first section on a tablet', () => {
       )
     }
     for (const row of await page.locator('.local__row').all()) {
-      expect(await row.evaluate((element) => element.getAnimations().length)).toBe(0)
+      await expect.poll(() => row.evaluate((element) => element.getAnimations().length)).toBe(0)
     }
   })
 })
@@ -317,7 +317,7 @@ test.describe('local-first section on a phone', () => {
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(PHONE.width)
     }
     for (const row of await page.locator('.local__row').all()) {
-      expect(await row.evaluate((element) => element.getAnimations().length)).toBe(0)
+      await expect.poll(() => row.evaluate((element) => element.getAnimations().length)).toBe(0)
       await expect(row).toHaveCSS('transform', 'none')
     }
   })

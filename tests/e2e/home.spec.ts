@@ -73,12 +73,26 @@ async function violations(page: Page): Promise<string[]> {
   return scan.violations.map(({ id, nodes }) => `${id} (${nodes.length})`)
 }
 
+/** Waits for the finite animations on the page clock: text mid-fade would fail the contrast scan. */
+const entranceDone = (page: Page) =>
+  page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.timeline !== document.timeline ||
+          animation.playState !== 'running' ||
+          animation.effect?.getComputedTiming().endTime === Infinity,
+      ),
+  )
+
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`${colorScheme} appearance`, () => {
     test.use({ colorScheme })
 
     test("uses devot's page surface and passes an accessibility scan", async ({ page }) => {
       await page.goto('/')
+      await entranceDone(page)
 
       await expect(page.locator('body')).toHaveCSS('background-color', rgb(surface[colorScheme]))
       expect(await violations(page)).toEqual([])

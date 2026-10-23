@@ -149,7 +149,10 @@ test.describe('beside the media, at 1440', () => {
         const style = getComputedStyle(element)
         return { opacity: Number(style.opacity), scale: new DOMMatrix(style.transform).a }
       })
-    await placeWell(page, 0, 120)
+    await placeWell(page, 1, DESKTOP.height + 120)
+    await page.evaluate(
+      () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+    )
     expect(await state()).toEqual({ opacity: 0, scale: expect.closeTo(0.97, 3) })
 
     await placeWell(page, 1, line)

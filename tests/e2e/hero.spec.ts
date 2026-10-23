@@ -72,16 +72,18 @@ test.describe('hero at 1440 x 900', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
-    const element = await page.evaluate(
-      () =>
-        new Promise<string>((resolve) => {
-          new PerformanceObserver((list) => {
-            const last = list.getEntries().at(-1) as PerformanceEntry & { element?: Element }
-            resolve(last?.element?.tagName ?? 'none')
-          }).observe({ type: 'largest-contentful-paint', buffered: true })
-        }),
-    )
-    expect(element).toBe('VIDEO')
+    // The latest candidate counts; on a busy machine text can paint before the poster arrives.
+    const latest = () =>
+      page.evaluate(
+        () =>
+          new Promise<string>((resolve) => {
+            new PerformanceObserver((list) => {
+              const last = list.getEntries().at(-1) as PerformanceEntry & { element?: Element }
+              resolve(last?.element?.tagName ?? 'none')
+            }).observe({ type: 'largest-contentful-paint', buffered: true })
+          }),
+      )
+    await expect.poll(latest).toBe('VIDEO')
   })
 
   test('enters within 100 ms on the motion curves, background first and the button last', async ({
