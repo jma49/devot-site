@@ -1,15 +1,15 @@
 ---
 import '../../styles/home/closing.css'
 import { messages } from '../../i18n/index.ts'
-import { INSTALL_URL, RELEASES_URL } from '../../lib/links.ts'
+import { RELEASES_URL } from '../../lib/links.ts'
 import { DOWNLOAD_URL, REPO_URL } from '../../site.ts'
+import InstallNote from '../InstallNote.astro'
 
 const t = messages()
 const copy = t.closing
 const links = [
   { href: REPO_URL, label: copy.links.source },
   { href: RELEASES_URL, label: copy.links.releases },
-  { href: INSTALL_URL, label: copy.links.install },
 ]
 ---
 
@@ -61,6 +61,7 @@ const links = [
       <p class="closing__requirements" id="closing-requirements">
         {t.download.requirements}
       </p>
+      <InstallNote />
     </div>
     <ul
       class="closing__links"

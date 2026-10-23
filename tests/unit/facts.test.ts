@@ -10,7 +10,14 @@ import {
   shortcutSpoken,
   type FactCode,
 } from '../../scripts/facts/check.ts'
-import { devotSource, readDevotFiles, FactSourceError } from '../../scripts/facts/source.ts'
+import { annotate, factsReport } from '../../scripts/facts/report.ts'
+import {
+  devotSource,
+  FetchFailure,
+  readDevotFiles,
+  FactSourceError,
+  type Retry,
+} from '../../scripts/facts/source.ts'
 import { tempDir } from '../support/temp-dirs.ts'
 
 // A Devot that backs every claim the page makes, cut down to the lines the check reads.
@@ -38,6 +45,15 @@ const QUALIFIERS = new Map<string, SearchField>([
 ])
 `,
   'src/core/storage.ts': `export const NOTE_STATUSES = ['none', 'active', 'on_hold', 'completed', 'dropped'] as const\n`,
+  'src/core/revisions.ts': `// Versions are local to this device: they are not synced, and carry no HLC.
+export const REVISION_PAUSE_MS = 60_000
+export const REVISION_EVERY_MS = 10 * 60_000
+const HOUR = 3_600_000
+const DAY = 24 * HOUR
+const WEEK = 7 * DAY
+    if (age < DAY) return
+    const bucket = age < WEEK ? \`h\${Math.floor(revision.at / HOUR)}\` : \`d\${dayOf(revision.at)}\`
+`,
   'src/core/templates.ts': `const DATE_FORMATS: Readonly<Record<string, string>> = {
   date: 'YYYY-MM-DD',
   time: 'HH:mm',
@@ -85,10 +101,13 @@ const CHECK_EVERY_BETA: Duration = Duration::from_secs(60 * 60);
   '.github/workflows/release.yml': `          cp "$dmg" "out/Devot_\${VERSION}_aarch64.dmg"
           cp "$bundle/macos/Devot.app.tar.gz" "out/Devot_\${VERSION}_aarch64.app.tar.gz"
 `,
-  'README.md': `3. The first time, right-click Devot. Builds are ad-hoc signed and not notarised, so macOS asks once.
+  'README.md': `## Download
+3. The first time, right-click Devot in Applications and choose Open, then Open again. Builds are ad-hoc signed and not notarised, so macOS asks once.
 - \`[[\` note links with a link index; each note lists the notes that link to it.
 The folder is written by Devot and never read back: edit notes in Devot.
+## Claude and other MCP clients (devot-mcp)
 devot-mcp runs from a checkout of this repository (requirements in \`docs/development.md\`).
+## Contributing
 `,
 }
 
@@ -175,6 +194,40 @@ describe('checkFacts', () => {
       (text) => `${text}          cp "$x64" "out/Devot_\${VERSION}_x86_64.dmg"\n`,
     ],
     ['E_FACT_SIGNING', 'README.md', replace('ad-hoc signed and not notarised', 'notarised')],
+    ['E_FACT_SIGNING', 'README.md', replace('so macOS asks once', 'so macOS warns you')],
+    [
+      'E_FACT_SIGNING',
+      'README.md',
+      replace('right-click Devot in Applications and choose Open', 'open Devot'),
+    ],
+    ['E_FACT_ANCHOR', 'README.md', replace('## Download', '## Get Devot')],
+    ['E_FACT_ANCHOR', 'README.md', replace('## Contributing', '## Helping out')],
+    [
+      'E_FACT_REVISIONS',
+      'src/core/revisions.ts',
+      replace('PAUSE_MS = 60_000', 'PAUSE_MS = 120_000'),
+    ],
+    [
+      'E_FACT_REVISIONS',
+      'src/core/revisions.ts',
+      replace('age < DAY) return', 'age < HOUR) return'),
+    ],
+    ['E_FACT_REVISIONS', 'src/core/revisions.ts', replace('WEEK = 7 * DAY', 'WEEK = 30 * DAY')],
+    [
+      'E_FACT_REVISIONS',
+      'src/core/revisions.ts',
+      replace('`h${Math.floor(revision.at / HOUR)}`', '`d${dayOf(revision.at)}`'),
+    ],
+    [
+      'E_FACT_REVISIONS',
+      'src/core/revisions.ts',
+      replace('`d${dayOf(revision.at)}`', '`w${Math.floor(revision.at / WEEK)}`'),
+    ],
+    [
+      'E_FACT_REVISIONS',
+      'src/core/revisions.ts',
+      replace('local to this device', 'synced to every device'),
+    ],
     ['E_FACT_MIRROR', 'README.md', replace('never read back', 'read back')],
     ['E_FACT_MCP', 'README.md', replace('runs from a checkout', 'ships inside the app')],
     ['E_FACT_SOURCE', 'src/core/search.ts', () => undefined],
@@ -223,11 +276,80 @@ describe('checkFacts', () => {
     expect(codes(checkFacts(devot(), copy))).toEqual(['E_FACT_OPERATOR'])
   })
 
-  it('E_FACT_STALE when the page stops saying what a check expects', () => {
+  it.each<[string, (copy: Messages) => void, FactCode[]]>([
+    [
+      'the closing install note',
+      (c) => (c.closing.installNote = 'Download, open and write.'),
+      ['E_FACT_STALE'],
+    ],
+    [
+      'the note under the download buttons',
+      (c) => (c.install.note = ['Download, open and write.']),
+      ['E_FACT_STALE'],
+    ],
+    [
+      'the Revision History card',
+      (c) => (c.cards.items['card-5'].body = ['Devot keeps notes.']),
+      ['E_FACT_STALE', 'E_FACT_REVISIONS'],
+    ],
+  ])('E_FACT_STALE when %s stops saying what a check expects', (_, change, expected) => {
+    expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(expected)
+  })
+
+  it('E_FACT_REVISIONS when the card promises more than compaction keeps', () => {
     const copy = withCopy((c) => {
-      c.closing.installNote = 'Download, open and start writing.'
+      c.cards.items['card-5'].body = [
+        'Devot saves a version when you pause typing for a minute and keeps every one for a day, then hourly for a month, then daily.',
+      ]
     })
-    expect(codes(checkFacts(devot(), copy))).toEqual(['E_FACT_STALE'])
+    expect(checkFacts(devot(), copy).map(({ message }) => message)).toEqual([
+      expect.stringMatching(/^E_FACT_REVISIONS .*"then hourly for a week"/),
+    ])
+  })
+
+  it('reports no missing file for the downloads that could not be reached', () => {
+    const files = devot({ LICENSE: () => undefined })
+    expect(checkFacts(files, en, ['LICENSE'])).toEqual([])
+    expect(codes(checkFacts(files, en))).toEqual(['E_FACT_SOURCE'])
+  })
+})
+
+describe('factsReport', () => {
+  it('passes with one warning naming the skipped checks when GitHub cannot be reached', () => {
+    const report = factsReport({ files: new Map(), unreachable: [...DEVOT_FILES] }, en)
+    expect(report.errors).toEqual([])
+    expect(report.warnings).toHaveLength(1)
+    expect(report.warnings[0]).toMatch(/^W_FACT_UNREACHABLE /)
+    expect(report.warnings[0]).toContain('E_FACT_SHORTCUT')
+    expect(report.warnings[0]).toContain('E_FACT_REVISIONS')
+    expect(report.warnings[0]).toContain('LICENSE')
+  })
+
+  it('still fails on a real mismatch in the files it could read', () => {
+    const files = devot({
+      LICENSE: (text) => text.replace('MIT License', 'Apache License'),
+      'src/core/search.ts': () => undefined,
+    })
+    const report = factsReport({ files, unreachable: ['src/core/search.ts'] }, en)
+    expect(report.errors).toEqual([expect.stringMatching(/^E_FACT_LICENCE /)])
+    expect(report.warnings).toEqual([
+      expect.stringMatching(/^W_FACT_UNREACHABLE .*E_FACT_OPERATOR/),
+    ])
+    expect(report.warnings[0]).not.toContain('E_FACT_LICENCE')
+  })
+
+  it('has nothing to say when every file arrived and every fact holds', () => {
+    expect(factsReport({ files: devot(), unreachable: [] }, en)).toEqual({
+      errors: [],
+      warnings: [],
+    })
+  })
+
+  it('turns a warning into a GitHub Actions annotation in CI only', () => {
+    expect(annotate('W_FACT_UNREACHABLE x', { GITHUB_ACTIONS: 'true' })).toBe(
+      '::warning title=pnpm facts::W_FACT_UNREACHABLE x',
+    )
+    expect(annotate('W_FACT_UNREACHABLE x', {})).toBe('W_FACT_UNREACHABLE x')
   })
 })
 
@@ -283,26 +405,75 @@ describe('readDevotFiles', () => {
   it('reads the listed files a checkout has, and leaves out the ones it lacks', async () => {
     const dir = tempDir('facts-devot-')
     writeFileSync(join(dir, 'LICENSE'), 'MIT License\n')
-    const files = await readDevotFiles({ kind: 'checkout', dir }, async () => '')
-    expect([...files]).toEqual([['LICENSE', 'MIT License\n']])
+    const read = await readDevotFiles({ kind: 'checkout', dir }, async () => '')
+    expect([...read.files]).toEqual([['LICENSE', 'MIT License\n']])
+    expect(read.unreachable).toEqual([])
   })
 
   it('downloads the listed files at the pinned commit', async () => {
     const urls: string[] = []
-    const files = await readDevotFiles({ kind: 'github', commit: 'c'.repeat(40) }, async (url) => {
+    const read = await readDevotFiles({ kind: 'github', commit: 'c'.repeat(40) }, async (url) => {
       urls.push(url)
       return `body of ${url.split('/').pop()}`
     })
     expect(urls).toHaveLength(DEVOT_FILES.length)
     expect(urls[0]).toMatch(/^https:\/\/raw\.githubusercontent\.com\/jma49\/devot\/c{40}\//)
-    expect(files.get('LICENSE')).toBe('body of LICENSE')
+    expect(read.files.get('LICENSE')).toBe('body of LICENSE')
   })
 
-  it('fails with E_FACT_FETCH when a download fails', async () => {
-    const failing = readDevotFiles({ kind: 'github', commit: 'c'.repeat(40) }, async () => {
-      throw new Error('HTTP 503')
-    })
+  const github = { kind: 'github', commit: 'c'.repeat(40) } as const
+  const retry = (): Retry & { waits: number[] } => {
+    const waits: number[] = []
+    return { attempts: 4, firstDelayMs: 1000, wait: async (ms) => void waits.push(ms), waits }
+  }
+
+  it('fails at once with E_FACT_FETCH when the pinned commit lacks a file', async () => {
+    let calls = 0
+    const policy = retry()
+    const failing = readDevotFiles(
+      github,
+      async () => {
+        calls += 1
+        throw new FetchFailure('HTTP 404', false)
+      },
+      policy,
+    )
     await expect(failing).rejects.toThrow(FactSourceError)
-    await expect(failing).rejects.toThrow(/^E_FACT_FETCH .*HTTP 503/)
+    await expect(failing).rejects.toThrow(/^E_FACT_FETCH .*HTTP 404/)
+    expect(policy.waits).toEqual([])
+    expect(calls).toBe(DEVOT_FILES.length)
+  })
+
+  it('tries a failed download again, waiting twice as long each time', async () => {
+    const policy = retry()
+    let licenceTries = 0
+    const read = await readDevotFiles(
+      github,
+      async (url) => {
+        if (url.endsWith('/LICENSE') && ++licenceTries < 3) throw new FetchFailure('HTTP 503', true)
+        return 'text'
+      },
+      policy,
+    )
+    expect(read.unreachable).toEqual([])
+    expect(read.files.get('LICENSE')).toBe('text')
+    expect(licenceTries).toBe(3)
+    expect(policy.waits).toEqual([1000, 2000])
+  })
+
+  it('lists a file as unreachable after the last try when the connection keeps failing', async () => {
+    const policy = retry()
+    const read = await readDevotFiles(
+      github,
+      async (url) => {
+        if (url.endsWith('/LICENSE')) throw new TypeError('fetch failed')
+        return 'text'
+      },
+      policy,
+    )
+    expect(read.unreachable).toEqual(['LICENSE'])
+    expect(read.files.has('LICENSE')).toBe(false)
+    expect(read.files.size).toBe(DEVOT_FILES.length - 1)
+    expect(policy.waits).toEqual([1000, 2000, 4000])
   })
 })

@@ -1,5 +1,8 @@
 import type { CardText } from '../../src/i18n/en/cards.ts'
+import type { NoteText } from '../../src/i18n/en/hero.ts'
 import type { Messages } from '../../src/i18n/en.ts'
+import { footerLinks, INSTALL_URL } from '../../src/lib/links.ts'
+import { REPO_URL } from '../../src/site.ts'
 
 export type FactCode =
   | 'E_FACT_SOURCE'
@@ -18,6 +21,8 @@ export type FactCode =
   | 'E_FACT_SIGNING'
   | 'E_FACT_MIRROR'
   | 'E_FACT_MCP'
+  | 'E_FACT_REVISIONS'
+  | 'E_FACT_ANCHOR'
 
 export interface FactProblem {
   code: FactCode
@@ -31,6 +36,7 @@ const REGISTRY = 'src/renderer/src/commands/registry.ts'
 const SEARCH = 'src/core/search.ts'
 const STORAGE = 'src/core/storage.ts'
 const TEMPLATES = 'src/core/templates.ts'
+const REVISIONS = 'src/core/revisions.ts'
 const STRINGS = 'src/renderer/src/i18n/en.ts'
 const BACKDROPS = 'design/tokens/backdrops.tokens.json'
 const UPDATES = 'src-tauri/src/updates.rs'
@@ -44,6 +50,7 @@ export const DEVOT_FILES = [
   SEARCH,
   STORAGE,
   TEMPLATES,
+  REVISIONS,
   STRINGS,
   BACKDROPS,
   UPDATES,
@@ -73,6 +80,8 @@ const CARD_NAMES: Partial<Record<CardSlot, string>> = {
 }
 
 interface Fact {
+  /** The code its mismatches carry, which names the check when it is skipped. */
+  code: FactCode
   needs: readonly string[]
   check: (devot: (path: string) => string, copy: Messages) => FactProblem[]
 }
@@ -89,6 +98,8 @@ function says(text: string, phrase: string, where: string): FactProblem[] {
     : [problem('E_FACT_STALE', `${where} no longer says "${phrase}": update scripts/facts`)]
 }
 
+const noteText = (runs: readonly NoteText[]) =>
+  runs.map((run) => (typeof run === 'string' ? run : run.unbroken)).join('')
 const plain = (runs: readonly CardText[]) =>
   runs.map((run) => (typeof run === 'string' ? run : run.code)).join('')
 const codesIn = (runs: readonly CardText[]) =>
@@ -155,12 +166,52 @@ function rustSeconds(source: string, name: string): number | undefined {
 }
 
 const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
+
+/** A TypeScript constant in milliseconds: a product of numbers and constants defined before it. */
+function tsMillis(source: string, name: string, depth = 0): number | undefined {
+  const value = new RegExp(`const ${name}\\s*=\\s*([\\w\\s*]+?)\\s*$`, 'm').exec(source)?.[1]
+  if (value === undefined || depth > 4) return undefined
+  return value.split('*').reduce<number | undefined>((product, factor) => {
+    const term = factor.trim()
+    const number = /^[\d_]+$/.test(term)
+      ? Number(term.replaceAll('_', ''))
+      : tsMillis(source, term, depth + 1)
+    return product === undefined || number === undefined ? undefined : product * number
+  }, 1)
+}
+
+const HOUR_MS = 3_600_000
+const UNITS: [string, number][] = [
+  ['week', 7 * 24 * HOUR_MS],
+  ['day', 24 * HOUR_MS],
+  ['hour', HOUR_MS],
+  ['minute', 60_000],
+  ['second', 1_000],
+]
+
+/** A length of time as the page says it: "a minute", "an hour", "two weeks". */
+function duration(ms: number): string {
+  const [unit, size] = UNITS.find(([, length]) => ms % length === 0) ?? ['millisecond', 1]
+  const count = ms / size
+  if (count === 1) return `${unit === 'hour' ? 'an' : 'a'} ${unit}`
+  return `${NUMBER_WORDS[count] ?? count} ${unit}s`
+}
+
+/** The anchor GitHub gives a Markdown heading. */
+function headingAnchor(heading: string): string {
+  return heading
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replace(/\s/g, '-')
+}
+
 const sameName = (a: string, b: string) =>
   a.replace(/(…|\.\.\.)$/, '').toLowerCase() === b.replace(/(…|\.\.\.)$/, '').toLowerCase()
 const capitalised = (word: string) => word.charAt(0).toUpperCase() + word.slice(1)
 
 const FACTS: Fact[] = [
   {
+    code: 'E_FACT_SHORTCUT',
     needs: [REGISTRY],
     check: (devot, copy) =>
       Object.entries(copy.cards.items).flatMap(([slot, card]) => {
@@ -196,6 +247,7 @@ const FACTS: Fact[] = [
       }),
   },
   {
+    code: 'E_FACT_OPERATOR',
     needs: [SEARCH],
     check: (devot, copy) => {
       const search = devot(SEARCH)
@@ -216,6 +268,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_LINKS',
     needs: [README],
     check: (devot, copy) => [
       ...says(codesIn(feature(copy, 'find')).join(' '), '[[', 'The Find and connect feature'),
@@ -225,6 +278,7 @@ const FACTS: Fact[] = [
     ],
   },
   {
+    code: 'E_FACT_LABEL',
     needs: [STRINGS],
     check: (devot, copy) => {
       const strings = devot(STRINGS)
@@ -251,6 +305,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_STATUS',
     needs: [STORAGE, STRINGS],
     check: (devot, copy) => {
       const ids = [
@@ -276,6 +331,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_THEME',
     needs: [BACKDROPS, STRINGS],
     check: (devot, copy) => {
       const backdrop = (JSON.parse(devot(BACKDROPS)) as { backdrop?: Record<string, unknown> })
@@ -310,6 +366,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_PLACEHOLDER',
     needs: [TEMPLATES],
     check: (devot, copy) => {
       const names = codesIn(copy.cards.items['card-6'].body).flatMap(
@@ -326,6 +383,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_UPDATES',
     needs: [UPDATES],
     check: (devot, copy) => {
       const source = devot(UPDATES)
@@ -355,6 +413,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_LICENCE',
     needs: [LICENSE],
     check: (devot, copy) => {
       const licence = devot(LICENSE)
@@ -376,6 +435,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_PLATFORM',
     needs: [TAURI],
     check: (devot, copy) => {
       const conf = JSON.parse(devot(TAURI)) as {
@@ -394,6 +454,7 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_RELEASE',
     needs: [RELEASE],
     check: (devot, copy) => {
       const archs = [...devot(RELEASE).matchAll(/Devot_\$\{[^}]*\}_(\w+)\.dmg/g)].map((m) => m[1])
@@ -411,20 +472,39 @@ const FACTS: Fact[] = [
     },
   },
   {
+    code: 'E_FACT_SIGNING',
     needs: [README],
-    check: (devot, copy) => [
-      ...says(copy.closing.installNote, 'Signed ad hoc, not notarised', 'The closing install note'),
-      ...(devot(README).includes('ad-hoc signed and not notarised')
-        ? []
-        : [
-            problem(
-              'E_FACT_SIGNING',
-              `${README} no longer says builds are ad-hoc signed and not notarised`,
-            ),
-          ]),
-    ],
+    check: (devot, copy) => {
+      const readme = devot(README)
+      const missing = (said: boolean, what: string) =>
+        said ? [] : [problem('E_FACT_SIGNING', `${README} no longer says ${what}`)]
+      return [
+        ...says(
+          copy.closing.installNote,
+          'Signed ad hoc, not notarised',
+          'The closing install note',
+        ),
+        ...says(copy.closing.installNote, 'so macOS asks once', 'The closing install note'),
+        ...says(noteText(copy.install.note), 'Not notarised yet', 'The install note'),
+        ...says(
+          noteText(copy.install.note),
+          'right-click Devot and choose Open',
+          'The install note',
+        ),
+        ...missing(
+          readme.includes('ad-hoc signed and not notarised'),
+          'builds are ad-hoc signed and not notarised',
+        ),
+        ...missing(readme.includes('so macOS asks once'), 'macOS asks once'),
+        ...missing(
+          /right-click Devot\b[^.\n]*\bchoose Open\b/.test(readme),
+          'to right-click Devot and choose Open the first time',
+        ),
+      ]
+    },
   },
   {
+    code: 'E_FACT_MIRROR',
     needs: [README],
     check: (devot, copy) => [
       ...says(copy.privacy.body, 'never reads them back', 'The local-first paragraph'),
@@ -439,6 +519,7 @@ const FACTS: Fact[] = [
     ],
   },
   {
+    code: 'E_FACT_MCP',
     needs: [README],
     check: (devot, copy) => [
       ...says(copy.footer.groups.resources.links.mcp, 'from source', 'The footer devot-mcp link'),
@@ -447,11 +528,101 @@ const FACTS: Fact[] = [
         : [problem('E_FACT_MCP', `${README} no longer says devot-mcp runs from a checkout`)]),
     ],
   },
+  {
+    code: 'E_FACT_ANCHOR',
+    needs: [README],
+    check: (devot) => {
+      const sections = new Set(
+        [...devot(README).matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)].map((m) =>
+          headingAnchor(m[1] ?? ''),
+        ),
+      )
+      const hrefs = new Set([INSTALL_URL, ...footerLinks().map(({ href }) => href)])
+      return [...hrefs]
+        .filter((href) => href.startsWith(`${REPO_URL}#`))
+        .filter((href) => !sections.has(href.slice(REPO_URL.length + 1)))
+        .map((href) => problem('E_FACT_ANCHOR', `${href} names no section of ${README}`))
+    },
+  },
+  {
+    code: 'E_FACT_REVISIONS',
+    needs: [REVISIONS],
+    check: (devot, copy) => {
+      const source = devot(REVISIONS)
+      const text = plain(copy.cards.items['card-5'].body)
+      const ms = (name: string | undefined) =>
+        name === undefined ? undefined : tsMillis(source, name)
+      const pause = ms('REVISION_PAUSE_MS')
+      const keepAll = ms(/if \(age < (\w+)\) return\b/.exec(source)?.[1])
+      const buckets =
+        /age < (\w+) \? `h\$\{Math\.floor\(revision\.at \/ (\w+)\)\}` : `d\$\{dayOf\(revision\.at\)\}`/.exec(
+          source,
+        )
+      const hourlyFor = buckets && ms(buckets[2]) === HOUR_MS ? ms(buckets[1]) : undefined
+      const rules: [phrase: string | undefined, rule: string][] = [
+        [
+          pause === undefined ? undefined : `pause typing for ${duration(pause)}`,
+          'REVISION_PAUSE_MS',
+        ],
+        [
+          keepAll === undefined ? undefined : `every one for ${duration(keepAll)}`,
+          'the age under which every version is kept',
+        ],
+        [
+          hourlyFor === undefined ? undefined : `then hourly for ${duration(hourlyFor)}`,
+          'the hourly versions',
+        ],
+        [buckets ? 'then daily' : undefined, 'the daily versions'],
+      ]
+      return [
+        ...says(text, 'pause typing', 'card-5'),
+        ...rules.flatMap(([phrase, rule]) => {
+          if (phrase === undefined)
+            return [
+              problem(
+                'E_FACT_REVISIONS',
+                `${REVISIONS}: cannot find ${rule}; check card-5 and scripts/facts`,
+              ),
+            ]
+          return text.includes(phrase)
+            ? []
+            : [problem('E_FACT_REVISIONS', `${REVISIONS} means card-5 should say "${phrase}"`)]
+        }),
+        ...says(
+          copy.privacy.facts.rows.flat().join(' '),
+          'Version history on your Mac',
+          'The local-first facts',
+        ),
+        ...(source.includes('Versions are local to this device')
+          ? []
+          : [problem('E_FACT_REVISIONS', `${REVISIONS} no longer keeps versions on this device`)]),
+      ]
+    },
+  },
 ]
 
-/** Every claim the page makes about Devot that Devot's own files can settle, checked against them. */
-export function checkFacts(devot: DevotFiles, copy: Messages): FactProblem[] {
-  const missing = DEVOT_FILES.filter((path) => !devot.has(path))
+/** The codes of the checks that read any of `paths`. */
+export function factsReading(paths: readonly string[]): FactCode[] {
+  return [
+    ...new Set(
+      FACTS.filter(({ needs }) => needs.some((path) => paths.includes(path))).map(
+        ({ code }) => code,
+      ),
+    ),
+  ]
+}
+
+/**
+ * Every claim the page makes about Devot that Devot's own files can settle, checked against them.
+ * A file listed in `unreachable` (a download that kept failing) is not reported missing; the checks
+ * that read it are skipped.
+ */
+export function checkFacts(
+  devot: DevotFiles,
+  copy: Messages,
+  unreachable: readonly string[] = [],
+): FactProblem[] {
+  const missing = DEVOT_FILES.filter((path) => !devot.has(path) && !unreachable.includes(path))
   const read = (path: string) => devot.get(path) ?? ''
   return [
     ...missing.map((path) => problem('E_FACT_SOURCE', `${path} is missing`)),

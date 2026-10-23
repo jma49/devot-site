@@ -1,6 +1,4 @@
 .closing {
-  --closing-title-size: clamp(2.25rem, 1.2rem + 3.2vw, 3.5rem);
-
   position: relative;
   isolation: isolate;
   overflow: clip;
@@ -60,10 +58,10 @@
 
 .closing__title {
   margin: 0;
-  font-size: var(--closing-title-size);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
-  line-height: 1.06;
+  font-size: var(--site-type-display-size);
+  font-weight: var(--site-type-display-weight);
+  letter-spacing: var(--site-type-display-tracking);
+  line-height: var(--site-type-display-leading);
   text-wrap: balance;
 }
 
@@ -96,7 +94,7 @@
 
 .closing__requirements {
   color: var(--site-color-text-muted);
-  font-size: var(--site-font-size-small);
+  font-size: var(--site-type-caption-size);
 }
 
 .closing__links {
@@ -115,7 +113,8 @@
   min-height: 2.75rem;
   border-radius: var(--radius-button);
   color: var(--site-color-link);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--site-type-body-size);
+  font-weight: var(--site-type-body-weight);
   text-decoration: none;
   transition: color var(--site-dur-quick) var(--site-ease-out);
 }
@@ -129,7 +128,8 @@
   max-width: 36rem;
   margin-top: var(--space-5);
   color: var(--site-color-text-muted);
-  font-size: var(--site-font-size-small);
+  font-size: var(--site-type-caption-size);
+  line-height: var(--site-type-caption-leading);
   text-wrap: balance;
 }
 

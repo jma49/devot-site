@@ -357,11 +357,24 @@ test.describe('closing call to action', () => {
       'href',
       RELEASES_URL,
     )
-    await expect(section.getByRole('link', { name: en.closing.links.install })).toHaveAttribute(
+    await expect(section.getByRole('link', { name: en.install.link })).toHaveAttribute(
       'href',
       INSTALL_URL,
     )
     await expect(section.getByText(en.closing.installNote)).toBeVisible()
+  })
+
+  test('sets its title in the hero’s display tier, so the page ends as it began', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    const type = (selector: string) =>
+      page.locator(selector).evaluate((element) => {
+        const style = getComputedStyle(element)
+        return [style.fontSize, style.fontWeight, style.letterSpacing, style.lineHeight]
+      })
+
+    expect(await type('#download h2')).toEqual(await type('#hero h1'))
   })
 
   test('brings the gradient back, in the scheme of the page', async ({ page }) => {
@@ -549,15 +562,36 @@ test.describe('footer', () => {
     for (const anchor of anchors) await expect(page.locator(anchor)).toHaveCount(1)
   })
 
-  test('names its groups in mono, uppercase, 13 px', async ({ page }) => {
+  test('names its groups in the label tier: uppercase, 12 px semibold, tracked 0.08em', async ({
+    page,
+  }) => {
     await page.goto('/')
 
     const label = page.locator('.site-footer__label').first()
-    await expect(label).toHaveCSS('font-size', '13px')
+    await expect(label).toHaveCSS('font-size', '12px')
+    await expect(label).toHaveCSS('font-weight', '600')
+    await expect(label).toHaveCSS('letter-spacing', '0.96px')
     await expect(label).toHaveCSS('text-transform', 'uppercase')
-    expect(await label.evaluate((element) => getComputedStyle(element).fontFamily)).toMatch(
-      /mono|menlo|consolas/i,
-    )
+    const family = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => getComputedStyle(element).fontFamily)
+    expect(await family('.site-footer__label')).toBe(await family('body'))
+  })
+
+  test('sets the brand in the card heading tier', async ({ page }) => {
+    await page.goto('/')
+    const type = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => {
+          const style = getComputedStyle(element)
+          return [style.fontSize, style.fontWeight, style.letterSpacing]
+        })
+
+    expect(await type('.site-footer__logo')).toEqual(await type('#cards h3'))
   })
 
   test('shifts a link to the text colour within 200 ms on hover', async ({ page }) => {

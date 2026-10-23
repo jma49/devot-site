@@ -3,6 +3,7 @@ import '../../styles/home/hero.css'
 import { messages } from '../../i18n/index.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
 import Clip from '../Clip.astro'
+import InstallNote from '../InstallNote.astro'
 
 const t = messages()
 ---
@@ -61,6 +62,7 @@ const t = messages()
       <p class="hero-requirements" id="download-requirements">
         {t.download.requirements}
       </p>
+      <InstallNote />
     </div>
   </div>
 

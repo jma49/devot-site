@@ -1,0 +1,26 @@
+.install-note {
+  max-width: 34rem;
+  color: var(--site-color-text-muted);
+  font-size: var(--site-type-caption-size);
+  font-weight: var(--site-type-caption-weight);
+  line-height: var(--site-type-caption-leading);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.install-note__unbroken {
+  white-space: nowrap;
+}
+
+.install-note a {
+  border-radius: var(--radius-control);
+  color: var(--site-color-link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.install-note a:hover {
+  text-decoration-thickness: 0.12em;
+}
