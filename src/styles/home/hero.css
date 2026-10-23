@@ -1,0 +1,439 @@
+/*
+ * The hero: Devot's Tide gradient, drawn by hero-backdrop.ts over CSS layers that stand in
+ * without WebGL, and the app in a window that stands up as the page scrolls. hero.ts writes the
+ * scroll state into the --hero-* variables below; with reduced motion they keep their final values.
+ */
+.hero {
+  --hero-window-max: 70rem;
+  --hero-window-width: min(var(--hero-window-max), 100cqw - 2 * var(--site-gutter));
+  /* The capture is the app's 1440 x 900 point window. */
+  --hero-window-points: 1440;
+  --hero-window-ratio: 0.625;
+  --hero-pt: calc(var(--hero-window-width) / var(--hero-window-points));
+  /* Share of the window above the hero's bottom edge, where it dissolves into the page. */
+  --hero-window-shown: 0.86;
+  --hero-fade: 8rem;
+  --hero-shadow-room: 2.5rem;
+  --hero-tilt: 10deg;
+  --hero-rest-scale: 0.94;
+  --hero-perspective: 2200px;
+  --hero-drift-distance: -4.5rem;
+  --hero-entrance-rise: 20px;
+  --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 55%, transparent);
+
+  --hero-settle: 0;
+  --hero-drift: 0;
+  --hero-lift: 0;
+  --hero-sky: 0;
+  --hero-sheen: 1;
+  --hero-dome: 0;
+
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'copy'
+    'cta'
+    'stage';
+  justify-items: center;
+  padding-block-start: clamp(5.75rem, 3.5rem + 5vh, 7rem);
+  overflow: clip;
+  text-align: center;
+}
+
+/* Background */
+
+.hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--site-color-page);
+  mask-image: linear-gradient(to bottom, var(--site-color-page) 52%, transparent 96%);
+}
+
+.hero-sky,
+.hero-fallback,
+.hero-canvas,
+.hero-sheen {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-sky {
+  bottom: -12%;
+  transform: translate3d(0, calc(var(--hero-sky) * 1px), 0);
+}
+
+.hero-fallback {
+  overflow: hidden;
+  background: var(--backdrop), var(--color-surface-editor);
+  filter: saturate(1.4);
+}
+
+.hero-fallback[data-backdrop-source='dark'] {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero-fallback[data-backdrop-source='light'] {
+    display: none;
+  }
+
+  .hero-fallback[data-backdrop-source='dark'] {
+    display: block;
+  }
+}
+
+/* Two copies of the gradient, turned and masked to soft discs, drift over it. */
+.hero-fallback::before,
+.hero-fallback::after {
+  content: '';
+  position: absolute;
+  width: 72vmax;
+  height: 72vmax;
+  background: var(--backdrop);
+  mask-image: radial-gradient(closest-side, var(--site-color-page), transparent);
+}
+
+.hero-fallback::before {
+  top: -30vmax;
+  left: -18vmax;
+  rotate: 180deg;
+}
+
+.hero-fallback::after {
+  right: -22vmax;
+  bottom: -38vmax;
+  rotate: 90deg;
+}
+
+.hero-canvas {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.hero[data-backdrop='webgl'] .hero-canvas {
+  opacity: 1;
+}
+
+.hero[data-backdrop='webgl'] .hero-fallback::before,
+.hero[data-backdrop='webgl'] .hero-fallback::after {
+  display: none;
+}
+
+.hero-sheen {
+  background: radial-gradient(58% 44% at 50% 18%, var(--hero-sheen-color), transparent 74%);
+  opacity: var(--hero-sheen);
+}
+
+.hero-dome {
+  position: absolute;
+  right: -30%;
+  bottom: 0;
+  left: -30%;
+  height: 46%;
+  background: radial-gradient(50% 100% at 50% 100%, var(--site-color-page) 58%, transparent 100%);
+  opacity: var(--hero-dome);
+}
+
+/* Copy */
+
+.hero-copy,
+.hero-cta {
+  padding-inline: var(--site-gutter);
+  transform: translate3d(0, calc(var(--hero-drift) * var(--hero-drift-distance)), 0);
+  opacity: calc(1 - var(--hero-drift));
+}
+
+.hero-copy {
+  grid-area: copy;
+  display: grid;
+  justify-items: center;
+  gap: clamp(0.875rem, 0.5rem + 1vh, 1.25rem);
+  max-width: 64rem;
+}
+
+.hero-title {
+  color: var(--site-color-text);
+  font-size: clamp(2.25rem, min(1.2rem + 3.3vw, 6.8vh), 3.75rem);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.022em;
+  line-height: 1.07;
+  text-wrap: balance;
+}
+
+.hero-lead {
+  max-width: 40rem;
+  color: var(--site-color-text-muted);
+  font-size: clamp(1.0625rem, 0.95rem + 0.45vw, 1.25rem);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.hero-cta {
+  grid-area: cta;
+  margin-block-start: clamp(1.5rem, 0.75rem + 2vh, 2rem);
+}
+
+.hero-cta-inner {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-5);
+}
+
+.hero-download {
+  min-height: 3rem;
+}
+
+.hero-requirements {
+  color: var(--site-color-text-muted);
+  font-size: var(--site-font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The window */
+
+.hero-stage {
+  grid-area: stage;
+  width: 100%;
+  height: calc(
+    var(--hero-window-width) * var(--hero-window-ratio) * var(--hero-window-shown) +
+      var(--hero-shadow-room)
+  );
+  margin-block-start: calc(clamp(2rem, 0.75rem + 3vh, 3rem) - var(--hero-shadow-room));
+  padding-block-start: var(--hero-shadow-room);
+  perspective: var(--hero-perspective);
+  perspective-origin: 50% 0%;
+  mask-image: linear-gradient(
+    to bottom,
+    var(--site-color-page) calc(100% - var(--hero-fade)),
+    transparent
+  );
+}
+
+.hero-rig {
+  width: var(--hero-window-width);
+  margin-inline: auto;
+  transform-origin: 50% 0%;
+  transform: translate3d(0, calc(var(--hero-lift) * 1px), 0)
+    rotateX(calc(var(--hero-tilt) * (1 - var(--hero-settle))))
+    scale(calc(1 - (1 - var(--hero-rest-scale)) * (1 - var(--hero-settle))));
+}
+
+.hero-frame {
+  position: relative;
+  aspect-ratio: 1 / var(--hero-window-ratio);
+  overflow: hidden;
+  border-radius: max(0.5rem, 16 * var(--hero-pt));
+  background: var(--color-surface-window);
+  box-shadow:
+    0 0 0 0.5px var(--color-line-hairline),
+    0 2px 4px var(--color-shadow-popover-key),
+    0 24px 48px -16px var(--color-shadow-popover-ambient),
+    0 56px 110px -36px var(--color-shadow-float-bar);
+}
+
+.hero-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  pointer-events: none;
+}
+
+.hero-frame .hero-clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left top;
+}
+
+.hero-lights {
+  position: absolute;
+  top: calc(20 * var(--hero-pt));
+  left: calc(20 * var(--hero-pt));
+  display: flex;
+  gap: calc(8 * var(--hero-pt));
+}
+
+.hero-lights i {
+  width: calc(12 * var(--hero-pt));
+  height: calc(12 * var(--hero-pt));
+  border-radius: 50%;
+  background: var(--color-tag-red);
+  box-shadow: inset 0 0 0 0.5px var(--color-line-hairline);
+}
+
+.hero-lights i:nth-child(2) {
+  background: var(--color-tag-yellow);
+}
+
+.hero-lights i:nth-child(3) {
+  background: var(--color-tag-green);
+}
+
+/* Entrance: everything starts within 100 ms and settles on Devot's curves. The window and its
+   poster paint at full opacity from the first frame, so the poster is the largest paint. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-canvas {
+    transition: opacity var(--site-dur-media) var(--site-ease-text);
+  }
+
+  .hero-backdrop {
+    animation: hero-fade 600ms var(--site-ease-text) both;
+  }
+
+  .hero-line {
+    animation:
+      hero-rise 900ms var(--site-ease-media) both,
+      hero-fade 800ms var(--site-ease-text) both;
+  }
+
+  .hero-line + .hero-line {
+    animation-delay: 60ms;
+  }
+
+  .hero-lead {
+    animation:
+      hero-rise 950ms var(--site-ease-media) 80ms both,
+      hero-fade 850ms var(--site-ease-text) 80ms both;
+  }
+
+  .hero-window {
+    animation: hero-window-in 1100ms var(--site-ease-media) 30ms both;
+  }
+
+  /* The button paints at full opacity from the first frame, as the window does: a fading fill
+     would read as low contrast to anyone who checks it mid-entrance. */
+  .hero-cta-inner {
+    animation: hero-rise 1300ms var(--site-ease-media) 100ms both;
+  }
+
+  .hero-requirements {
+    animation: hero-fade 900ms var(--site-ease-text) 100ms both;
+  }
+
+  .hero[data-backdrop-state='idle'] .hero-fallback::before,
+  .hero[data-backdrop-state='idle'] .hero-fallback::after {
+    animation-play-state: paused;
+  }
+
+  .hero-fallback::before {
+    animation: hero-drift-a 28s var(--site-ease-text) infinite alternate;
+  }
+
+  .hero-fallback::after {
+    animation: hero-drift-b 34s var(--site-ease-text) infinite alternate;
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    translate: 0 var(--hero-entrance-rise);
+  }
+}
+
+@keyframes hero-window-in {
+  from {
+    translate: 0 1rem;
+    scale: 0.97;
+  }
+}
+
+@keyframes hero-drift-a {
+  to {
+    translate: 24vmax 12vmax;
+    scale: 1.15;
+  }
+}
+
+@keyframes hero-drift-b {
+  to {
+    translate: -20vmax -10vmax;
+    scale: 0.9;
+  }
+}
+
+/* Without scripting nothing scrolls the window upright, so it rests upright. */
+@media (scripting: none) {
+  .hero {
+    --hero-settle: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    --hero-settle: 1;
+  }
+
+  .hero-copy,
+  .hero-cta,
+  .hero-rig,
+  .hero-sky {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-line {
+    display: block;
+  }
+}
+
+@media (max-width: 1023.98px) {
+  .hero {
+    --hero-tilt: 8deg;
+  }
+}
+
+/* Phones: the call to action follows the window, and the window runs off the right edge so the
+   app stays large enough to read. */
+@media (max-width: 639.98px) {
+  .hero {
+    --hero-window-width: 170cqw;
+    --hero-window-shown: 0.78;
+    --hero-fade: 5rem;
+    --hero-tilt: 6deg;
+    --hero-drift-distance: -2.5rem;
+
+    grid-template-areas:
+      'copy'
+      'stage'
+      'cta';
+    padding-block-end: var(--space-10);
+  }
+
+  .hero-rig {
+    margin-inline: var(--site-gutter) 0;
+  }
+
+  .hero-cta {
+    justify-self: stretch;
+    margin-block-start: var(--space-7);
+    transform: none;
+    opacity: 1;
+  }
+
+  .hero-cta-inner,
+  .hero-download {
+    width: 100%;
+  }
+
+  .hero-download {
+    max-width: 24rem;
+  }
+}
