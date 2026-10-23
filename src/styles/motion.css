@@ -71,18 +71,27 @@
   }
 }
 
+/* Longhands only: the minifier folds an `animation` shorthand and `animation-timeline` into one
+   declaration that browsers reject. WebKit may pick a moving element as its scroll anchor and
+   scroll the page to follow it, hence overflow-anchor. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     [data-scroll='rise'] {
-      animation: site-scroll-rise linear both;
+      animation-name: site-scroll-rise;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
       animation-timeline: view();
       animation-range: entry 0% entry 60%;
+      overflow-anchor: none;
     }
 
     [data-scroll='drift'] {
-      animation: site-scroll-drift linear both;
+      animation-name: site-scroll-drift;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
       animation-timeline: view();
       animation-range: cover;
+      overflow-anchor: none;
     }
   }
 }
