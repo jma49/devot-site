@@ -1,4 +1,5 @@
 import { REDUCED_MOTION_QUERY } from '../lib/dom-env.ts'
+import { browserPause, type Pause } from './pause.ts'
 
 export type Rgb = readonly [number, number, number]
 export type Lab = readonly [number, number, number]
@@ -263,16 +264,24 @@ export interface BackdropParts {
   sources: Record<Scheme, HTMLElement>
   /** False keeps the CSS layers and only tracks whether they should move. */
   webgl?: boolean
+  /** The reader's pause: while it holds, the flow stops where it is. */
+  pause?: Pause
 }
 
 /**
  * Draws the hero's gradient with WebGL at up to 30 frames a second while the hero is on screen
  * and the tab is shown, once its shaders are built; with reduced motion it draws one still frame.
  * Until then, and without WebGL, the CSS layers underneath show. `data-backdrop` on the hero says
- * which one shows (`webgl` or `css`) and `data-backdrop-state` whether it moves (`running`,
- * `idle` or `still`).
+ * which one shows (`webgl` or `css`) and `data-backdrop-state` whether it moves (`running`;
+ * `idle` while off screen, in a hidden tab or paused; `still` with reduced motion).
  */
-export function startBackdrop({ hero, canvas, sources, webgl = true }: BackdropParts): () => void {
+export function startBackdrop({
+  hero,
+  canvas,
+  sources,
+  webgl = true,
+  pause = browserPause(),
+}: BackdropParts): () => void {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
   let renderer: Renderer | null = null
@@ -314,7 +323,8 @@ export function startBackdrop({ hero, canvas, sources, webgl = true }: BackdropP
   }
 
   const sync = () => {
-    const state = reduced.matches ? 'still' : visible && !document.hidden ? 'running' : 'idle'
+    const moving = visible && !document.hidden && !pause.paused
+    const state = reduced.matches ? 'still' : moving ? 'running' : 'idle'
     hero.dataset['backdropState'] = state
     const animate = state === 'running' && renderer !== null
     if (animate && !frame) {
@@ -371,6 +381,7 @@ export function startBackdrop({ hero, canvas, sources, webgl = true }: BackdropP
   document.addEventListener('visibilitychange', sync)
   reduced.addEventListener('change', sync)
   dark.addEventListener('change', repaint)
+  const stopPause = pause.subscribe(sync)
   sync()
 
   return () => {
@@ -383,5 +394,6 @@ export function startBackdrop({ hero, canvas, sources, webgl = true }: BackdropP
     document.removeEventListener('visibilitychange', sync)
     reduced.removeEventListener('change', sync)
     dark.removeEventListener('change', repaint)
+    stopPause()
   }
 }

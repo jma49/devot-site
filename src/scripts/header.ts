@@ -1,3 +1,5 @@
+import { bindPauseToggles, browserPause } from './pause.ts'
+
 export interface SectionBox {
   id: string
   /** Pixels from the top of the viewport. */
@@ -9,9 +11,12 @@ export interface SectionBox {
 export const READING_LINE = 0.4
 /** The pill gives way once the closing section's top rises above this share of the viewport. */
 export const CLOSING_LINE = 1
+/** The corner pill steps aside while it would cover this share of a clip's visible part. */
+export const PILL_COVER_LIMIT = 0.05
 /** The bar takes on its shadow after this much scroll. */
 const SCROLLED_AT = 8
 const WIDE_QUERY = '(min-width: 800px)'
+const SETTLE_MS = 800
 
 /** The id of the section that crosses the reading line, or null when none does. */
 export function activeSection(sections: SectionBox[], viewport: number): string | null {
@@ -36,6 +41,44 @@ export function pillShown({
   return ctaBottom < 0 && (closingTop === null || closingTop > viewport * CLOSING_LINE)
 }
 
+export interface Box {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+/** The part every box shares, or null when they do not all overlap. */
+export function intersect(...boxes: Box[]): Box | null {
+  const [first, ...rest] = boxes
+  if (!first) return null
+  const box = rest.reduce(
+    (shared, next) => ({
+      left: Math.max(shared.left, next.left),
+      top: Math.max(shared.top, next.top),
+      right: Math.min(shared.right, next.right),
+      bottom: Math.min(shared.bottom, next.bottom),
+    }),
+    first,
+  )
+  return box.right > box.left && box.bottom > box.top ? box : null
+}
+
+const area = ({ left, top, right, bottom }: Box) => (right - left) * (bottom - top)
+
+/** The largest share of any clip's on-screen part that `pill` covers. */
+export function coveredShare(pill: Box, clips: Box[], view: Box): number {
+  return clips.reduce((largest, clip) => {
+    const shown = intersect(clip, view)
+    const covered = shown && intersect(shown, pill)
+    return covered ? Math.max(largest, area(covered) / area(shown)) : largest
+  }, 0)
+}
+
+export function clearOfClips(pill: Box, clips: Box[], view: Box): boolean {
+  return coveredShare(pill, clips, view) < PILL_COVER_LIMIT
+}
+
 /** The index focus moves to on Tab (or Shift+Tab) in a trap of `count` items. */
 export function trapIndex(count: number, current: number, backwards: boolean): number {
   if (current < 0) return backwards ? count - 1 : 0
@@ -45,7 +88,8 @@ export function trapIndex(count: number, current: number, backwards: boolean): n
 const FOCUSABLE = 'a[href], button:not([disabled])'
 
 /**
- * Starts the site header: the scrolled look of the bar, the section indicator, the download pill
+ * Starts the site header: the scrolled look of the bar, the section indicator, the pause toggle,
+ * the download pill (on wide screens a corner pill that steps aside while it would cover a clip)
  * and, on narrow screens, the menu (focus kept inside, page scroll locked, Escape closes).
  */
 export function startHeader(root: Document = document): void {
@@ -68,7 +112,51 @@ export function startHeader(root: Document = document): void {
     pill,
   ].filter((element): element is HTMLElement => element !== null)
   const wide = window.matchMedia(WIDE_QUERY)
+  const clips = [...root.querySelectorAll<HTMLElement>('video[data-clip]')]
   let open = false
+  let measured = false
+  let inset = { right: 0, bottom: 0 }
+  // Each clip with the ancestors that clip it: what shows of it is what they all share.
+  let clipChains: HTMLElement[][] = []
+
+  const measure = () => {
+    const style = getComputedStyle(pill)
+    inset = { right: parseFloat(style.right), bottom: parseFloat(style.bottom) }
+    clipChains = clips.map((clip) => {
+      const chain = [clip]
+      for (let at = clip.parentElement; at && at !== root.body; at = at.parentElement) {
+        const { overflowX, overflowY } = getComputedStyle(at)
+        if (overflowX !== 'visible' || overflowY !== 'visible') chain.push(at)
+      }
+      return chain
+    })
+    measured = true
+  }
+
+  /** Whether the corner pill, where it rests, would cover too much of a clip on screen. */
+  const coversClip = () => {
+    if (!measured) measure()
+    const view = {
+      left: 0,
+      top: 0,
+      right: root.documentElement.clientWidth,
+      bottom: root.documentElement.clientHeight,
+    }
+    const right = view.right - inset.right
+    const bottom = view.bottom - inset.bottom
+    const resting = {
+      left: right - pill.offsetWidth,
+      top: bottom - pill.offsetHeight,
+      right,
+      bottom,
+    }
+    const shown = clipChains.flatMap(([clip, ...clippers]) => {
+      const box = clip && intersect(clip.getBoundingClientRect(), view)
+      const visible = box && intersect(box, ...clippers.map((at) => at.getBoundingClientRect()))
+      return visible ? [visible] : []
+    })
+    return !clearOfClips(resting, shown, view)
+  }
 
   // Every measurement comes before the first write, so a frame lays out once.
   const update = () => {
@@ -80,25 +168,33 @@ export function startHeader(root: Document = document): void {
     })
     const ctaBottom = heroCta?.getBoundingClientRect().bottom
     const closingTop = closing?.getBoundingClientRect().top ?? null
+    const due = !open && ctaBottom !== undefined && pillShown({ ctaBottom, closingTop, viewport })
+    const aside = due && wide.matches && coversClip()
 
     const active = activeSection(sections, viewport)
-    const shown = !open && ctaBottom !== undefined && pillShown({ ctaBottom, closingTop, viewport })
     header.toggleAttribute('data-scrolled', scrolled)
-    pill.toggleAttribute('data-shown', shown)
+    pill.toggleAttribute('data-shown', due && !aside)
+    pill.toggleAttribute('data-aside', aside)
     for (const link of links) {
-      if (link.hash === `#${active}`) link.setAttribute('aria-current', 'true')
+      const current = link.hash === `#${active}`
+      if (current === link.hasAttribute('aria-current')) continue
+      if (current) link.setAttribute('aria-current', 'true')
       else link.removeAttribute('aria-current')
     }
   }
 
-  let queued = false
+  // Clips keep moving for a moment after the scroll stops (eased drift, reveals), so the pill
+  // checks again on every frame until they have settled.
+  let frame = 0
+  let settleUntil = 0
+  const tick = (now: number) => {
+    frame = 0
+    update()
+    if (now < settleUntil) frame = requestAnimationFrame(tick)
+  }
   const schedule = () => {
-    if (queued) return
-    queued = true
-    requestAnimationFrame(() => {
-      queued = false
-      update()
-    })
+    settleUntil = performance.now() + SETTLE_MS
+    if (!frame) frame = requestAnimationFrame(tick)
   }
 
   const focusables = () =>
@@ -144,7 +240,17 @@ export function startHeader(root: Document = document): void {
   wide.addEventListener('change', () => {
     if (wide.matches) setOpen(false)
   })
+  bindPauseToggles(
+    header.querySelectorAll<HTMLButtonElement>('[data-motion-toggle]'),
+    browserPause(),
+  )
   window.addEventListener('scroll', schedule, { passive: true })
-  window.addEventListener('resize', schedule)
+  window.addEventListener('resize', () => {
+    measured = false
+    schedule()
+  })
+  root.addEventListener('transitionend', (event) => {
+    if ((event.target as Element).matches('[data-reveal]')) schedule()
+  })
   update()
 }

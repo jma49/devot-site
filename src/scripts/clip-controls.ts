@@ -1,20 +1,25 @@
-import { browserEnv, REDUCED_MOTION_QUERY, type DomEnv } from '../lib/dom-env.ts'
+import {
+  browserEnv,
+  REDUCED_MOTION_QUERY,
+  type DomEnv,
+  type MediaQueryLike,
+} from '../lib/dom-env.ts'
 
 const controlled = new WeakSet<HTMLVideoElement>()
 
 /**
- * With reduced motion, the clips stay on their posters (src/scripts/clips.ts); this gives each
- * `video[data-clip]` a play button from `template[data-clip-control]`, placed in the clip's
- * `[data-clip-dock]` or its parent. A press plays the clip once through. One clip plays at a time,
- * and only while it is on screen and the tab is shown. Without the preference nothing is added.
+ * While the clips hold still (src/scripts/clips.ts), this gives each `video[data-clip]` a play
+ * button from `template[data-clip-control]`, placed in the clip's `[data-clip-dock]` or its parent.
+ * A press plays the clip once through. One clip plays at a time, and only while it is on screen and
+ * the tab is shown. `still` says when: by default, while reduced motion is on.
  */
 export function initClipControls(
   root: ParentNode = document,
   env: DomEnv = browserEnv(),
+  still: MediaQueryLike = env.matchMedia(REDUCED_MOTION_QUERY),
 ): () => void {
   const template = root.querySelector<HTMLTemplateElement>('template[data-clip-control]')
   if (template === null) return () => {}
-  const reduced = env.matchMedia(REDUCED_MOTION_QUERY)
   let unmount: (() => void) | null = null
 
   const mount = () => {
@@ -85,16 +90,16 @@ export function initClipControls(
   }
 
   const sync = () => {
-    if (reduced.matches && unmount === null) unmount = mount()
-    if (!reduced.matches && unmount !== null) {
+    if (still.matches && unmount === null) unmount = mount()
+    if (!still.matches && unmount !== null) {
       unmount()
       unmount = null
     }
   }
   sync()
-  reduced.addEventListener('change', sync)
+  still.addEventListener('change', sync)
   return () => {
-    reduced.removeEventListener('change', sync)
+    still.removeEventListener('change', sync)
     unmount?.()
     unmount = null
   }

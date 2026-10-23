@@ -19,6 +19,7 @@ export const chromeCopy = {
     home: 'Devot home',
     navLabel: 'Main',
     menu: 'Menu',
+    pause: 'Pause animations',
     nav: {
       write: 'Features',
       cards: 'More features',
