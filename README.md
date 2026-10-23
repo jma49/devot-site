@@ -13,22 +13,23 @@ A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, 
 
 ## Commands
 
-| Command                   | What it does                                                               |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `pnpm dev`                | Development server                                                         |
-| `pnpm build`              | Static build into `dist/`                                                  |
-| `pnpm preview`            | Serves `dist/` (without the headers in `public/_headers`)                  |
-| `pnpm format`             | Formats with oxfmt (`pnpm format:check` only checks)                       |
-| `pnpm lint`               | oxlint                                                                     |
-| `pnpm typecheck`          | `astro check`: `.astro` and `.ts` files                                    |
-| `pnpm test`               | Vitest unit and policy tests                                               |
-| `pnpm test:dist`          | Vitest checks of the built site; run `pnpm build` first                    |
-| `pnpm test:e2e`           | Playwright smoke tests in Chromium and WebKit against `dist/`; build first |
-| `pnpm tokens`             | Regenerates the files copied from Devot at the pinned commit               |
-| `pnpm tokens:check`       | Fails with `E_TOKENS_STALE` when the committed copies differ from the pin  |
-| `pnpm tokens:update`      | Moves the pin to Devot's current `main` and regenerates                    |
-| `pnpm media:placeholders` | Writes the missing placeholder posters and clips (needs ffmpeg)            |
-| `pnpm check`              | Everything CI runs, in order                                               |
+| Command              | What it does                                                               |
+| -------------------- | -------------------------------------------------------------------------- |
+| `pnpm dev`           | Development server                                                         |
+| `pnpm build`         | Static build into `dist/`                                                  |
+| `pnpm preview`       | Serves `dist/` (without the headers in `public/_headers`)                  |
+| `pnpm format`        | Formats with oxfmt (`pnpm format:check` only checks)                       |
+| `pnpm lint`          | oxlint                                                                     |
+| `pnpm typecheck`     | `astro check`: `.astro` and `.ts` files                                    |
+| `pnpm test`          | Vitest unit and policy tests                                               |
+| `pnpm test:dist`     | Vitest checks of the built site; run `pnpm build` first                    |
+| `pnpm test:e2e`      | Playwright smoke tests in Chromium and WebKit against `dist/`; build first |
+| `pnpm tokens`        | Regenerates the files copied from Devot at the pinned commit               |
+| `pnpm tokens:check`  | Fails with `E_TOKENS_STALE` when the committed copies differ from the pin  |
+| `pnpm tokens:update` | Moves the pin to Devot's current `main` and regenerates                    |
+| `pnpm media:capture` | Records the product clips from Devot's UI-test build and encodes them      |
+| `pnpm media:encode`  | Encodes the clips again from the frames already recorded                   |
+| `pnpm check`         | Everything CI runs, in order                                               |
 
 Playwright needs its browsers once: `pnpm exec playwright install chromium webkit`.
 
@@ -70,11 +71,20 @@ GSAP 3.15.0 is a dependency (exact version) and Astro bundles it from `node_modu
 
 ## Product media
 
-`src/media.ts` lists every slot: `hero`, `write`, `organise`, `find` and `card-1` to `card-6`, each with width and height in pixels (2x of the size it is shown at), duration in seconds, alt text (from `src/i18n/en/media.ts`), poster path and whether it is a clip or a still. `public/media/<slot>/` holds `<slot>.mp4`, `<slot>.webm` and `<slot>-poster.webp`; `tests/unit/media.test.ts` checks the files against the manifest (WebP poster at the stated size under 80 KB, clip files under 700 KB each, the hero under 2 MB for both).
+`src/media.ts` lists every slot: `hero`, `write`, `organise`, `find` and `card-1` to `card-6`, each with width and height in pixels (about twice the size it is shown at), loop length in seconds, the window edges the clip shows (`edges`: round and outline those, fade out the other sides), alt text (from `src/i18n/en/media.ts`), poster path and whether it is a clip or a still. The measured values come from `src/media.json`, which the capture writes. `public/media/<slot>/` holds `<slot>.mp4` (H.264), `<slot>.webm` (AV1) and `<slot>-poster.webp` (the first frame); `tests/unit/media.test.ts` checks the files against the manifest (WebP poster at the stated size under 80 KB, clip files under 700 KB each, the hero under 2 MB for both) and `tests/unit/media-files.test.ts` each MP4's size and length.
 
 `src/components/Clip.astro` renders a slot, `<Clip name="card-1" class="…" />`: a `video` with `width`, `height`, `poster`, `muted loop playsinline`, `preload="none"` and `data-clip`, and its files in `source data-src`. There is no `autoplay` attribute and no `src`, so the browser requests nothing but the poster. `src/scripts/clips.ts` gives the sources their `src` when a clip comes within 600 px of the viewport, plays it while any part of it is visible and the tab is shown, and pauses it otherwise; with reduced motion nothing loads or plays and the poster stays. A slot with `clip: false` renders its poster as an image instead.
 
-Until real captures land, `pnpm media:placeholders` writes neutral posters and 2-second clips from Devot's tokens at each slot's size, and skips files that exist (`--force` replaces them). It needs ffmpeg with libx264 and libvpx-vp9.
+### Recording the clips
+
+The clips are the real app, recorded from Devot's UI-test build: its renderer in Playwright's WebKit with the notes kept in the page and Tauri mocked as in Devot's own UI tests. `pnpm media:capture [slot ...]` (every slot by default) does all of it:
+
+1. Clones Devot at the commit in `devot.pin.json` into `.cache/media/devot/<sha>` (untracked; `DEVOT_GIT` names another source, such as a local checkout) and installs its dependencies, once per commit.
+2. Starts the UI-test build's Vite server on port 5391 (`MEDIA_PORT`; a server already there fails the run unless `MEDIA_REUSE_SERVER=1`) and waits while the machine's one-minute load is 24 or more, for at most 15 minutes.
+3. For each slot, opens a 2x WebKit page in the Tide theme (light), fills it with the demo library in `scripts/media/library.ts` through the app's own services, and plays the slot's scene from `scripts/media/scenes.ts`: a soft pointer glides, clicks and hides while typing, and the app's own transitions run on the clip's clock. Each frame is a 2x screenshot of the part of the window the slot shows, with the traffic lights the system would draw (`scripts/media/overlay.ts`); SF Symbols are drawn on this Mac (`scripts/media/symbols/render-symbol.swift`, so recording needs macOS with Xcode's command line tools).
+4. Encodes the frames (`.cache/media/frames/<slot>/`) with ffmpeg: H.264 MP4 and AV1 WebM, raising the CRF until each file fits its budget, the last half second cross-fading into the first frame when a clip does not end where it starts; then writes the first frame as the WebP poster and the measured size, length and edges to `src/media.json`.
+
+`pnpm media:encode [slot ...]` repeats step 4 from the frames already recorded. It needs ffmpeg with libx264 and libsvtav1 (`FFMPEG` names another binary). Other settings: `MEDIA_CACHE` (the cache folder), `MEDIA_FPS` (30) and `MEDIA_TZ` (the page's time zone; by default one where it is late morning, so the times in the notes look like a working day). Logs go to `.cache/media/logs/media.log`. After the app's UI changes, move the pin (`pnpm tokens:update`), record again and look at the clips before committing them.
 
 ## Security headers
 
