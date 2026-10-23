@@ -19,7 +19,6 @@ export function tags(html: string, name?: string): Tag[] {
     .filter((tag) => name === undefined || tag.name === name)
 }
 
-/** `<script>` elements with their attributes and body. */
 export function scripts(html: string): { attrs: string; body: string }[] {
   return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].map(([, attrs, body]) => ({
     attrs: attrs as string,

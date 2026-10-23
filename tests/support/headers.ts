@@ -40,7 +40,6 @@ export function siteCsp(text = readRepoFile('public/_headers')): string {
   return values[0] as string
 }
 
-/** A policy as a map from directive to its sources. */
 export function directives(csp: string): Map<string, string[]> {
   return new Map(
     csp

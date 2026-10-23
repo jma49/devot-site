@@ -1,4 +1,3 @@
-# Local git hooks. CI runs the same checks and more.
 pre-commit:
   parallel: true
   jobs:
