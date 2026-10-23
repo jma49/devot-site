@@ -325,16 +325,13 @@ Plain Markdown, fast search and a library that lives on your own machine.
     tags: ['personal'],
     updated: 5 * D,
     created: 30 * D,
-    body: `Serves 6. Start the evening before.
-
-| Ingredient | Amount |
+    body: `| Ingredient | Amount |
 | :--- | ---: |
 | Bread flour | 500 g |
 | Water | 400 g |
-| Salt | 10 g |
-| Instant yeast | 4 g |
 | Olive oil | 60 ml |
-| Rosemary | 3 sprigs |
+
+Serves 6. Start the evening before. Salt, yeast and rosemary to taste.
 
 1. Mix everything except the oil and rest for 30 minutes.
 2. Fold four times, 20 minutes apart, then chill overnight.
@@ -437,7 +434,7 @@ Picked the dynamic one: it forgives the room.
     key: 'newsletter',
     title: 'Newsletter ideas',
     status: 'dropped',
-    tags: ['personal'],
+    tags: [],
     updated: 20 * D,
     created: 50 * D,
     body: `- A monthly note about how the product is made

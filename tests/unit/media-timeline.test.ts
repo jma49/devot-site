@@ -149,4 +149,11 @@ describe('CursorScript', () => {
     script.move({ x: 0, y: 0 }, 0.6)
     expect(script.time).toBeCloseTo(1)
   })
+
+  it('takes the poster where the script marks it, or at the start when it does not', () => {
+    const { actions } = recorder()
+    const marked = new CursorScript(start, actions).wait(0.4).poster().wait(1).build()
+    expect(marked.posterTime).toBeCloseTo(0.4)
+    expect(new CursorScript(start, actions).wait(1).build().posterTime).toBe(0)
+  })
 })

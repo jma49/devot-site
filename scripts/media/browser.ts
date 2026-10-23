@@ -10,8 +10,7 @@ import type {
   expect as Expect,
   webkit as WebKit,
 } from '@playwright/test'
-
-export type Scheme = 'light' | 'dark'
+import type { Scheme } from '../../src/media.ts'
 
 /** SF Symbols drawn on this Mac the way the app's native `symbol_png` command draws them. */
 export class SymbolRenderer {

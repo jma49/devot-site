@@ -1,8 +1,10 @@
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 import {
+  cutFrame,
   fitPoster,
   frameFile,
+  posterFrame,
   videoArgs,
   withinBudget,
   type ClipInput,
@@ -46,6 +48,23 @@ describe('videoArgs', () => {
     expect(after(args, '-filter_complex')).toContain('scale=1720:1080:flags=lanczos')
     expect(after(args, '-colorspace')).toBe('bt709')
     expect(after(args, '-pix_fmt')).toBe('yuv420p')
+  })
+
+  it('cuts a part of the frames before scaling, for the closer phone clip', () => {
+    const graph = after(
+      videoArgs({ ...clip, crop: { x: 0, y: 40, width: 800, height: 500 } }, 'av1', 40, 'x.webm'),
+      '-filter_complex',
+    )!
+    expect(graph).toContain('crop=800:500:0:40,scale=1720:1080')
+  })
+
+  it('fills the frame outside a part with one colour, keeping its size', () => {
+    const fill = { rect: { x: 0, y: 0, width: 1200, height: 900 }, color: '1a2b3c' }
+    const graph = after(videoArgs({ ...clip, fill }, 'h264', 26, 'x.mp4'), '-filter_complex')!
+    expect(graph).toContain(
+      'drawbox=x=1200:y=0:w=iw-1200:h=ih:color=0x1a2b3c:t=fill,' +
+        'drawbox=x=0:y=900:w=iw:h=ih-900:color=0x1a2b3c:t=fill,scale=1720:1080',
+    )
   })
 
   it('uses H.264 with the index first for MP4, and AV1 or VP9 for WebM', () => {
@@ -105,6 +124,41 @@ describe('fitPoster', () => {
     await expect(fitPoster(png, { width: 64, height: 64, maxBytes: 10 })).rejects.toThrow(
       /^E_MEDIA_POSTER/,
     )
+  })
+})
+
+describe('posterFrame', () => {
+  it('takes the frame at the poster time, within the clip', () => {
+    expect(posterFrame({ count: 240, fps: 30 }, 3.2)).toBe(96)
+    expect(posterFrame({ count: 240, fps: 30 }, 0)).toBe(0)
+    expect(posterFrame({ count: 240, fps: 30 }, 9)).toBe(239)
+  })
+})
+
+describe('cutFrame', () => {
+  const frame = () =>
+    sharp({ create: { width: 40, height: 20, channels: 3, background: { r: 200, g: 10, b: 10 } } })
+      .png()
+      .toBuffer()
+
+  it('cuts a part of a frame', async () => {
+    const part = await cutFrame(await frame(), { crop: { x: 4, y: 2, width: 10, height: 8 } })
+    const meta = await sharp(part).metadata()
+    expect([meta.width, meta.height]).toEqual([10, 8])
+  })
+
+  it('fills the rest of a frame with the colour, as the video does', async () => {
+    const filled = await cutFrame(await frame(), {
+      fill: { rect: { x: 0, y: 0, width: 20, height: 10 }, color: '0a141e' },
+    })
+    const { data, info } = await sharp(filled).raw().toBuffer({ resolveWithObject: true })
+    const at = (x: number, y: number) => [
+      ...data.subarray((y * info.width + x) * 3, (y * info.width + x) * 3 + 3),
+    ]
+    expect([info.width, info.height]).toEqual([40, 20])
+    expect(at(5, 5)).toEqual([200, 10, 10])
+    expect(at(30, 5)).toEqual([10, 20, 30])
+    expect(at(5, 15)).toEqual([10, 20, 30])
   })
 })
 

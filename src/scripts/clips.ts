@@ -9,9 +9,10 @@ export interface ClipOptions {
 
 /**
  * Plays each `video[data-clip]` only while it is in view and the tab is visible, and pauses it
- * otherwise. Its `<source data-src>` files are not requested until the clip is near the viewport.
- * With reduced motion nothing loads or plays, so the poster stays. Returns a function that stops
- * it all.
+ * otherwise. Its `<source data-src>` files are not requested until the clip is near the viewport,
+ * and the browser then picks the one whose `media` matches (scheme, width); when that changes, a
+ * loaded clip loads again so it follows. With reduced motion nothing loads or plays, so the poster
+ * stays. Returns a function that stops it all.
  */
 export function initClips(
   root: ParentNode = document,
@@ -23,6 +24,15 @@ export function initClips(
   const inView = new Set<HTMLVideoElement>()
   const loaded = new WeakSet<HTMLVideoElement>()
   const reduced = env.matchMedia(REDUCED_MOTION_QUERY)
+  const variants = [
+    ...new Set(
+      videos.flatMap((video) =>
+        [...video.querySelectorAll<HTMLSourceElement>('source')].map((source) => source.media),
+      ),
+    ),
+  ]
+    .filter(Boolean)
+    .map((media) => env.matchMedia(media))
   let observers: ObserverLike[] = []
 
   const load = (video: HTMLVideoElement) => {
@@ -80,12 +90,20 @@ export function initClips(
 
   const onReducedMotion = (event: { matches: boolean }) => (event.matches ? stop() : start())
   const stopVisibility = env.onPageVisibility(() => inView.forEach(sync))
+  const reload = () => {
+    for (const video of videos.filter((each) => loaded.has(each))) {
+      video.load()
+      sync(video)
+    }
+  }
 
   if (!reduced.matches) start()
   reduced.addEventListener('change', onReducedMotion)
+  variants.forEach((query) => query.addEventListener('change', reload))
   return () => {
     stop()
     stopVisibility()
     reduced.removeEventListener('change', onReducedMotion)
+    variants.forEach((query) => query.removeEventListener('change', reload))
   }
 }
