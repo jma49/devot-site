@@ -2,6 +2,7 @@ import { AxeBuilder } from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
 import { media, type SlotName } from '../../src/media.ts'
 import { openFixture } from '../support/browser-fixture.ts'
+import { animationsDone, frames, placeEdge, scrollToY, steady } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 // The motion helpers, run as modules in Chromium and WebKit under the site's own CSP.
@@ -50,6 +51,24 @@ test.describe('revealOnScroll', () => {
     expect(await variable(page, '#b', '--site-reveal-delay')).toBe('50ms')
     expect(await variable(page, '#c', '--site-reveal-delay')).toBe('200ms')
     expect(await opacity(page, '#far')).toBe(0)
+  })
+
+  test('hides at once and eases only the reveal, so late styles never fade an element out', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await openFixture(page, fixture)
+    const durations = (id: string) =>
+      page
+        .locator(`#${id}`)
+        .evaluate((element) => getComputedStyle(element).transitionDuration.split(', '))
+
+    expect(await durations('far')).toEqual(['0s', '0s'])
+    await scrollToElement(page, '#a', -300)
+    await expect(page.locator('#a')).toHaveAttribute('data-revealed', '')
+
+    expect(await durations('a')).toEqual(['0.4s', '0.4s'])
+    expect(await durations('b')).toEqual(['0.7s', '0.7s'])
   })
 
   test('reveals once: scrolling back leaves the element shown', async ({ page }) => {
@@ -114,65 +133,88 @@ test.describe('scroll-linked CSS', () => {
   })
 })
 
-test.describe('scrollEffects', () => {
-  const fixture = (when = '') => ({
-    css: '.spacer { height: 1600px } .box { height: 100px; width: 100px }',
+test.describe('scrollEffects and scrubScroll', () => {
+  const fixture = (when = '', lag = 0.45) => ({
+    css: '.spacer { height: 1600px } .box { height: 100px; width: 100px; transform: translateX(calc(var(--x, 0) * 1px)) }',
     body: '<div class="spacer"></div><div class="box" id="box"></div><div class="spacer"></div>',
-    script: `import { gsap, ScrollTrigger, scrollEffects } from '/__src/lib/scroll.ts'
-      window.sceneEffects = {
-        stop: scrollEffects(() => {
-          gsap.to('#box', { x: 300, ease: 'none', scrollTrigger: { trigger: '#box', start: 'top bottom', end: 'bottom top', scrub: true } })
-        }, ${when ? `{ when: '${when}' }` : ''}),
-        triggers: () => ScrollTrigger.getAll().length,
-      }`,
+    script: `import { scrollEffects, scrubScroll } from '/__src/lib/scroll.ts'
+      const box = document.getElementById('box')
+      window.scene = { setups: 0, active: 0 }
+      window.scene.stop = scrollEffects(() => {
+        window.scene.setups += 1
+        window.scene.active += 1
+        const stop = scrubScroll((y) => box.style.setProperty('--x', String(Math.min(y, 1200) / 4)), { lag: ${lag} })
+        return () => {
+          stop()
+          window.scene.active -= 1
+          box.style.removeProperty('--x')
+        }
+      }${when ? `, { when: '${when}' }` : ''})`,
   })
-  type Fx = { sceneEffects: { stop: () => void; triggers: () => number } }
-  const triggers = (page: Page) =>
-    page.evaluate(() => (window as unknown as Fx).sceneEffects.triggers())
+  type Scene = { scene: { setups: number; active: number; stop: () => void } }
+  const scene = (page: Page) =>
+    page.evaluate(() => {
+      const { setups, active } = (window as unknown as Scene).scene
+      return { setups, active }
+    })
   const moved = (page: Page) =>
     page
       .locator('#box')
       .evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m41)
 
-  test('moves an element with the scroll, both ways, without breaking the CSP', async ({
+  test('eases toward the scroll, lands on it and runs both ways, without breaking the CSP', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await openFixture(page, fixture())
-    await expect.poll(() => triggers(page)).toBe(1)
+    await expect.poll(() => scene(page)).toEqual({ setups: 1, active: 1 })
 
-    await scrollToElement(page, '#box', -700)
-    await expect.poll(() => moved(page)).toBeLessThan(10)
-    await scrollToElement(page, '#box', -300)
-    await expect.poll(() => moved(page)).toBeGreaterThan(100)
-    await scrollToElement(page, '#box', -700)
+    await scrollToY(page, 800)
+    const caught = await steady(page, () => moved(page))
+    expect(caught).toBe(200)
+    await scrollToY(page, 0)
 
-    await expect.poll(() => moved(page)).toBeLessThan(10)
+    expect(await steady(page, () => moved(page))).toBe(0)
   })
 
-  test('creates nothing under reduced motion', async ({ page }) => {
+  test('trails a sudden jump instead of following it in one frame', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await openFixture(page, fixture('', 0.6))
+    await expect.poll(() => scene(page)).toEqual({ setups: 1, active: 1 })
+
+    await page.evaluate(() => window.scrollTo(0, 1200))
+    await frames(page, 2)
+    const early = await moved(page)
+
+    expect(early).toBeGreaterThan(0)
+    expect(early).toBeLessThan(300)
+    expect(await steady(page, () => moved(page))).toBe(300)
+  })
+
+  test('sets nothing up under reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openFixture(page, fixture())
-
     await page.waitForLoadState('load')
-    expect(await triggers(page)).toBe(0)
-    await scrollToElement(page, '#box', -300)
-    await expect(page.locator('#box')).toHaveCSS('transform', 'none')
+
+    expect(await scene(page)).toEqual({ setups: 0, active: 0 })
+    await scrollToY(page, 800)
+    await frames(page, 3)
+    expect(await moved(page)).toBe(0)
   })
 
-  test('removes the triggers and the styles it wrote when stopped', async ({ page }) => {
+  test('undoes the effect and the styles it wrote when stopped', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await openFixture(page, fixture())
-    await expect.poll(() => triggers(page)).toBe(1)
-    await scrollToElement(page, '#box', -300)
-    await expect.poll(() => moved(page)).toBeGreaterThan(100)
+    await scrollToY(page, 800)
+    expect(await steady(page, () => moved(page))).toBe(200)
 
-    await page.evaluate(() => (window as unknown as Fx).sceneEffects.stop())
+    await page.evaluate(() => (window as unknown as Scene).scene.stop())
+    expect(await moved(page)).toBe(0)
+    await scrollToY(page, 1000)
+    await frames(page, 3)
 
-    expect(await triggers(page)).toBe(0)
-    expect(
-      await page.locator('#box').evaluate((element) => (element as HTMLElement).style.transform),
-    ).toBe('')
+    expect(await scene(page)).toEqual({ setups: 1, active: 0 })
+    expect(await moved(page)).toBe(0)
   })
 
   test('follows its extra media query as the window is resized', async ({ page }) => {
@@ -180,14 +222,128 @@ test.describe('scrollEffects', () => {
     await page.setViewportSize({ width: 500, height: 700 })
     await openFixture(page, fixture('(min-width: 800px)'))
     await page.waitForLoadState('load')
-    expect(await triggers(page)).toBe(0)
+    expect(await scene(page)).toEqual({ setups: 0, active: 0 })
 
     await page.setViewportSize({ width: 1000, height: 700 })
-    await expect.poll(() => triggers(page)).toBe(1)
+    await expect.poll(() => scene(page)).toEqual({ setups: 1, active: 1 })
     await page.setViewportSize({ width: 500, height: 700 })
 
-    await expect.poll(() => triggers(page)).toBe(0)
+    await expect.poll(() => scene(page)).toEqual({ setups: 1, active: 0 })
   })
+})
+
+test.describe('scroll-linked amplitude on the page at 1440 x 900', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  /** The translation of the element's computed transform, rounded to a tenth of a pixel. */
+  const shift = (page: Page, selector: string) =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((element) => {
+        const matrix = new DOMMatrix(getComputedStyle(element).transform)
+        return { x: Math.round(matrix.m41 * 10) / 10, y: Math.round(matrix.m42 * 10) / 10 }
+      })
+  const settledShift = (page: Page, selector: string) => steady(page, () => shift(page, selector))
+  const timelines = (page: Page) => page.evaluate(() => CSS.supports('animation-timeline: view()'))
+
+  for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+    const moves = reducedMotion === 'no-preference'
+
+    test(`${moves ? 'drifts' : 'holds'} the hero copy and window over the first 400 px (${reducedMotion})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      await page.goto('/')
+      await animationsDone(page, '#hero')
+
+      const rest = {
+        copy: await settledShift(page, '.hero-copy'),
+        rig: await settledShift(page, '.hero-rig'),
+      }
+      await scrollToY(page, 200)
+      const middle = {
+        copy: await settledShift(page, '.hero-copy'),
+        rig: await settledShift(page, '.hero-rig'),
+      }
+      await scrollToY(page, 400)
+      const end = {
+        copy: await settledShift(page, '.hero-copy'),
+        rig: await settledShift(page, '.hero-rig'),
+      }
+
+      if (moves) {
+        expect(rest.copy.y - middle.copy.y).toBeGreaterThan(0)
+        expect(rest.copy.y - end.copy.y).toBeGreaterThanOrEqual(40)
+        expect(middle.rig.y - rest.rig.y).toBeGreaterThan(0)
+        expect(end.rig.y - rest.rig.y).toBeGreaterThanOrEqual(40)
+      } else {
+        expect([middle, end]).toEqual([rest, rest])
+      }
+    })
+
+    test(`${moves ? 'drifts' : 'holds'} the feature stage by 24 px or more across its well (${reducedMotion})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      await page.goto('/')
+      test.skip(moves && !(await timelines(page)), 'no view timelines')
+
+      await placeEdge(page, '.feature-well', 'top', 0.9)
+      const entering = await settledShift(page, '.feature-stage')
+      await placeEdge(page, '.feature-well', 'bottom', 0.1)
+      const leaving = await settledShift(page, '.feature-stage')
+
+      if (moves) expect(entering.y - leaving.y).toBeGreaterThanOrEqual(24)
+      else
+        expect([entering, leaving]).toEqual([
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ])
+    })
+
+    test(`${moves ? 'raises' : 'holds'} a card's media by 24 px or more as it arrives (${reducedMotion})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      await page.goto('/')
+      test.skip(moves && !(await timelines(page)), 'no view timelines')
+
+      await placeEdge(page, '.card-crop', 'top', 0.98)
+      const arriving = await settledShift(page, '.card-crop')
+      await placeEdge(page, '.card-crop', 'top', 0.3)
+      const arrived = await settledShift(page, '.card-crop')
+
+      if (moves) {
+        expect(arriving.y - arrived.y).toBeGreaterThanOrEqual(24)
+        expect(arrived.y).toBe(0)
+      } else
+        expect([arriving, arrived]).toEqual([
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ])
+    })
+
+    test(`${moves ? 'drifts' : 'holds'} the local-first rows by 5vw or more (${reducedMotion})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      await page.goto('/')
+      test.skip(moves && !(await timelines(page)), 'no view timelines')
+
+      await placeEdge(page, '.local__row', 'top', 0.9)
+      const entering = await settledShift(page, '.local__row')
+      await placeEdge(page, '.local__row', 'bottom', 0.1)
+      const leaving = await settledShift(page, '.local__row')
+
+      if (moves) expect(leaving.x - entering.x).toBeGreaterThanOrEqual(0.05 * 1440)
+      else
+        expect([entering, leaving]).toEqual([
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+        ])
+    })
+  }
 })
 
 test.describe('clips', () => {

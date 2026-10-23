@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { themeColors } from '../../src/lib/theme-color.ts'
 import { DOWNLOAD_URL } from '../../src/site.ts'
+import { animationsDone } from '../support/settle.ts'
 import { readRepoFile } from '../support/source-files.ts'
 import { expect, test } from './fixtures.ts'
 
@@ -73,26 +74,13 @@ async function violations(page: Page): Promise<string[]> {
   return scan.violations.map(({ id, nodes }) => `${id} (${nodes.length})`)
 }
 
-/** Waits for the finite animations on the page clock: text mid-fade would fail the contrast scan. */
-const entranceDone = (page: Page) =>
-  page.waitForFunction(() =>
-    document
-      .getAnimations()
-      .every(
-        (animation) =>
-          animation.timeline !== document.timeline ||
-          animation.playState !== 'running' ||
-          animation.effect?.getComputedTiming().endTime === Infinity,
-      ),
-  )
-
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`${colorScheme} appearance`, () => {
     test.use({ colorScheme })
 
     test("uses devot's page surface and passes an accessibility scan", async ({ page }) => {
       await page.goto('/')
-      await entranceDone(page)
+      await animationsDone(page)
 
       await expect(page.locator('body')).toHaveCSS('background-color', rgb(surface[colorScheme]))
       expect(await violations(page)).toEqual([])

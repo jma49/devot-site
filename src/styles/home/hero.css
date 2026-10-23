@@ -27,6 +27,7 @@
   --hero-drift-distance: -4.5rem;
   --hero-entrance-rise: 20px;
   --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 55%, transparent);
+  --hero-fallback-filter: saturate(1.3) brightness(0.93);
 
   --hero-settle: 0;
   --hero-drift: 0;
@@ -75,10 +76,12 @@
   transform: translate3d(0, calc(var(--hero-sky) * 1px), 0);
 }
 
+/* Three layers of the token's translucent stops come within a few per cent of the opaque stops
+   the shader mixes, so the canvas fades in without a shift in colour. */
 .hero-fallback {
   overflow: hidden;
-  background: var(--backdrop), var(--color-surface-editor);
-  filter: saturate(1.4);
+  background: var(--backdrop), var(--backdrop), var(--backdrop), var(--color-surface-editor);
+  filter: var(--hero-fallback-filter);
 }
 
 .hero-fallback[data-backdrop-source='dark'] {
@@ -86,6 +89,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  .hero {
+    --hero-fallback-filter: saturate(1.2) brightness(1.06);
+  }
+
   .hero-fallback[data-backdrop-source='light'] {
     display: none;
   }
@@ -128,9 +135,12 @@
   opacity: 1;
 }
 
+/* The discs stay under the canvas while it fades in, then stop drawing. */
 .hero[data-backdrop='webgl'] .hero-fallback::before,
 .hero[data-backdrop='webgl'] .hero-fallback::after {
-  display: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--site-dur-media);
+  animation-play-state: paused;
 }
 
 .hero-sheen {
@@ -274,15 +284,16 @@
   object-position: left top;
 }
 
-/* Entrance: everything starts within 100 ms and settles on Devot's curves. The window and its
-   poster paint at full opacity from the first frame, so the poster is the largest paint. */
+/* Entrance: everything starts within 100 ms and settles on Devot's curves. The backdrop, the
+   window and its poster paint at full opacity from the first frame, so the hero is never empty
+   and the poster is the largest paint. */
 @media (prefers-reduced-motion: no-preference) {
   .hero-canvas {
     transition: opacity var(--site-dur-media) var(--site-ease-text);
   }
 
-  .hero-backdrop {
-    animation: hero-fade 600ms var(--site-ease-text) both;
+  .hero-sky {
+    animation: hero-sky-in 1200ms var(--site-ease-media) both;
   }
 
   .hero-line {
@@ -338,6 +349,12 @@
 @keyframes hero-rise {
   from {
     translate: 0 var(--hero-entrance-rise);
+  }
+}
+
+@keyframes hero-sky-in {
+  from {
+    scale: 1.08;
   }
 }
 

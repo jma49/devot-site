@@ -2,9 +2,11 @@ import { AxeBuilder } from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { REPO_URL } from '../../src/site.ts'
+import { animationsDone, frames, scrollToY } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
+const tablet = { width: 768, height: 1024 }
 const phone = { width: 390, height: 844 }
 /** The motion curves the entrance may use: Devot's standard and move curves. */
 const CURVES = [
@@ -50,7 +52,7 @@ test.describe('hero at 1440 x 900', () => {
   }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await openPage(page)
-    await page.waitForTimeout(1500)
+    await animationsDone(page, '#hero')
 
     const title = await page.getByRole('heading', { level: 1 }).boundingBox()
     const cta = await heroCta(page).boundingBox()
@@ -65,6 +67,76 @@ test.describe('hero at 1440 x 900', () => {
 
     const clip = page.locator('.hero-frame video[data-clip="hero"]')
     await expect(clip).toHaveAttribute('poster', /hero-poster\.webp$/)
+  })
+
+  test('paints the backdrop at full strength with the first frame, before any script', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.addInitScript(() => {
+      const first = () => {
+        const backdrop = document.querySelector('.hero-backdrop')
+        if (!backdrop) return requestAnimationFrame(first)
+        const shown = (element: Element | null) =>
+          element !== null &&
+          Number(getComputedStyle(element).opacity) === 1 &&
+          getComputedStyle(element).visibility === 'visible'
+        const fallback = [...document.querySelectorAll('.hero-fallback')].find(
+          (element) => getComputedStyle(element).display !== 'none',
+        )
+        ;(window as unknown as { firstFrame: unknown }).firstFrame = {
+          backdrop: shown(backdrop),
+          sky: shown(document.querySelector('.hero-sky')),
+          gradient: fallback
+            ? getComputedStyle(fallback).backgroundImage.includes('gradient')
+            : false,
+        }
+      }
+      requestAnimationFrame(first)
+    })
+    await page.goto('/')
+
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { firstFrame: unknown }).firstFrame))
+      .toEqual({ backdrop: true, sky: true, gradient: true })
+    const fades = await page.evaluate(() =>
+      ['.hero-backdrop', '.hero-sky', '.hero-fallback', '.hero-window', '.hero-frame'].flatMap(
+        (selector) =>
+          [...document.querySelectorAll(selector)].flatMap((element) =>
+            element
+              .getAnimations()
+              .filter((animation) =>
+                (animation.effect as KeyframeEffect | null)
+                  ?.getKeyframes()
+                  .some((frame) => 'opacity' in frame),
+              )
+              .map(() => selector),
+          ),
+      ),
+    )
+    expect(fades).toEqual([])
+  })
+
+  test('loads the WebGL backdrop once the page has loaded, over the CSS gradient', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    const hero = page.locator('[data-hero]')
+
+    await expect(hero).toHaveAttribute('data-backdrop-state', /^(running|idle)$/)
+    // After the load event and idle time: paint timing itself can trail the drawn frame by
+    // several frames, so it makes no reliable bound.
+    const timing = await page.evaluate(() => ({
+      load: (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming)
+        .loadEventEnd,
+      chunk:
+        performance
+          .getEntriesByType('resource')
+          .find((entry) => /\/hero-backdrop\.[\w-]+\.js$/.test(entry.name))?.startTime ?? null,
+    }))
+    expect(timing.chunk).not.toBeNull()
+    expect(timing.chunk).toBeGreaterThanOrEqual(timing.load)
   })
 
   test('paints the window poster as the largest element', async ({ page, browserName }) => {
@@ -86,9 +158,7 @@ test.describe('hero at 1440 x 900', () => {
     await expect.poll(latest).toBe('VIDEO')
   })
 
-  test('enters within 100 ms on the motion curves, background first and the button last', async ({
-    page,
-  }) => {
+  test('enters within 100 ms on the motion curves and settles within 1.4 s', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
@@ -105,7 +175,7 @@ test.describe('hero at 1440 x 900', () => {
             return { delay: Number(delay), duration: Number(duration), easing }
           }) ?? []
       return {
-        backdrop: of('.hero-backdrop'),
+        backdrop: of('.hero-sky'),
         title: of('.hero-line'),
         window: of('.hero-window'),
         cta: of('.hero-cta-inner'),
@@ -115,8 +185,8 @@ test.describe('hero at 1440 x 900', () => {
     expect(all.length).toBeGreaterThanOrEqual(5)
     for (const { delay } of all) expect(delay).toBeLessThanOrEqual(100)
     const longest = (list: { duration: number }[]) => Math.max(...list.map((a) => a.duration))
-    expect(longest(timing.backdrop)).toBeGreaterThanOrEqual(500)
-    expect(longest(timing.backdrop)).toBeLessThanOrEqual(700)
+    expect(longest(timing.backdrop)).toBeGreaterThanOrEqual(1000)
+    expect(longest(timing.backdrop)).toBeLessThanOrEqual(1400)
     expect(longest(timing.title)).toBeGreaterThanOrEqual(800)
     expect(longest(timing.title)).toBeLessThanOrEqual(1000)
     expect(longest(timing.window)).toBeGreaterThanOrEqual(1000)
@@ -251,6 +321,20 @@ test.describe('hero at 390 x 844', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeInViewport()
   })
 
+  test('keeps the CSS gradient, still pausing it while the hero is off screen', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await openPage(page)
+    const hero = page.locator('[data-hero]')
+
+    await expect(hero).toHaveAttribute('data-backdrop-state', 'running')
+    await expect(hero).toHaveAttribute('data-backdrop', 'css')
+    await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '0')
+    await scrollToId(page, 'cards')
+    await expect(hero).toHaveAttribute('data-backdrop-state', 'idle')
+  })
+
   test('opens a full-screen menu that keeps focus and scroll, and closes on Escape', async ({
     page,
   }) => {
@@ -313,6 +397,64 @@ test.describe('hero at 390 x 844', () => {
   })
 })
 
+for (const viewport of [phone, tablet]) {
+  test.describe(`download pill at ${viewport.width} x ${viewport.height}`, () => {
+    test.use({ viewport })
+
+    test('stays at most 64 px tall, inside the screen, after the hero', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await page.goto('/')
+
+      await scrollToY(page, viewport.height * 1.5)
+      await expect(pill(page)).toBeVisible()
+      await animationsDone(page, '[data-download-pill]')
+      const box = await pill(page).boundingBox()
+      expect(box?.height).toBeLessThanOrEqual(64)
+      expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(viewport.height)
+      expect(box?.x).toBeGreaterThanOrEqual(0)
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width)
+    })
+
+    test('hides while the closing section is on screen and never covers its links or the footer', async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await page.goto('/')
+      const { start, end } = await page.evaluate(() => {
+        const closing = document.getElementById('download')?.getBoundingClientRect()
+        return {
+          start: window.scrollY + (closing?.top ?? 0) - innerHeight - 240,
+          end: document.documentElement.scrollHeight - innerHeight,
+        }
+      })
+      await scrollToY(page, start)
+      await expect(pill(page)).toBeVisible()
+
+      const step = Math.round(viewport.height / 3)
+      for (let y = start + step; y < end + step; y += step) {
+        await scrollToY(page, y)
+        const closingOnScreen = await page.evaluate(() => {
+          const box = document.getElementById('download')?.getBoundingClientRect()
+          return box !== undefined && box.top < innerHeight && box.bottom > 0
+        })
+        if (closingOnScreen) await expect(pill(page)).toBeHidden()
+        const covered = await page.evaluate(() => {
+          const bar = document.querySelector('[data-download-pill]')
+          if (!bar || getComputedStyle(bar).visibility === 'hidden') return []
+          const a = bar.getBoundingClientRect()
+          return [...document.querySelectorAll('#download a, body > footer a')]
+            .filter((link) => {
+              const b = link.getBoundingClientRect()
+              return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+            })
+            .map((link) => link.textContent?.trim())
+        })
+        expect(covered, `at ${y}`).toEqual([])
+      }
+    })
+  })
+}
+
 test.describe('hero with reduced motion', () => {
   test.use({ viewport: desktop })
 
@@ -334,8 +476,8 @@ test.describe('hero with reduced motion', () => {
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
 
-    await scrollTo(page, 300)
-    await page.waitForTimeout(400)
+    await scrollToY(page, 300)
+    await frames(page, 3)
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
     expect(await heroVar(page, '--hero-settle')).toBe(1)

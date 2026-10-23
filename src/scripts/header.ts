@@ -7,8 +7,8 @@ export interface SectionBox {
 
 /** Share of the viewport height at which the section being read is decided. */
 export const READING_LINE = 0.4
-/** The pill gives way once the closing call to action's top rises above this share. */
-export const CLOSING_LINE = 0.85
+/** The pill gives way once the closing section's top rises above this share of the viewport. */
+export const CLOSING_LINE = 1
 /** The bar takes on its shadow after this much scroll. */
 const SCROLLED_AT = 8
 const WIDE_QUERY = '(min-width: 800px)'
@@ -21,7 +21,8 @@ export function activeSection(sections: SectionBox[], viewport: number): string 
 
 /**
  * Whether the floating download pill shows: once the hero's call to action has scrolled out
- * above the viewport, and until the closing call to action comes into view.
+ * above the viewport, and until any of the closing section comes into view, so it never sits over
+ * the closing call to action or the footer.
  */
 export function pillShown({
   ctaBottom,

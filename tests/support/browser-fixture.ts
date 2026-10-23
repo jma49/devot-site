@@ -7,7 +7,7 @@ import { readRepoFile, REPO } from './source-files.ts'
 
 // A page that runs this repo's own modules in a real browser, under the site's policy, without a
 // page of the site in between. `/__src/…` serves a file of src/ (TypeScript with its types
-// removed), `/__pkg/…` a file of node_modules, so a fixture imports `/__src/lib/motion.ts`.
+// removed), so a fixture imports `/__src/lib/motion.ts`.
 
 const TYPES: Record<string, string> = {
   '.ts': 'text/javascript',
@@ -26,18 +26,9 @@ export interface Fixture {
   script?: string
 }
 
-export function packageUrl(specifier: string): string {
-  return specifier === 'gsap' ? '/__pkg/gsap/index.js' : `/__pkg/${specifier}.js`
-}
-
 function moduleSource(file: string): string {
   const text = readFileSync(file, 'utf8')
-  if (!file.endsWith('.ts')) return text
-  return stripTypeScriptTypes(text).replace(
-    /(\bfrom\s*)(['"])(gsap(?:\/\w+)?)\2/g,
-    (_, from: string, quote: string, specifier: string) =>
-      `${from}${quote}${packageUrl(specifier)}${quote}`,
-  )
+  return file.endsWith('.ts') ? stripTypeScriptTypes(text) : text
 }
 
 export async function openFixture(page: Page, { body, css = '', script = '' }: Fixture) {
@@ -50,7 +41,6 @@ export async function openFixture(page: Page, { body, css = '', script = '' }: F
       })
     })
   await serve('**/__src/**', join(REPO, 'src'), '/__src/')
-  await serve('**/__pkg/**', join(REPO, 'node_modules'), '/__pkg/')
   await page.route('**/__fixture/page.css', (route) =>
     route.fulfill({ contentType: 'text/css', body: css }),
   )

@@ -1,6 +1,5 @@
 import { setVar } from '../lib/motion.ts'
-import { gsap, scrollEffects } from '../lib/scroll.ts'
-import { startBackdrop } from './hero-backdrop.ts'
+import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
 export const HERO_SCROLL = {
@@ -15,7 +14,15 @@ export const HERO_SCROLL = {
   sheenEnd: 200,
   domeStart: 60,
   domeEnd: 180,
+  /** Seconds the layers trail the scroll by. */
+  lag: 0.45,
 } as const
+
+/**
+ * Phones keep the CSS gradient: building the shader holds a phone's main thread for longer than a
+ * frame, and at that size the CSS layers look the same.
+ */
+export const WEBGL_QUERY = '(min-width: 640px)'
 
 export interface HeroScroll {
   /** 0 tilted, 1 upright. */
@@ -58,15 +65,36 @@ const VARS = {
   dome: '--hero-dome',
 } as const satisfies Record<keyof HeroScroll, `--${string}`>
 
-function applyScroll(hero: HTMLElement, state: HeroScroll): void {
+function applyScroll(hero: HTMLElement, state: HeroScroll, written: Map<string, string>): void {
   for (const [key, name] of Object.entries(VARS) as [keyof HeroScroll, `--${string}`][]) {
-    setVar(hero, name, Number(state[key].toFixed(4)))
+    const value = String(Number(state[key].toFixed(4)))
+    if (written.get(name) === value) continue
+    written.set(name, value)
+    setVar(hero, name, value)
   }
 }
 
 /**
- * Starts the hero: the gradient backdrop, and the first-scroll choreography that hero.css draws
- * from the `--hero-*` variables. Scroll is smoothed a little, so uneven wheels still glide.
+ * Runs `task` once the page has loaded and painted a frame, when the main thread has a moment to
+ * spare.
+ */
+function afterFirstPaint(task: () => void): void {
+  const idle = () => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(task, { timeout: 1000 })
+    } else {
+      setTimeout(task, 0)
+    }
+  }
+  const painted = () => requestAnimationFrame(() => requestAnimationFrame(idle))
+  if (document.readyState === 'complete') painted()
+  else window.addEventListener('load', painted, { once: true })
+}
+
+/**
+ * Starts the hero: the first-scroll choreography that hero.css draws from the `--hero-*`
+ * variables, and the WebGL backdrop, which loads once the page has painted with the CSS gradient
+ * standing in for it.
  */
 export function startHero(root: ParentNode = document): void {
   const hero = root.querySelector<HTMLElement>('[data-hero]')
@@ -75,24 +103,37 @@ export function startHero(root: ParentNode = document): void {
   const dark = hero?.querySelector<HTMLElement>('[data-backdrop-source="dark"]')
   if (!hero || !canvas || !light || !dark) return
 
-  startBackdrop({ hero, canvas, sources: { light, dark } })
+  afterFirstPaint(() => {
+    import('./hero-backdrop.ts')
+      .then(({ startBackdrop }) =>
+        startBackdrop({
+          hero,
+          canvas,
+          sources: { light, dark },
+          webgl: window.matchMedia(WEBGL_QUERY).matches,
+        }),
+      )
+      .catch((error: unknown) =>
+        console.warn('W_HERO_BACKDROP_LOAD', error instanceof Error ? error.name : 'unknown'),
+      )
+  })
 
   scrollEffects(() => {
-    const progress = { y: 0 }
-    const apply = () => applyScroll(hero, heroScroll(progress.y, window.innerHeight))
-    gsap.to(progress, {
-      y: () => hero.offsetHeight,
-      ease: 'none',
-      onUpdate: apply,
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.45,
-        invalidateOnRefresh: true,
-      },
+    let height = hero.offsetHeight
+    const sizes = new ResizeObserver(() => {
+      height = hero.offsetHeight
     })
-    apply()
-    return () => Object.values(VARS).forEach((name) => hero.style.removeProperty(name))
+    sizes.observe(hero)
+    const written = new Map<string, string>()
+    const stop = scrubScroll(
+      (scroll) =>
+        applyScroll(hero, heroScroll(Math.min(scroll, height), window.innerHeight), written),
+      { lag: HERO_SCROLL.lag },
+    )
+    return () => {
+      stop()
+      sizes.disconnect()
+      Object.values(VARS).forEach((name) => hero.style.removeProperty(name))
+    }
   })
 }

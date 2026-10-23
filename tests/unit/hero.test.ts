@@ -6,7 +6,7 @@ import {
   srgbToOklab,
   tuneStop,
 } from '../../src/scripts/hero-backdrop.ts'
-import { HERO_SCROLL, heroScroll } from '../../src/scripts/hero.ts'
+import { HERO_SCROLL, heroScroll, WEBGL_QUERY } from '../../src/scripts/hero.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
 const tokensCss = readRepoFile('src/theme/tokens.css')
@@ -77,6 +77,13 @@ describe('heroScroll', () => {
   it('treats overscroll above the top as the top and a zero viewport as no progress', () => {
     expect(heroScroll(-80, viewport)).toEqual(heroScroll(0, viewport))
     expect(heroScroll(300, 0)).toMatchObject({ settle: 0, drift: 0 })
+  })
+})
+
+describe('WEBGL_QUERY', () => {
+  it('keeps phones, which get the phone layout of the hero, on the CSS gradient', () => {
+    expect(WEBGL_QUERY).toBe('(min-width: 640px)')
+    expect(readRepoFile('src/styles/home/hero.css')).toContain('@media (max-width: 639.98px)')
   })
 })
 
