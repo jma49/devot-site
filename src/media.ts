@@ -1,4 +1,5 @@
 import { en } from './i18n/en.ts'
+import measured from './media.json' with { type: 'json' }
 
 export const SLOTS = [
   'hero',
@@ -15,13 +16,18 @@ export const SLOTS = [
 
 export type SlotName = (typeof SLOTS)[number]
 
+/** A side of the Devot window. */
+export type Edge = 'top' | 'right' | 'bottom' | 'left'
+
 export interface MediaSlot {
   name: SlotName
-  /** Pixels of the encoded video and poster: 2x of the size they are shown at. */
+  /** Pixels of the encoded video and poster, about twice the size they are shown at. */
   width: number
   height: number
   /** Seconds of one loop. */
   duration: number
+  /** The window's own edges the clip shows, to round and outline; its other sides are cuts to fade out. */
+  edges: Edge[]
   alt: string
   poster: string
   /** False when the slot is a still: `Clip.astro` then renders the poster as an image. */
@@ -36,13 +42,20 @@ export function slotPaths(name: SlotName): { mp4: string; webm: string; poster: 
   return { mp4: `${base}.mp4`, webm: `${base}.webm`, poster: `${base}-poster.webp` }
 }
 
-function slot(name: SlotName, width: number, height: number, duration: number): MediaSlot {
+function slot(name: SlotName): MediaSlot {
   const paths = slotPaths(name)
+  const { width, height, duration, edges } = (
+    measured as Record<
+      SlotName,
+      { width: number; height: number; duration: number; edges: string[] }
+    >
+  )[name]
   return {
     name,
     width,
     height,
     duration,
+    edges: edges as Edge[],
     alt: en.media[name],
     poster: paths.poster,
     clip: true,
@@ -53,17 +66,8 @@ function slot(name: SlotName, width: number, height: number, duration: number): 
   }
 }
 
-// Sizes and durations are those of the placeholders; capture replaces them with measured values.
-// Cards: wide is 6 of 10 grid columns, narrow is 4.
-export const media: Record<SlotName, MediaSlot> = {
-  hero: slot('hero', 1500, 1080, 2),
-  write: slot('write', 1500, 1080, 2),
-  organise: slot('organise', 1500, 1080, 2),
-  find: slot('find', 1500, 1080, 2),
-  'card-1': slot('card-1', 1720, 1080, 2),
-  'card-2': slot('card-2', 860, 1080, 2),
-  'card-3': slot('card-3', 860, 1080, 2),
-  'card-4': slot('card-4', 1720, 1080, 2),
-  'card-5': slot('card-5', 1720, 1080, 2),
-  'card-6': slot('card-6', 860, 1080, 2),
-}
+// Sizes, loop lengths and window edges are measured by `pnpm media:capture` (scripts/media), which
+// writes them to media.json.
+export const media: Record<SlotName, MediaSlot> = Object.fromEntries(
+  SLOTS.map((name) => [name, slot(name)]),
+) as Record<SlotName, MediaSlot>
