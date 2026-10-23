@@ -1,0 +1,217 @@
+.closing {
+  --closing-fill: var(--color-activity-level-4);
+  --closing-fill-hover: color-mix(in oklab, var(--closing-fill) 84%, var(--color-text-primary));
+  --closing-title-size: clamp(2.25rem, 1.2rem + 3.6vw, 4rem);
+  --closing-hover: 300ms;
+
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-block: clamp(5.5rem, 17vh, 10rem) clamp(4.5rem, 13vh, 8.5rem);
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .closing {
+    --closing-fill: color-mix(
+      in srgb,
+      var(--color-activity-level-4) 56%,
+      var(--color-surface-window)
+    );
+    --closing-fill-hover: color-mix(
+      in srgb,
+      var(--color-activity-level-4) 62%,
+      var(--color-surface-window)
+    );
+  }
+}
+
+.closing__glow {
+  position: absolute;
+  inset: -12% 0;
+  z-index: -1;
+  background: var(--backdrop), var(--backdrop);
+  mask-image: linear-gradient(to bottom, transparent 14%, var(--site-color-page) 54%);
+  pointer-events: none;
+}
+
+.closing__glow[data-appearance-preview='dark'] {
+  display: none;
+}
+
+.closing::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: -1;
+  height: clamp(5rem, 14vh, 9rem);
+  background: linear-gradient(to bottom, transparent, var(--site-color-page));
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .closing__glow[data-appearance-preview='light'] {
+    display: none;
+  }
+
+  .closing__glow[data-appearance-preview='dark'] {
+    display: block;
+  }
+}
+
+.closing__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100% - 2 * var(--site-gutter), 46rem);
+  margin-inline: auto;
+}
+
+.closing__mark {
+  width: clamp(3.5rem, 3rem + 2vw, 4.5rem);
+  aspect-ratio: 1;
+  margin-bottom: var(--space-10);
+  background: var(--color-activity-level-4);
+  mask: url('../../assets/dove.svg') center / contain no-repeat;
+}
+
+.closing__title {
+  margin: 0;
+  font-size: var(--closing-title-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.closing__line {
+  display: block;
+}
+
+.closing__lead {
+  max-width: 32rem;
+  margin-top: var(--space-9);
+  color: var(--site-color-text-muted);
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.closing__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+}
+
+.closing__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding-inline: 2rem;
+  border-radius: var(--radius-capsule);
+  background: var(--closing-fill);
+  box-shadow:
+    0 1px 2px var(--color-shadow-popover-key),
+    0 0.5rem 1.5rem color-mix(in oklab, var(--closing-fill) 32%, transparent);
+  color: var(--color-accent-on-fill);
+  font-size: 1.0625rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  transition:
+    transform var(--closing-hover) var(--site-ease-out),
+    box-shadow var(--closing-hover) var(--site-ease-out),
+    background-color var(--closing-hover) var(--site-ease-out);
+}
+
+.closing__cta:hover {
+  background: var(--closing-fill-hover);
+  box-shadow:
+    0 2px 4px var(--color-shadow-popover-key),
+    0 0.75rem 2rem color-mix(in oklab, var(--closing-fill) 42%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .closing__cta:hover {
+    transform: scale(1.02);
+  }
+
+  .closing__cta:active {
+    transform: scale(0.99);
+  }
+}
+
+.closing__requirements {
+  color: var(--site-color-text-muted);
+  font-size: var(--site-font-size-small);
+}
+
+.closing__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-10);
+  margin: var(--space-10) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closing__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  border-radius: var(--radius-button);
+  color: var(--site-color-link);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: color var(--site-dur-quick) var(--site-ease-out);
+}
+
+.closing__links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.closing__note {
+  max-width: 36rem;
+  margin-top: var(--space-5);
+  color: var(--site-color-text-muted);
+  font-size: var(--site-font-size-small);
+  text-wrap: balance;
+}
+
+@media (max-width: 799px) {
+  .closing {
+    padding-block: clamp(4.5rem, 14vh, 6rem) clamp(3.5rem, 10vh, 5rem);
+  }
+
+  .closing__cta {
+    width: min(100%, 20rem);
+  }
+}
+
+@keyframes closing-glow {
+  from {
+    transform: translate3d(0, -8%, 0);
+  }
+  to {
+    transform: translate3d(0, 8%, 0);
+  }
+}
+
+/* Longhands only, as in privacy.css: the minifier would fold a shorthand browsers reject. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .closing__glow {
+      animation-name: closing-glow;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}

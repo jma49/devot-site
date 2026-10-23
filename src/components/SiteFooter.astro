@@ -1,36 +1,58 @@
 ---
+import '../styles/footer.css'
 import { messages } from '../i18n/index.ts'
-import { REPO_URL } from '../site.ts'
+import { FOOTER_GROUPS } from '../lib/links.ts'
 
 const t = messages()
+const copy = t.footer
+// A footer a short page shows at load would be mid-fade when a contrast scan reads it.
+const reveal = Astro.url.pathname === '/' ? '' : undefined
 ---
 
 <footer class="site-footer">
-  <p>{t.footer.copyright(new Date().getFullYear())}</p>
-  <a href={REPO_URL}>{t.footer.source}</a>
+  <div class="site-footer__top">
+    <div class="site-footer__brand" data-reveal={reveal} data-reveal-index="0">
+      <a class="site-footer__logo" href="/">
+        <span class="site-footer__mark" aria-hidden="true"></span>
+        <span>{t.siteName}</span>
+      </a>
+      <p class="site-footer__tagline">{copy.tagline}</p>
+    </div>
+    <nav class="site-footer__nav" aria-label={copy.label}>
+      {FOOTER_GROUPS.map((group, index) => {
+        const labels: Record<string, string> = copy.groups[group.id].links
+        return (
+          <div class="site-footer__group" data-reveal={reveal} data-reveal-index={index + 1}>
+            <p class="site-footer__label" id={`footer-${group.id}`}>
+              {copy.groups[group.id].title}
+            </p>
+            <ul role="list" aria-labelledby={`footer-${group.id}`}>
+              {group.links.map((link) => (
+                <li>
+                  <a href={link.href}>{labels[link.id]}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      })}
+    </nav>
+  </div>
+  <div class="site-footer__bottom">
+    <p>{copy.copyright(new Date().getFullYear())}</p>
+    <p>{copy.licence}</p>
+    <a class="site-footer__top-link" href="/#hero">
+      {copy.backToTop}
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path
+          d="M8 13V3.5M4 7.5l4-4 4 4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        ></path>
+      </svg>
+    </a>
+  </div>
 </footer>
-
-<style>
-  .site-footer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4) var(--space-9);
-    align-items: center;
-    justify-content: space-between;
-    width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
-    margin-inline: auto;
-    padding-block: var(--space-9) var(--space-10);
-    border-top: 1px solid var(--site-color-line);
-    color: var(--site-color-text-muted);
-    font-size: var(--site-font-size-small);
-  }
-
-  a {
-    border-radius: var(--radius-control);
-    color: inherit;
-  }
-
-  a:hover {
-    color: var(--site-color-text);
-  }
-</style>
