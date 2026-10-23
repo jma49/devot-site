@@ -56,12 +56,11 @@ export const privacyCopy = {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
     lead: 'Open source under the MIT licence. Get the latest release from GitHub.',
-    installNote: 'Signed ad hoc, not notarised: the first time, right-click Devot and choose Open.',
+    installNote: 'Signed ad hoc, not notarised, so macOS asks once.',
     links: {
       label: 'More ways in',
       source: 'Source on GitHub',
       releases: 'All releases',
-      install: 'Install steps',
     },
   },
   footer: {

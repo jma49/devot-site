@@ -15,6 +15,8 @@ const RETIRED_CLAIMS: { wording: RegExp; why: string }[] = [
   { wording: /^© \d{4} Devot$/, why: 'the licence names the copyright holder' },
   { wording: /^Highlights$/, why: 'a vague navigation label' },
   { wording: /^devot-mcp$/, why: 'devot-mcp runs from a checkout of the source' },
+  { wording: /\bany (version|revision)/i, why: 'versions older than a day are thinned' },
+  { wording: /\brestore (any|every)\b/i, why: 'versions older than a day are thinned' },
 ]
 
 it('retires wording that claimed more than Devot does', () => {

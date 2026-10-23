@@ -48,9 +48,9 @@ export const cardsCopy = {
       },
       'card-5': {
         label: 'Revision History',
-        title: 'Go back to any version.',
+        title: 'Go back to an earlier version.',
         body: [
-          'Devot keeps a version whenever you pause typing, shows what changed since, and lets you restore any of them.',
+          'Devot saves a version when you pause typing for a minute and keeps every one for a day, then hourly for a week, then daily.',
         ],
         keys: { glyphs: '⌥⌘Y', spoken: 'Shortcut: Option Command Y' },
       },

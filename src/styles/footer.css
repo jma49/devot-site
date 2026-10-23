@@ -4,7 +4,7 @@
   padding-block: clamp(3rem, 7vw, 4.5rem) var(--space-10);
   border-top: 1px solid var(--site-color-line);
   color: var(--site-color-text-muted);
-  font-size: var(--site-font-size-small);
+  font-size: var(--site-type-caption-size);
 }
 
 .site-footer :where(a) {
@@ -36,9 +36,9 @@
   align-items: center;
   gap: var(--space-5);
   color: var(--site-color-text);
-  font-size: var(--site-font-size-brand);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--site-tracking-brand);
+  font-size: var(--site-type-card-size);
+  font-weight: var(--site-type-card-weight);
+  letter-spacing: var(--site-type-card-tracking);
 }
 
 .site-footer__mark {
@@ -61,9 +61,9 @@
 .site-footer__label {
   margin-bottom: var(--space-6);
   color: var(--site-color-text-faint);
-  font-family: var(--font-family-mono);
-  font-size: 0.8125rem;
-  letter-spacing: 0.08em;
+  font-size: var(--site-type-label-size);
+  font-weight: var(--site-type-label-weight);
+  letter-spacing: var(--site-type-label-tracking);
   text-transform: uppercase;
 }
 

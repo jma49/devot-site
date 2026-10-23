@@ -1,0 +1,14 @@
+---
+import '../styles/install-note.css'
+import { messages } from '../i18n/index.ts'
+import { INSTALL_URL } from '../lib/links.ts'
+
+const t = messages()
+---
+
+<p class="install-note">
+  {t.install.note.map((run) =>
+    typeof run === 'string' ? run : <span class="install-note__unbroken">{run.unbroken}</span>,
+  )}{' '}
+  <a href={INSTALL_URL}>{t.install.link}</a>
+</p>

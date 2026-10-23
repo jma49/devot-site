@@ -23,6 +23,50 @@ export type DevotSource =
 
 export type FetchText = (url: string) => Promise<string>
 
+/** A download that failed; `transient` when trying again may help (a 408, 429 or 5xx). */
+export class FetchFailure extends Error {
+  readonly transient: boolean
+
+  constructor(message: string, transient: boolean) {
+    super(message)
+    this.transient = transient
+  }
+}
+
+/** How often and how patiently a failed download is tried again. */
+export interface Retry {
+  attempts: number
+  /** The wait before the second try; each later wait doubles it. */
+  firstDelayMs: number
+  wait: (ms: number) => Promise<void>
+}
+
+export const RETRY: Retry = {
+  attempts: 4,
+  firstDelayMs: 1_000,
+  wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+}
+
+export interface DevotRead {
+  files: Map<string, string>
+  /** Files whose download kept failing in a way that may pass, such as GitHub being down. */
+  unreachable: string[]
+}
+
+// No connection and timeouts reach here as other errors; only an HTTP status can rule a retry out.
+const transient = (error: unknown) => !(error instanceof FetchFailure) || error.transient
+
+async function fetchWithRetry(fetchText: FetchText, url: string, retry: Retry): Promise<string> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fetchText(url)
+    } catch (error) {
+      if (attempt >= retry.attempts || !transient(error)) throw error
+      await retry.wait(retry.firstDelayMs * 2 ** (attempt - 1))
+    }
+  }
+}
+
 /**
  * Where Devot's files come from: the checkout `DEVOT_CHECKOUT` names, else the pinned commit,
  * from the clone `pnpm media:capture` keeps under `MEDIA_CACHE` when there is one, else from GitHub.
@@ -52,25 +96,32 @@ export function describeSource(source: DevotSource): string {
   return source.commit ? `${DEVOT_REPO}@${source.commit} (${source.dir})` : source.dir
 }
 
-/** The files the check reads; a checkout may lack some, a download must not. */
+/**
+ * The files the check reads. A checkout may lack some. A download tries each file again on a
+ * failure that may pass, and lists it as unreachable after the last try; any other failure, such
+ * as a file the pinned commit lacks, is E_FACT_FETCH.
+ */
 export async function readDevotFiles(
   source: DevotSource,
   fetchText: FetchText,
-): Promise<Map<string, string>> {
+  retry: Retry = RETRY,
+): Promise<DevotRead> {
   if (source.kind === 'checkout') {
-    return new Map(
+    const files = new Map(
       DEVOT_FILES.filter((path) => existsSync(join(source.dir, path))).map((path) => [
         path,
         readFileSync(join(source.dir, path), 'utf8'),
       ]),
     )
+    return { files, unreachable: [] }
   }
-  const entries = await Promise.all(
+  const results = await Promise.allSettled(
     DEVOT_FILES.map(async (path) => {
       const url = `https://raw.githubusercontent.com/${DEVOT_REPO}/${source.commit}/${path}`
       try {
-        return [path, await fetchText(url)] as const
+        return [path, await fetchWithRetry(fetchText, url, retry)] as const
       } catch (error) {
+        if (transient(error)) return path
         throw new FactSourceError(
           'E_FACT_FETCH',
           `${url}: ${error instanceof Error ? error.message : String(error)}`,
@@ -78,5 +129,11 @@ export async function readDevotFiles(
       }
     }),
   )
-  return new Map(entries)
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed) throw failed.reason
+  const settled = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+  return {
+    files: new Map(settled.filter((entry) => typeof entry !== 'string')),
+    unreachable: settled.filter((entry) => typeof entry === 'string'),
+  }
 }
