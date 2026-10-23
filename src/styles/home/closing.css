@@ -75,8 +75,9 @@
   max-width: 32rem;
   margin-top: var(--space-9);
   color: var(--site-color-text-muted);
-  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
-  line-height: 1.5;
+  font-size: var(--site-type-lead-size);
+  font-weight: var(--site-type-lead-weight);
+  line-height: var(--site-type-lead-leading);
   text-wrap: balance;
 }
 

@@ -59,4 +59,10 @@ describe('the home page script weight', () => {
     expect(firstLoaded).not.toContain(backdrop)
     expect(imports(heroEntry ?? '', DYNAMIC_IMPORT)).toContain(backdrop)
   })
+
+  it('imports the backdrop without preloading what the page has already loaded', () => {
+    // Vite's preload helper adds a preload link for each of the chunk's dependencies, all of
+    // which the hero has loaded already; WebKit warns about every such link as unused.
+    for (const chunk of chunks) expect(readRepoFile(chunk), chunk).not.toMatch(/__vite__mapDeps/)
+  })
 })

@@ -92,7 +92,7 @@ test.describe('feature cards at 1440', () => {
 
       const heading = card.getByRole('heading')
       await expect(heading).toHaveCount(1)
-      await expect(heading).toHaveText(en.cardHeadings[slot])
+      await expect(heading).toHaveText(copy.title)
       expect(await heading.evaluate((h) => h.tagName)).toBe('H3')
       expect(
         parseFloat(await heading.evaluate((h) => getComputedStyle(h).fontSize)),

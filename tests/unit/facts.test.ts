@@ -186,10 +186,16 @@ describe('checkFacts', () => {
     }
   })
 
+  // structuredClone refuses the catalog's message functions, so they are shared, not copied.
+  const cloneCopy = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(cloneCopy)
+    if (value === null || typeof value !== 'object') return value
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneCopy(item)]))
+  }
   const withCopy = (change: (copy: Messages) => void): Messages => {
-    const copy = structuredClone({ ...en, footer: { ...en.footer, copyright: undefined } })
-    change(copy as unknown as Messages)
-    return { ...copy, footer: { ...copy.footer, copyright: en.footer.copyright } } as Messages
+    const copy = cloneCopy(en) as Messages
+    change(copy)
+    return copy
   }
 
   it('E_FACT_SHORTCUT when a card shows keys the check cannot trace to a command', () => {

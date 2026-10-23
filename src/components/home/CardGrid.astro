@@ -38,8 +38,7 @@ const themes = ['dawn', 'tide', 'sage', 'ember']
 const cards = layout.map(({ slot, shape, swatches = false }) => {
   const copy = t.cards.items[slot]
   const keys = 'keys' in copy ? copy.keys : undefined
-  const heading = t.cardHeadings[slot]
-  return { slot, shape, corner: cornerOf(slot), swatches, copy, keys, heading }
+  return { slot, shape, corner: cornerOf(slot), swatches, copy, keys, heading: copy.title }
 })
 ---
 

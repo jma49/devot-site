@@ -62,7 +62,7 @@
 }
 
 /* The hero window is cropped at the bottom, so its button sits in the title bar, after the
-   window controls: offsets are shares of the 1024 x 640 point window. */
+   window controls: offsets are shares of the window. */
 .clip-control[data-for='hero'] {
   inset-block: calc(4.06% - 0.875rem) auto;
   inset-inline-start: 8.2%;

@@ -33,6 +33,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm tokens:check
+      - run: pnpm facts
       - run: pnpm test
 
   e2e:

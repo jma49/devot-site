@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { cardsCopy, type CardText } from '../../src/i18n/en/cards.ts'
-import { demoCopy } from '../../src/i18n/en/demo.ts'
 import { media, SLOTS } from '../../src/media.ts'
 
 const { items } = cardsCopy.cards
@@ -52,15 +51,14 @@ describe('feature card copy', () => {
   })
 
   it('gives each card a short heading of its own, apart from its label', () => {
-    const headings = demoCopy.cardHeadings
-    expect(Object.keys(headings)).toEqual(Object.keys(items))
-    for (const [slot, heading] of Object.entries(headings)) {
-      const label = items[slot as keyof typeof items].label
+    for (const [slot, { label, title: heading }] of Object.entries(items)) {
       expect(words(heading).length, slot).toBeGreaterThanOrEqual(3)
       expect(words(heading).length, slot).toBeLessThanOrEqual(6)
-      expect(heading, slot).toMatch(/^[A-Z][^.]*[a-z]$/)
+      expect(heading, slot).toMatch(/^[A-Z][^.]*[a-z]\.$/)
       expect(heading.toLowerCase(), slot).not.toBe(label.toLowerCase())
     }
-    expect(new Set(Object.values(headings)).size).toBe(Object.keys(headings).length)
+    expect(new Set(Object.values(items).map(({ title }) => title)).size).toBe(
+      Object.keys(items).length,
+    )
   })
 })

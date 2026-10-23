@@ -39,13 +39,4 @@ export const demoCopy = {
   clipControl: {
     label: 'Play clip',
   },
-  /** Each feature card's heading; its uppercase label names the feature. */
-  cardHeadings: {
-    'card-1': 'Four gradients, light and dark',
-    'card-2': 'Just you and the note',
-    'card-3': 'Tables you edit from the keyboard',
-    'card-4': 'Every command, a few letters away',
-    'card-5': 'Go back to any version',
-    'card-6': 'New notes, already filed',
-  },
 }

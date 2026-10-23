@@ -86,6 +86,24 @@ const contrastOnPage = (locator: Locator) =>
     return (Math.max(text, page) + 0.05) / (Math.min(text, page) + 0.05)
   })
 
+for (const width of [390, 800, 1024, 1440]) {
+  test(`sets each line of the section heading on a line of its own at ${width}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/')
+    const lines = page.locator('.features-title-line')
+    await expect(lines).toHaveCount(en.features.titleLines.length)
+    const heights = await lines.evaluateAll((spans) =>
+      spans.map(
+        (span) =>
+          span.getBoundingClientRect().height / parseFloat(getComputedStyle(span).lineHeight),
+      ),
+    )
+    for (const height of heights) expect(height).toBeLessThan(1.5)
+  })
+}
+
 test.describe('beside the media, at 1440', () => {
   test.use({ viewport: DESKTOP })
 

@@ -6,6 +6,7 @@ const tokens = readRepoFile('src/styles/site-tokens.css')
 
 /** Stylesheets that set their type only through the scale. */
 const SCALED = [
+  'src/styles/home/hero.css',
   'src/styles/home/features.css',
   'src/styles/home/cards.css',
   'src/styles/home/privacy.css',

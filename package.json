@@ -21,11 +21,10 @@
     "media:capture": "node scripts/media/cli.ts capture",
     "media:encode": "node scripts/media/cli.ts encode",
     "facts": "node scripts/facts/cli.ts",
-    "check": "pnpm tokens:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:e2e"
+    "check": "pnpm tokens:check && pnpm facts && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:e2e"
   },
   "dependencies": {
-    "astro": "7.4.2",
-    "gsap": "3.15.0"
+    "astro": "7.4.2"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",

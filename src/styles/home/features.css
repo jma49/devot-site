@@ -239,6 +239,11 @@
     align-items: end;
   }
 
+  /* Each line is a phrase of its own; the widest runs a few pixels into the column gap. */
+  .features-title-line {
+    white-space: nowrap;
+  }
+
   .features-lead {
     padding-block-end: 0.4em;
   }
