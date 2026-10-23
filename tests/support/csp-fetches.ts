@@ -25,7 +25,7 @@ export function fetches(html: string): Fetch[] {
   const rest = html.replace(MEDIA, (block, name: string, attrs: string, inner: string) => {
     const [element] = tags(`<${name}${attrs}>`)
     const src = element?.attrs.get('src')
-    const poster = element?.attrs.get('poster')
+    const poster = element?.attrs.get('poster') ?? element?.attrs.get('data-poster')
     if (src) media.push({ directive: 'media-src', url: src })
     if (poster) media.push({ directive: 'img-src', url: poster })
     for (const child of tags(inner)) {

@@ -11,6 +11,10 @@ it('reads the poster and the deferred sources of a clip', () => {
   ])
 })
 
+it('reads a deferred poster as the poster', () => {
+  expect(builtClips(clip().replace(' poster=', ' data-poster='))[0]?.poster).toBe('/a.webp')
+})
+
 it('ignores videos that are not clips', () => {
   expect(builtClips('<video src="/a.mp4" controls></video><p>text</p>')).toEqual([])
 })

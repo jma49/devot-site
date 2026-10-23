@@ -39,3 +39,25 @@ describe.each(pages)('%s', (page) => {
     expect(blocked).toEqual([])
   })
 })
+
+it('loads only the hero poster with the home page and defers the others until they are near', () => {
+  const html = readRepoFile('dist/index.html')
+  const videos = [...html.matchAll(/<video\b[^>]*>/g)].map(([tag]) => ({
+    slot: /data-clip="([^"]+)"/.exec(tag)?.[1],
+    eager: /\sposter="/.test(tag),
+    deferred: /\sdata-poster="/.test(tag),
+  }))
+
+  expect(videos.filter(({ eager }) => eager).map(({ slot }) => slot)).toEqual(['hero'])
+  expect(videos.filter(({ deferred }) => deferred)).toHaveLength(videos.length - 1)
+})
+
+it('shows a deferred poster as an image when scripts do not run', () => {
+  const html = readRepoFile('dist/index.html')
+  const deferred = [...html.matchAll(/\sdata-poster="([^"]+)"/g)].map(([, url]) => url)
+  const fallbacks = [...html.matchAll(/<noscript>\s*<img\b[^>]*\ssrc="([^"]+)"/g)].map(
+    ([, url]) => url,
+  )
+
+  expect(fallbacks).toEqual(deferred)
+})

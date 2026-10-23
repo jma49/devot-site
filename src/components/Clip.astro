@@ -4,29 +4,50 @@ import { media, type SlotName } from '../media.ts'
 interface Props {
   name: SlotName
   class?: string
+  /**
+   * For a clip on the first screen: its poster loads with the page. Other clips get theirs from
+   * src/scripts/posters.ts as they come near, since a browser fetches every poster at once.
+   */
+  priority?: boolean
 }
 
-const { name, class: className } = Astro.props
+const { name, class: className, priority = false } = Astro.props
 const slot = media[name]
 ---
 
 {slot.clip ? (
-  <video
-    class:list={['clip', className]}
-    data-clip={name}
-    width={slot.width}
-    height={slot.height}
-    poster={slot.poster}
-    aria-label={slot.alt}
-    preload="none"
-    muted
-    loop
-    playsinline
-  >
-    {slot.sources.map(({ src, type }) => (
-      <source data-src={src} type={type} />
-    ))}
-  </video>
+  <>
+    <video
+      class:list={['clip', className]}
+      data-clip={name}
+      width={slot.width}
+      height={slot.height}
+      poster={priority ? slot.poster : undefined}
+      data-poster={priority ? undefined : slot.poster}
+      aria-label={slot.alt}
+      preload="none"
+      muted
+      loop
+      playsinline
+    >
+      {slot.sources.map(({ src, type }) => (
+        <source data-src={src} type={type} />
+      ))}
+    </video>
+    {!priority && (
+      <noscript>
+        <img
+          class:list={['clip', className]}
+          src={slot.poster}
+          width={slot.width}
+          height={slot.height}
+          alt={slot.alt}
+          loading="lazy"
+          decoding="async"
+        />
+      </noscript>
+    )}
+  </>
 ) : (
   <img
     class:list={['clip', className]}
@@ -44,5 +65,11 @@ const slot = media[name]
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  @media (scripting: none) {
+    video[data-poster] {
+      display: none;
+    }
   }
 </style>

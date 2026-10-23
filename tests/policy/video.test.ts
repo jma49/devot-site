@@ -30,3 +30,14 @@ it('finds a video that lacks an attribute or autoplays', () => {
   ])
   expect(videoProblems('<p>no video</p>')).toEqual([])
 })
+
+it('takes a deferred poster for a poster, and still wants one of the two', () => {
+  expect(
+    videoProblems(
+      '<video data-poster="/a.webp" width="2" height="1" muted loop playsinline></video>',
+    ),
+  ).toEqual([])
+  expect(videoProblems('<video width="2" height="1" muted loop playsinline></video>')).toEqual([
+    'video 1 lacks poster',
+  ])
+})

@@ -28,6 +28,7 @@ export function builtClips(html: string): BuiltClip[] {
       ...(video.attrs.get('preload') === 'none' ? [] : ['lacks preload="none"']),
       ...(sources.length === 0 ? ['has no source with data-src'] : []),
     ]
-    return [{ poster: video.attrs.get('poster'), sources, problems }]
+    const poster = video.attrs.get('poster') ?? video.attrs.get('data-poster')
+    return [{ poster, sources, problems }]
   })
 }
