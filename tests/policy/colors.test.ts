@@ -33,6 +33,23 @@ describe('colours', () => {
     expect(undefinedUses).toEqual([])
   })
 
+  it('every site variable is read somewhere in src', () => {
+    const site = customProperties(readRepoFile(SITE_TOKENS)).defined.filter((name) =>
+      name.startsWith('--site-'),
+    )
+    const read = new Set(
+      filesUnder('src')
+        .filter((file) => /\.(astro|css|ts)$/.test(file))
+        .flatMap((file) =>
+          [
+            ...readRepoFile(file).matchAll(/var\(\s*(--site-[\w-]+)|['"`](--site-[\w-]+)['"`]/g),
+          ].map(([, inCss, inScript]) => inCss ?? inScript),
+        ),
+    )
+    expect(site.length).toBeGreaterThan(20)
+    expect(site.filter((name) => !read.has(name))).toEqual([])
+  })
+
   it('the scan covers components, styles, scripts and pages but not the token files', () => {
     const checked = [
       'src/pages/index.astro',

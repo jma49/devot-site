@@ -91,4 +91,11 @@ describe('status demo copy', () => {
   it('names the play control for what it does', () => {
     expect(clipControl.label).toMatch(/^Play\b/)
   })
+
+  it('names each play control for the clip it plays', () => {
+    expect(clipControl.named('Focus Mode hiding the note list.')).toBe(
+      'Play clip: Focus Mode hiding the note list.',
+    )
+    expect(clipControl.named('A')).toMatch(new RegExp(`^${clipControl.label}\\b`))
+  })
 })

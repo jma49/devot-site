@@ -78,19 +78,23 @@ it('styles the hero poster from the built stylesheet', () => {
   for (const { poster } of media.hero.variants) expect(css).toContain(poster)
 })
 
-it('shows each deferred poster as a picture of its variants when scripts do not run', () => {
+it('shows each poster as a picture of its variants when scripts do not run', () => {
   const html = readRepoFile('dist/index.html')
   const pictures = [...html.matchAll(/<noscript>\s*<picture\b[^>]*>([\s\S]*?)<\/picture>/g)].map(
-    ([, inner = '']) => ({
-      sources: tags(inner, 'source').map(({ attrs }) => attrs.get('srcset')),
-      img: tags(inner, 'img')[0]?.attrs.get('src'),
-    }),
+    ([, inner = '']) => {
+      const img = tags(inner, 'img')[0]?.attrs
+      return {
+        sources: tags(inner, 'source').map(({ attrs }) => attrs.get('srcset')),
+        img: img?.get('src'),
+        loading: img?.get('loading'),
+      }
+    },
   )
-  const deferred = SLOTS.filter((name) => name !== 'hero')
   expect(pictures).toEqual(
-    deferred.map((name) => ({
+    SLOTS.filter((name) => media[name].clip).map((name) => ({
       sources: media[name].variants.filter((v) => v.media).map((v) => v.poster),
       img: media[name].poster,
+      loading: name === 'hero' ? 'eager' : 'lazy',
     })),
   )
 })

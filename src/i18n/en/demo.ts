@@ -6,6 +6,8 @@ export interface DemoNote {
   status: DemoStatus
 }
 
+const playClip = 'Play clip'
+
 export const demoCopy = {
   demo: {
     label: 'Try it',
@@ -37,6 +39,7 @@ export const demoCopy = {
     ] satisfies DemoNote[],
   },
   clipControl: {
-    label: 'Play clip',
+    label: playClip,
+    named: (clip: string) => `${playClip}: ${clip}`,
   },
 }

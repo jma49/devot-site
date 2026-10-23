@@ -9,9 +9,10 @@ const controlled = new WeakSet<HTMLVideoElement>()
 
 /**
  * While the clips hold still (src/scripts/clips.ts), this gives each `video[data-clip]` a play
- * button from `template[data-clip-control]`, placed in the clip's `[data-clip-dock]` or its parent.
- * A press plays the clip once through. One clip plays at a time, and only while it is on screen and
- * the tab is shown. `still` says when: by default, while reduced motion is on.
+ * button from `template[data-clip-control]`, named by the clip's `data-control-label` and placed in
+ * its `[data-clip-dock]` or its parent. A press plays the clip once through, in the files for the
+ * scheme and width in use. One clip plays at a time, and only while it is on screen and the tab is
+ * shown. `still` says when: by default, while reduced motion is on.
  */
 export function initClipControls(
   root: ParentNode = document,
@@ -24,6 +25,16 @@ export function initClipControls(
 
   const mount = () => {
     const controls = new Map<HTMLVideoElement, HTMLButtonElement>()
+    // The browser picks a source only on load(), so a clip loaded before the scheme or width
+    // changed loads again before it plays.
+    const stale = new WeakSet<HTMLVideoElement>()
+    const variants = [
+      ...new Set(
+        [...root.querySelectorAll<HTMLSourceElement>('video[data-clip] source[media]')].map(
+          ({ media }) => media,
+        ),
+      ),
+    ].map((query) => env.matchMedia(query))
     let playing: HTMLVideoElement | null = null
 
     const stop = (video: HTMLVideoElement) => {
@@ -34,13 +45,11 @@ export function initClipControls(
     const play = (video: HTMLVideoElement) => {
       if (playing !== null && playing !== video) stop(playing)
       const sources = video.querySelectorAll<HTMLSourceElement>('source[data-src]')
-      if (sources.length > 0) {
-        for (const source of sources) {
-          source.src = source.dataset['src'] ?? ''
-          source.removeAttribute('data-src')
-        }
-        video.load()
+      for (const source of sources) {
+        source.src = source.dataset['src'] ?? ''
+        source.removeAttribute('data-src')
       }
+      if (stale.delete(video) || sources.length > 0) video.load()
       video.loop = false
       playing = video
       controls.get(video)?.setAttribute('aria-pressed', 'true')
@@ -59,6 +68,11 @@ export function initClipControls(
       if (env.pageHidden() && playing !== null) stop(playing)
     })
     const onEnded = (event: Event) => stop(event.target as HTMLVideoElement)
+    const onVariant = () => {
+      for (const video of controls.keys()) stale.add(video)
+      if (playing !== null) play(playing)
+    }
+    variants.forEach((query) => query.addEventListener('change', onVariant))
 
     for (const video of root.querySelectorAll<HTMLVideoElement>('video[data-clip]')) {
       if (controlled.has(video)) continue
@@ -66,6 +80,8 @@ export function initClipControls(
       const button = template.content.firstElementChild?.cloneNode(true)
       if (!(button instanceof HTMLButtonElement)) continue
       button.dataset['for'] = video.dataset['clip'] ?? ''
+      const name = video.dataset['controlLabel']
+      if (name) button.setAttribute('aria-label', name)
       button.addEventListener('click', () =>
         button.getAttribute('aria-pressed') === 'true' ? stop(video) : play(video),
       )
@@ -79,6 +95,7 @@ export function initClipControls(
     return () => {
       observer.disconnect()
       stopVisibility()
+      variants.forEach((query) => query.removeEventListener('change', onVariant))
       for (const [video, button] of controls) {
         stop(video)
         video.loop = true

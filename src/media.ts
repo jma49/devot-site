@@ -157,8 +157,6 @@ function slot(name: SlotName): MediaSlot {
   }
 }
 
-// Sizes, loop lengths, poster times and window edges are measured by `pnpm media:capture`
-// (scripts/media), which writes them to media.json.
 export const media: Record<SlotName, MediaSlot> = Object.fromEntries(
   SLOTS.map((name) => [name, slot(name)]),
 ) as Record<SlotName, MediaSlot>

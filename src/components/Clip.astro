@@ -1,4 +1,5 @@
 ---
+import { messages } from '../i18n/index.ts'
 import { media, type SlotName } from '../media.ts'
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 const { name, class: className, priority = false } = Astro.props
 const slot = media[name]
+const t = messages()
 const posterMedia = JSON.stringify(
   slot.variants.flatMap((variant) => (variant.media ? [[variant.media, variant.poster]] : [])),
 )
@@ -34,12 +36,13 @@ const posterMedia = JSON.stringify(
         />
       ))}
     <video
-      class:list={['clip', className, { 'clip-deferred': !priority }]}
+      class:list={['clip', className]}
       data-clip={name}
       width={slot.width}
       height={slot.height}
       data-poster={slot.poster}
       data-poster-media={posterMedia}
+      data-control-label={t.clipControl.named(slot.alt)}
       aria-label={slot.alt}
       preload="none"
       muted
@@ -50,31 +53,29 @@ const posterMedia = JSON.stringify(
         <source data-src={src} type={type} media={query} />
       ))}
     </video>
-    {!priority && (
-      <noscript>
-        <picture>
-          {slot.variants
-            .filter((variant) => variant.media)
-            .map((variant) => (
-              <source
-                srcset={variant.poster}
-                media={variant.media}
-                width={variant.width}
-                height={variant.height}
-              />
-            ))}
-          <img
-            class:list={['clip', className]}
-            src={slot.poster}
-            width={slot.width}
-            height={slot.height}
-            alt={slot.alt}
-            loading="lazy"
-            decoding="async"
-          />
-        </picture>
-      </noscript>
-    )}
+    <noscript>
+      <picture>
+        {slot.variants
+          .filter((variant) => variant.media)
+          .map((variant) => (
+            <source
+              srcset={variant.poster}
+              media={variant.media}
+              width={variant.width}
+              height={variant.height}
+            />
+          ))}
+        <img
+          class:list={['clip', className]}
+          src={slot.poster}
+          width={slot.width}
+          height={slot.height}
+          alt={slot.alt}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+        />
+      </picture>
+    </noscript>
   </>
 ) : (
   <img
@@ -95,8 +96,10 @@ const posterMedia = JSON.stringify(
     height: auto;
   }
 
+  /* Without scripts nothing plays a clip, and Chromium would give the video its native controls;
+     the noscript poster stands in. */
   @media (scripting: none) {
-    .clip-deferred {
+    video.clip {
       display: none;
     }
   }

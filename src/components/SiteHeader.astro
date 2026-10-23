@@ -146,9 +146,13 @@ const sections = [
     overflow: hidden;
   }
 
-  /* Section links land below the floating bar rather than under it. */
-  :global(main [id]) {
-    scroll-margin-top: calc(var(--chrome-bar-height) + 2 * var(--chrome-inset));
+  /* Section links, and controls that focus scrolls into view, land below the floating bar rather
+     than under it. A control not yet revealed rises by the reveal offset after the scroll, so the
+     padding leaves room for that too. */
+  :global(html) {
+    scroll-padding-top: calc(
+      var(--chrome-bar-height) + 2 * var(--chrome-inset) + var(--site-reveal-rise)
+    );
   }
 
   .site-header {
