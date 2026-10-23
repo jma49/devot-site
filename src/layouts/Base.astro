@@ -7,7 +7,7 @@ import SiteFooter from '../components/SiteFooter.astro'
 import SiteHeader from '../components/SiteHeader.astro'
 import { messages, type Locale } from '../i18n/index.ts'
 import { themeColors } from '../lib/theme-color.ts'
-import { SITE_URL } from '../site.ts'
+import { OG_IMAGE, SITE_URL } from '../site.ts'
 import tokensCss from '../theme/tokens.css?raw'
 
 interface Props {
@@ -22,6 +22,7 @@ const t = messages(locale)
 const { title = t.meta.title, description = t.meta.description, noindex = false } = Astro.props
 const canonical = noindex ? undefined : new URL(Astro.url.pathname, SITE_URL).href
 const themeColor = themeColors(tokensCss)
+const image = new URL(OG_IMAGE.path, SITE_URL).href
 ---
 
 <!doctype html>
@@ -46,9 +47,16 @@ const themeColor = themeColors(tokensCss)
     <meta property="og:description" content={description} />
     {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:locale" content={t.meta.ogLocale} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+    <meta property="og:image:height" content={String(OG_IMAGE.height)} />
+    <meta property="og:image:alt" content={t.meta.imageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+    <meta name="twitter:image:alt" content={t.meta.imageAlt} />
   </head>
   <body>
     <a class="skip-link" href="#main" data-skip-link>

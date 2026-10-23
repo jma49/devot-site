@@ -29,6 +29,7 @@ A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, 
 | `pnpm tokens:update` | Moves the pin to Devot's current `main` and regenerates                    |
 | `pnpm media:capture` | Records the product clips from Devot's UI-test build and encodes them      |
 | `pnpm media:encode`  | Encodes the clips again from the frames already recorded                   |
+| `pnpm facts`         | Checks the page's claims about Devot against Devot's own files             |
 | `pnpm check`         | Everything CI runs, in order                                               |
 
 Playwright needs its browsers once: `pnpm exec playwright install chromium webkit`.
@@ -46,9 +47,21 @@ The site uses Devot's design tokens and logo mark. `devot.pin.json` holds the De
 
 Each copy starts with a `Generated from jma49/devot@<sha>. Do not edit.` header. To take newer tokens, run `pnpm tokens:update` and commit the pin with the regenerated files. Errors carry a code: `E_TOKENS_STALE`, `E_TOKENS_FETCH` (download failed), `E_TOKENS_PIN` (malformed pin file) or `E_TOKENS_ARGS` (unknown flag).
 
-The build derives the square icons from the dove, at stable unhashed paths: `/favicon.svg`, `/favicon-192.png` and `/apple-touch-icon.png` (`src/pages/*.ts`).
+The build derives the square icons from the dove, at stable unhashed paths: `/favicon.svg`, `/favicon-192.png` and `/apple-touch-icon.png` (`src/pages/*.ts`). It also renders the link-preview image, `/og.png` (1200x630, `src/lib/og-image.ts`): the hero poster's app window on the Tide gradient with the dove above it, every colour from the tokens. `Base.astro` announces it with its size and description to Open Graph and as a large Twitter card; `pnpm test:dist` fails when a tag or the file is missing.
 
 Components use Devot's semantic tokens (`--color-text-*`, `--color-surface-*`, `--color-accent-*` and so on) or the site variables built on them in `src/styles/site-tokens.css`. A policy test refuses colour literals anywhere else in `src/`.
+
+## Facts check
+
+Every claim the page makes about Devot that Devot's own files can settle is checked by `pnpm facts` (`scripts/facts/`):
+
+- each shortcut a card shows is its command's default in `src/renderer/src/commands/registry.ts`, drawn and spoken the same way;
+- each search operator the Find feature names is a qualifier in `src/core/search.ts`, and a minus still excludes;
+- the statuses, the gradient themes (names, count, light and dark), the app names on the cards and the "Linked to this note" label match Devot's catalog and tokens;
+- the template placeholders, the update timing (`src-tauri/src/updates.rs`), the MIT licence and its holder, macOS 26+ (`tauri.conf.json`) and Apple Silicon only (the release workflow's `Devot_<version>_aarch64.dmg`);
+- the README still says builds are ad hoc signed and not notarised, the mirror folder is never read back, and devot-mcp runs from a checkout.
+
+It reads the checkout `DEVOT_CHECKOUT` names; without it, the pinned commit in `devot.pin.json`, from the clone `pnpm media:capture` keeps in `.cache/media` (or `MEDIA_CACHE`) when there is one, else from `raw.githubusercontent.com`. Each problem is one line starting with its code (`E_FACT_SHORTCUT`, `E_FACT_OPERATOR`, `E_FACT_STATUS`, `E_FACT_THEME`, `E_FACT_LABEL`, `E_FACT_LINKS`, `E_FACT_PLACEHOLDER`, `E_FACT_UPDATES`, `E_FACT_LICENCE`, `E_FACT_PLATFORM`, `E_FACT_RELEASE`, `E_FACT_SIGNING`, `E_FACT_MIRROR`, `E_FACT_MCP`); `E_FACT_STALE` means the page no longer says what a check expects, so the check needs updating with the copy; `E_FACT_SOURCE`, `E_FACT_PIN` and `E_FACT_FETCH` mean Devot's files could not be read. `tests/unit/facts.test.ts` runs the same checks on a cut-down Devot, so CI needs no checkout. Run `pnpm facts` after changing copy and after moving the pin.
 
 ## The page
 
