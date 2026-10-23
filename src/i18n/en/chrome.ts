@@ -14,5 +14,16 @@ export const chromeCopy = {
   },
   chrome: {
     skipLink: 'Skip to content',
+    home: 'Devot home',
+    navLabel: 'Main',
+    menu: 'Menu',
+    nav: {
+      write: 'Features',
+      cards: 'Highlights',
+      localFirst: 'Local-first',
+      download: 'Download',
+      source: 'GitHub',
+    },
+    downloadNote: 'Free and open source',
   },
 }

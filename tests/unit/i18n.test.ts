@@ -31,7 +31,7 @@ it('puts every namespace into the catalog', () => {
 })
 
 it('keeps the copy the page already used', () => {
-  expect(en.hero.title).toBe('Local-first Markdown notes for macOS.')
+  expect(en.hero.title).toBe('Your notes stay on your Mac, in your hands.')
   expect(en.download.label).toBe('Download for macOS')
   expect(en.meta.title).toBe('Devot: local-first Markdown notes for macOS')
   expect(en.notFound.heading).toBe('Page not found')
