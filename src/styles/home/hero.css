@@ -328,7 +328,9 @@
   }
 
   .hero[data-backdrop-state='idle'] .hero-fallback::before,
-  .hero[data-backdrop-state='idle'] .hero-fallback::after {
+  .hero[data-backdrop-state='idle'] .hero-fallback::after,
+  html[data-animations-paused] .hero-fallback::before,
+  html[data-animations-paused] .hero-fallback::after {
     animation-play-state: paused;
   }
 

@@ -211,7 +211,7 @@ test.describe('hero at 1440 x 900', () => {
     await expect.poll(() => heroVar(page, '--hero-sheen')).toBe(0)
     await expect.poll(() => heroVar(page, '--hero-dome')).toBe(1)
     expect(await opacity(page, '.hero-copy')).toBeLessThan(0.5)
-    expect(await heroVar(page, '--hero-lift')).toBeCloseTo(105, 0)
+    await expect.poll(() => heroVar(page, '--hero-lift')).toBeCloseTo(105, 0)
     expect(
       await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform),
     ).not.toBe(rest)

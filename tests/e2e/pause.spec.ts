@@ -132,6 +132,20 @@ for (const viewport of [DESKTOP, PHONE]) {
       ])
     })
 
+    test('holds the CSS drift still before the backdrop script starts', async ({ page }) => {
+      await page.addInitScript((key) => localStorage.setItem(key, 'true'), PAUSE_KEY)
+      // A module that never finishes evaluating keeps the backdrop from starting, without the
+      // console error an aborted request would log.
+      await page.route('**/hero-backdrop.*.js', (route) =>
+        route.fulfill({ contentType: 'text/javascript', body: 'await new Promise(() => {})' }),
+      )
+      await page.goto('/')
+
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+      await expect(hero(page)).not.toHaveAttribute('data-backdrop-state', /.*/)
+      expect((await driftStates(page)).filter((state) => state === 'running')).toEqual([])
+    })
+
     test('gives each clip its own play button while paused, as reduced motion does', async ({
       page,
     }) => {
