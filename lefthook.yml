@@ -1,0 +1,24 @@
+# Local git hooks. CI runs the same checks and more.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: '*.{ts,js,mjs,json,md,css,html,yml,yaml,astro}'
+      # Generated files are ignored by .oxfmtrc.json; a commit of only those must not fail.
+      run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: '*.{ts,js,mjs,astro}'
+      run: pnpm exec oxlint {staged_files}
+
+pre-push:
+  jobs:
+    - name: block-main
+      run: sh scripts/block-main-push.sh
+      use_stdin: true
+    - name: format
+      run: pnpm format:check
+    - name: typecheck
+      run: pnpm typecheck
+    - name: unit-tests
+      run: pnpm test

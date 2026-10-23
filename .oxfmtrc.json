@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "semi": false,
+  "printWidth": 100,
+  "astro": true,
+  "ignorePatterns": [
+    "dist/**",
+    ".astro/**",
+    "pnpm-lock.yaml",
+    "playwright-report/**",
+    "test-results/**",
+    "src/theme/tokens.css",
+    "src/assets/dove.svg"
+  ]
+}

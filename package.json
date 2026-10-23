@@ -1,0 +1,42 @@
+{
+  "name": "devot-site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Devot landing page, served at https://devot.online.",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "test": "vitest run --project unit",
+    "test:dist": "vitest run --project dist",
+    "test:e2e": "playwright test",
+    "tokens": "node scripts/tokens/cli.ts",
+    "tokens:check": "node scripts/tokens/cli.ts --check",
+    "tokens:update": "node scripts/tokens/cli.ts --update",
+    "check": "pnpm tokens:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:e2e"
+  },
+  "dependencies": {
+    "astro": "7.4.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@astrojs/compiler-rs": "0.5.2",
+    "@astrojs/sitemap": "3.7.4",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "lefthook": "2.2.2",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.10.1"
+}
