@@ -447,7 +447,7 @@ test.describe('closing call to action', () => {
       await cta.hover()
 
       await expect
-        .poll(() => cta.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).a))
+        .poll(() => cta.evaluate((element) => parseFloat(getComputedStyle(element).scale)))
         .toBeCloseTo(1.02, 2)
       expect(await cta.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe(rest)
     })
@@ -461,7 +461,7 @@ test.describe('closing call to action', () => {
 
     await cta.hover()
 
-    await expect(cta).toHaveCSS('transform', 'none')
+    await expect(cta).toHaveCSS('scale', 'none')
     for (const element of await page.locator('#download [data-reveal]').all()) {
       await expect(element).toHaveAttribute('data-revealed', '')
       await expect(element).toHaveCSS('opacity', '1')

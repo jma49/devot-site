@@ -36,4 +36,25 @@
   --site-size-hero-mark: clamp(4rem, 3rem + 4vw, 6rem);
   --site-size-action: 3rem;
   --site-motion-hover: var(--motion-duration-hover) var(--motion-easing-out);
+
+  /* Devot's teal, the one call to action and the small marks around the page. In dark the fill is
+     deepened toward the window colour so white text keeps AA. */
+  --site-brand: var(--color-activity-level-4);
+  --site-brand-mark: var(--site-brand);
+  --site-brand-fill: var(--site-brand);
+  --site-brand-fill-hover: color-mix(in oklab, var(--site-brand) 84%, var(--color-text-primary));
+  --site-brand-ink: var(--color-accent-on-fill);
+  --site-brand-glow: color-mix(in oklab, var(--site-brand) 38%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --site-brand-fill: color-mix(in oklab, var(--site-brand) 62%, var(--color-surface-window));
+    --site-brand-fill-hover: color-mix(
+      in oklab,
+      var(--site-brand) 68%,
+      var(--color-surface-window)
+    );
+    --site-brand-glow: color-mix(in oklab, var(--site-brand) 22%, transparent);
+  }
 }

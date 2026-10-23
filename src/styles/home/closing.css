@@ -1,29 +1,11 @@
 .closing {
-  --closing-fill: var(--color-activity-level-4);
-  --closing-fill-hover: color-mix(in oklab, var(--closing-fill) 84%, var(--color-text-primary));
   --closing-title-size: clamp(2.25rem, 1.2rem + 3.6vw, 4rem);
-  --closing-hover: 300ms;
 
   position: relative;
   isolation: isolate;
   overflow: clip;
   padding-block: clamp(5.5rem, 17vh, 10rem) clamp(4.5rem, 13vh, 8.5rem);
   text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-  .closing {
-    --closing-fill: color-mix(
-      in srgb,
-      var(--color-activity-level-4) 56%,
-      var(--color-surface-window)
-    );
-    --closing-fill-hover: color-mix(
-      in srgb,
-      var(--color-activity-level-4) 62%,
-      var(--color-surface-window)
-    );
-  }
 }
 
 .closing__glow {
@@ -72,7 +54,7 @@
   width: clamp(3.5rem, 3rem + 2vw, 4.5rem);
   aspect-ratio: 1;
   margin-bottom: var(--space-10);
-  background: var(--color-activity-level-4);
+  background: var(--site-brand-mark);
   mask: url('../../assets/dove.svg') center / contain no-repeat;
 }
 
@@ -107,42 +89,8 @@
 }
 
 .closing__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-height: 3.25rem;
-  padding-inline: 2rem;
-  border-radius: var(--radius-capsule);
-  background: var(--closing-fill);
-  box-shadow:
-    0 1px 2px var(--color-shadow-popover-key),
-    0 0.5rem 1.5rem color-mix(in oklab, var(--closing-fill) 32%, transparent);
-  color: var(--color-accent-on-fill);
-  font-size: 1.0625rem;
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.005em;
-  text-decoration: none;
-  transition:
-    transform var(--closing-hover) var(--site-ease-out),
-    box-shadow var(--closing-hover) var(--site-ease-out),
-    background-color var(--closing-hover) var(--site-ease-out);
-}
-
-.closing__cta:hover {
-  background: var(--closing-fill-hover);
-  box-shadow:
-    0 2px 4px var(--color-shadow-popover-key),
-    0 0.75rem 2rem color-mix(in oklab, var(--closing-fill) 42%, transparent);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .closing__cta:hover {
-    transform: scale(1.02);
-  }
-
-  .closing__cta:active {
-    transform: scale(0.99);
-  }
+  padding-inline: 1.75rem 2rem;
 }
 
 .closing__requirements {

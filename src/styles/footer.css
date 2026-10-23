@@ -44,7 +44,7 @@
 .site-footer__mark {
   width: var(--site-size-mark);
   aspect-ratio: 1;
-  background: var(--color-activity-level-4);
+  background: var(--site-brand);
   mask: url('../assets/dove.svg') center / contain no-repeat;
 }
 

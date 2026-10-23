@@ -63,7 +63,7 @@ export function startHeader(root: Document = document): void {
   const outside = [
     root.querySelector<HTMLElement>('main'),
     root.querySelector<HTMLElement>('body > footer'),
-    header.querySelector<HTMLElement>('[data-skip-link]'),
+    root.querySelector<HTMLElement>('[data-skip-link]'),
     pill,
   ].filter((element): element is HTMLElement => element !== null)
   const wide = window.matchMedia(WIDE_QUERY)

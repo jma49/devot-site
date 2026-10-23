@@ -12,10 +12,6 @@ const sections = [
 ---
 
 <header class="site-header" data-site-header>
-  <a class="skip-link" href="#main" data-skip-link>
-    {t.chrome.skipLink}
-  </a>
-
   <div class="bar" data-menu-scope>
     <a class="brand" href="/" aria-label={t.chrome.home}>
       <span class="brand-mark" aria-hidden="true"></span>
@@ -106,19 +102,8 @@ const sections = [
 </script>
 
 <style>
-  /* The brand button: the one call to action, in the hero, the pill, the menu and the closing
-     section. Devot's teal; in dark it is deepened toward the window colour so white text keeps AA.
-     The transparent borders on the button, the bar and the pill become edges in forced colours. */
+  /* The transparent borders on the bar and the pill become edges in forced colours. */
   :global(:root) {
-    --brand-fill: var(--color-activity-level-4);
-    --brand-fill-hover: color-mix(
-      in oklab,
-      var(--color-activity-level-4) 84%,
-      var(--color-text-primary)
-    );
-    --brand-ink: var(--color-accent-on-fill);
-    --brand-glow: color-mix(in oklab, var(--color-activity-level-4) 38%, transparent);
-    --brand-mark: var(--color-activity-level-4);
     --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 72%, transparent);
     --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 86%, transparent);
     --chrome-glass-filter: blur(20px) saturate(1.6);
@@ -137,17 +122,6 @@ const sections = [
 
   @media (prefers-color-scheme: dark) {
     :global(:root) {
-      --brand-fill: color-mix(
-        in oklab,
-        var(--color-activity-level-4) 62%,
-        var(--color-surface-window)
-      );
-      --brand-fill-hover: color-mix(
-        in oklab,
-        var(--color-activity-level-4) 68%,
-        var(--color-surface-window)
-      );
-      --brand-glow: color-mix(in oklab, var(--color-activity-level-4) 22%, transparent);
       --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 70%, transparent);
       --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 84%, transparent);
     }
@@ -162,92 +136,6 @@ const sections = [
     scroll-margin-top: calc(var(--chrome-bar-height) + 2 * var(--chrome-inset));
   }
 
-  :global(.visually-hidden) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  :global(.brand-button) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
-    min-height: var(--site-size-action);
-    padding-inline: 1.25rem 1.375rem;
-    border: 1px solid transparent;
-    border-radius: var(--radius-capsule);
-    background: var(--brand-fill);
-    color: var(--brand-ink);
-    font-size: var(--site-font-size-body);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: -0.005em;
-    line-height: 1.2;
-    text-decoration: none;
-    white-space: nowrap;
-    box-shadow:
-      0 1px 1px var(--color-shadow-popover-key),
-      0 8px 20px -6px var(--brand-glow);
-    transition-property: background-color, box-shadow, scale;
-    transition-duration: var(--motion-duration-hover);
-    transition-timing-function: var(--motion-easing-out);
-  }
-
-  :global(.brand-button:hover) {
-    background: var(--brand-fill-hover);
-    scale: 1.02;
-    box-shadow:
-      0 1px 1px var(--color-shadow-popover-key),
-      0 12px 26px -8px var(--brand-glow);
-  }
-
-  :global(.brand-button:active) {
-    scale: 0.98;
-  }
-
-  :global(.brand-button-glyph) {
-    flex: none;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: translate var(--motion-duration-hover) var(--motion-easing-out);
-  }
-
-  :global(.brand-button:hover .brand-button-glyph) {
-    translate: 0 1px;
-  }
-
-  :global(.brand-button-compact) {
-    min-height: 2.5rem;
-    padding-inline: 1rem 1.125rem;
-    font-size: var(--site-font-size-small);
-  }
-
-  .skip-link {
-    position: fixed;
-    top: var(--chrome-inset);
-    left: var(--chrome-inset);
-    z-index: 3;
-    padding: var(--space-5) var(--space-7);
-    border-radius: var(--radius-capsule);
-    background: var(--color-surface-popover);
-    color: var(--site-color-text);
-    font-size: var(--site-font-size-small);
-    font-weight: var(--font-weight-semibold);
-    text-decoration: none;
-    box-shadow: var(--chrome-shadow-raised);
-    translate: 0 -200%;
-  }
-
-  .skip-link:focus-visible {
-    translate: 0 0;
-  }
-
   .site-header {
     position: fixed;
     top: 0;
@@ -258,7 +146,6 @@ const sections = [
     pointer-events: none;
   }
 
-  .skip-link,
   .bar,
   .download-pill {
     pointer-events: auto;
@@ -326,7 +213,7 @@ const sections = [
     flex: none;
     width: 1.625rem;
     aspect-ratio: 92 / 86;
-    background: var(--brand-mark);
+    background: var(--site-brand-mark);
     mask: url('../assets/dove.svg') center / contain no-repeat;
     -webkit-mask: url('../assets/dove.svg') center / contain no-repeat;
   }
@@ -371,7 +258,7 @@ const sections = [
     height: 0.25rem;
     margin-left: -0.125rem;
     border-radius: 50%;
-    background: var(--brand-mark);
+    background: var(--site-brand-mark);
     opacity: 0;
     scale: 0;
     transition-property: opacity, scale;
