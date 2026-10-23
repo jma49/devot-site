@@ -22,6 +22,7 @@
   --site-font-size-brand: 1.125rem;
   --site-font-size-lead: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
   --site-font-size-display: clamp(2.5rem, 1.4rem + 4.6vw, 4.75rem);
+  --site-font-size-title: clamp(2rem, 1.5rem + 2vw, 3rem);
   --site-line-height-body: 1.55;
   --site-line-height-display: 1.04;
   --site-tracking-display: -0.025em;
@@ -34,5 +35,5 @@
   --site-size-mark: 1.75rem;
   --site-size-hero-mark: clamp(4rem, 3rem + 4vw, 6rem);
   --site-size-action: 3rem;
-  --site-motion-hover: var(--motion-duration-hover) var(--motion-easing-standard);
+  --site-motion-hover: var(--motion-duration-hover) var(--motion-easing-out);
 }

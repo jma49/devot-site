@@ -14,6 +14,13 @@ export const en = {
     label: 'Download for macOS',
     requirements: 'macOS 26+ · Apple Silicon',
   },
+  notFound: {
+    title: 'Devot: page not found',
+    description: 'There is no page at this address on devot.online.',
+    heading: 'Page not found',
+    body: 'The link may be out of date, or the address may have a typo.',
+    home: 'Go to the home page',
+  },
   footer: {
     source: 'Source on GitHub',
     copyright: (year: number) => `© ${year} Devot`,

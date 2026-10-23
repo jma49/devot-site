@@ -1,9 +1,13 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { en } from '../../src/i18n/en.ts'
 import { SITE_URL } from '../../src/site.ts'
+import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
+import { fetches } from '../support/csp-fetches.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
 import { scripts, tags } from '../support/html.ts'
+import { pngSize } from '../support/png.ts'
 import { filesUnder, readRepoFile, REPO } from '../support/source-files.ts'
 
 // The output of `pnpm build`, checked against the policy Cloudflare will serve with it.
@@ -12,45 +16,21 @@ const csp = directives(siteCsp(readRepoFile('dist/_headers')))
 const pages = filesUnder('dist').filter((file) => file.endsWith('.html'))
 const pageUrl = (page: string) =>
   new URL(page.replace(/^dist\//, '').replace(/index\.html$/, ''), SITE_URL).href
+// Cloudflare serves it, with status 404, for any path that matches no file.
+const NOT_FOUND = 'dist/404.html'
+const indexed = pages.filter((page) => page !== NOT_FOUND)
+const meta = (html: string, key: string) =>
+  tags(html, 'meta')
+    .find(({ attrs }) => attrs.get('name') === key || attrs.get('property') === key)
+    ?.attrs.get('content')
+const canonicalOf = (html: string) =>
+  tags(html, 'link')
+    .find(({ attrs }) => attrs.get('rel') === 'canonical')
+    ?.attrs.get('href')
 
-/** What the browser fetches for a tag, and the CSP directive that governs it. */
-function fetches(html: string): { directive: string; url: string }[] {
-  return tags(html).flatMap(({ name, attrs }) => {
-    const rel = (attrs.get('rel') ?? '').split(/\s+/)
-    const srcset = (attrs.get('srcset') ?? '')
-      .split(',')
-      .map((candidate) => candidate.trim().split(/\s+/)[0] ?? '')
-      .filter(Boolean)
-    if (name === 'script' && attrs.has('src'))
-      return [{ directive: 'script-src', url: attrs.get('src') as string }]
-    if (name === 'link' && rel.includes('stylesheet'))
-      return [{ directive: 'style-src', url: attrs.get('href') ?? '' }]
-    if (name === 'link' && rel.some((r) => /icon/.test(r)))
-      return [{ directive: 'img-src', url: attrs.get('href') ?? '' }]
-    if (name === 'link' && rel.includes('manifest'))
-      return [{ directive: 'manifest-src', url: attrs.get('href') ?? '' }]
-    if (name === 'link' && (rel.includes('preload') || rel.includes('modulepreload'))) {
-      const directive =
-        attrs.get('as') === 'style'
-          ? 'style-src'
-          : attrs.get('as') === 'font'
-            ? 'font-src'
-            : 'script-src'
-      return [{ directive, url: attrs.get('href') ?? '' }]
-    }
-    if (name === 'img' || name === 'source') {
-      const src = attrs.get('src')
-      return [...(src ? [src] : []), ...srcset].map((url) => ({ directive: 'img-src', url }))
-    }
-    if (name === 'video' || name === 'audio')
-      return attrs.has('src') ? [{ directive: 'media-src', url: attrs.get('src') as string }] : []
-    if (name === 'iframe') return [{ directive: 'frame-src', url: attrs.get('src') ?? '' }]
-    return []
-  })
-}
-
-it('builds the home page', () => {
+it('builds the home page and a 404 page', () => {
   expect(pages).toContain('dist/index.html')
+  expect(pages).toContain(NOT_FOUND)
 })
 
 describe.each(pages)('%s', (page) => {
@@ -82,7 +62,7 @@ describe.each(pages)('%s', (page) => {
     expect(loads.length).toBeGreaterThan(0)
     const blocked = loads.filter(({ directive, url }) => {
       const sources = csp.get(directive) ?? csp.get('default-src') ?? []
-      return !allows(sources, url, pageUrl(page))
+      return directive === 'unknown' || !allows(sources, url, pageUrl(page))
     })
     expect(blocked).toEqual([])
   })
@@ -96,23 +76,74 @@ describe.each(pages)('%s', (page) => {
     expect(missing).toEqual([])
   })
 
-  it('is English, with a title, a description and a canonical URL on devot.online', () => {
-    const meta = (key: string) =>
-      tags(html, 'meta')
-        .find(({ attrs }) => attrs.get('name') === key || attrs.get('property') === key)
-        ?.attrs.get('content')
+  it('is English, with a title, a description, one heading and link previews', () => {
     expect(tags(html, 'html')[0]?.attrs.get('lang')).toBe('en')
     expect(html).toMatch(/<title>[^<]+<\/title>/)
-    expect(meta('description')).toBeTruthy()
-    const canonical = tags(html, 'link').find(({ attrs }) => attrs.get('rel') === 'canonical')
-    expect(canonical?.attrs.get('href')).toBe(pageUrl(page))
-    expect(meta('og:url')).toBe(pageUrl(page))
-    expect(meta('og:title')).toBeTruthy()
-    expect(meta('twitter:card')).toBe('summary')
+    expect(meta(html, 'description')).toBeTruthy()
+    expect(meta(html, 'og:title')).toBeTruthy()
+    expect(meta(html, 'twitter:card')).toBe('summary')
     expect(
       tags(html, 'meta').filter(({ attrs }) => attrs.get('name') === 'theme-color'),
     ).toHaveLength(2)
     expect(tags(html, 'h1')).toHaveLength(1)
+  })
+
+  it('takes all its text from src/i18n/en.ts', () => {
+    const catalog = catalogStrings(en, [new Date().getFullYear()])
+    expect(pageCopy(html).filter((text) => !catalog.has(text))).toEqual([])
+  })
+
+  it('links the square icons at stable, unhashed paths', () => {
+    const icons = tags(html, 'link')
+      .filter(({ attrs }) => /icon/.test(attrs.get('rel') ?? ''))
+      .map(({ attrs }) => `${attrs.get('rel')} ${attrs.get('href')}`)
+    expect(icons).toEqual([
+      'icon /favicon.svg',
+      'icon /favicon-192.png',
+      'apple-touch-icon /apple-touch-icon.png',
+    ])
+  })
+})
+
+describe.each(indexed)('%s, a page for search engines', (page) => {
+  const html = readRepoFile(page)
+
+  it('names its canonical URL on devot.online', () => {
+    expect(canonicalOf(html)).toBe(pageUrl(page))
+    expect(meta(html, 'og:url')).toBe(pageUrl(page))
+    expect(meta(html, 'robots')).toBeUndefined()
+  })
+})
+
+describe('the 404 page', () => {
+  const html = pages.includes(NOT_FOUND) ? readRepoFile(NOT_FOUND) : ''
+
+  it('asks not to be indexed and claims no URL of its own', () => {
+    expect(meta(html, 'robots')).toBe('noindex')
+    expect(canonicalOf(html)).toBeUndefined()
+    expect(meta(html, 'og:url')).toBeUndefined()
+  })
+
+  it('loads its files from the site root, so it works at any depth', () => {
+    const relative = fetches(html)
+      .map(({ url }) => url)
+      .filter((url) => !/^(\/|https:\/\/)/.test(url))
+    expect(relative).toEqual([])
+  })
+})
+
+describe('icons', () => {
+  it('serves the dove as a square SVG', () => {
+    const svg = readRepoFile('dist/favicon.svg')
+    const [, , width, height] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? '').split(/\s+/)
+    expect(width).toBeTruthy()
+    expect(width).toBe(height)
+  })
+
+  it('serves square PNGs for browsers and home screens that want one', () => {
+    const size = (file: string) => pngSize(readFileSync(join(REPO, 'dist', file)))
+    expect(size('favicon-192.png')).toEqual({ width: 192, height: 192 })
+    expect(size('apple-touch-icon.png')).toEqual({ width: 180, height: 180 })
   })
 })
 
@@ -147,6 +178,6 @@ describe('files for Cloudflare and crawlers', () => {
         (m) => m[1],
       ),
     )
-    expect(listed.toSorted()).toEqual(pages.map(pageUrl).toSorted())
+    expect(listed.toSorted()).toEqual(indexed.map(pageUrl).toSorted())
   })
 })

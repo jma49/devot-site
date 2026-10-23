@@ -1,0 +1,48 @@
+---
+import { messages } from '../i18n/index.ts'
+import Base from '../layouts/Base.astro'
+
+const t = messages()
+---
+
+<Base title={t.notFound.title} description={t.notFound.description} noindex>
+  <div class="not-found">
+    <h1>{t.notFound.heading}</h1>
+    <p class="body">{t.notFound.body}</p>
+    <a class="home" href="/">
+      {t.notFound.home}
+    </a>
+  </div>
+</Base>
+
+<style>
+  .not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+    margin-inline: auto;
+    padding-block: var(--site-space-section);
+    text-align: center;
+  }
+
+  h1 {
+    font-size: var(--site-font-size-title);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--site-tracking-display);
+    line-height: var(--site-line-height-display);
+    text-wrap: balance;
+  }
+
+  .body {
+    margin-block-start: var(--space-6);
+    color: var(--site-color-text-muted);
+    text-wrap: balance;
+  }
+
+  .home {
+    margin-block-start: var(--space-9);
+    border-radius: var(--radius-control);
+    font-weight: var(--font-weight-semibold);
+  }
+</style>

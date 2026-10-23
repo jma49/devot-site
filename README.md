@@ -78,6 +78,8 @@ If the first build log does not show pnpm 12.10.1 being installed (or shows a co
 
 The build image reads the Node version from `.node-version`; no `NODE_VERSION` variable is needed.
 
+The build writes a top-level `404.html`. Pages serves it, with status 404, for any path that matches no file; without it, Pages would treat the site as a single-page app and answer every unknown path with the home page and status 200. The immutable `Cache-Control` of `/_astro/*` still applies to a 404 at a missing asset URL, since `_headers` cannot match on status.
+
 After the first preview deployment, check the headers with `curl -I`: the page should carry the Content-Security-Policy, and files under `/_astro/` should have `Cache-Control: public, max-age=31536000, immutable`.
 
 Zone settings that matter to this site:
