@@ -2,7 +2,7 @@ export const privacyCopy = {
   privacy: {
     label: 'Local-first',
     title: 'Your notes live on your Mac.',
-    lede: 'Open them in any editor, any time.',
+    lede: 'Plain Markdown files, once the mirror is on.',
     facts: {
       label: 'Where your notes live and what they need',
       rows: [
@@ -26,13 +26,13 @@ export const privacyCopy = {
         ],
       ],
     },
-    body: 'Devot keeps your notes in a SQLite database in your Library folder, and needs no account or connection to write, search, back up or export. Turn on the Markdown mirror and your notes also live as plain files in a folder you choose, which Git, Spotlight and your other editors can read.',
+    body: 'Devot keeps your notes in a SQLite database in your Library folder, and needs no account or connection to write, search, back up or export. Choose a mirror folder and Devot also writes every note there as a Markdown file for Git, Spotlight and other editors to read, and never reads them back.',
     network: {
       summary: 'What does Devot send over the network?',
       items: [
         {
           term: 'Update checks',
-          text: 'Release builds ask GitHub for the update feed 30 seconds after launch, then daily.',
+          text: 'Release builds ask GitHub for the update feed 30 seconds after launch, then daily (hourly for betas).',
         },
         {
           term: 'Link titles',
@@ -67,7 +67,7 @@ export const privacyCopy = {
   footer: {
     label: 'Footer',
     tagline: 'Local-first Markdown notes for macOS.',
-    copyright: (year: number) => `© ${year} Devot`,
+    copyright: (year: number) => `© ${year} jma49`,
     licence: 'Released under the MIT licence.',
     backToTop: 'Back to top',
     groups: {
@@ -87,7 +87,7 @@ export const privacyCopy = {
           install: 'Install steps',
           architecture: 'How Devot works',
           development: 'Development guide',
-          mcp: 'devot-mcp',
+          mcp: 'devot-mcp (from source)',
         },
       },
       community: {

@@ -32,7 +32,7 @@ export const featuresCopy = {
         name: 'Organise',
         title: 'Every note in its place, and you know where it stands.',
         body: [
-          'Nest notebooks inside notebooks, each with its own icon, and give your tags colours. Mark a note Active, On Hold, Completed or Dropped, or leave it without a status, and the list shows what is still open.',
+          'Nest notebooks inside notebooks, each with its own icon, and give your tags colours. Mark a note Active, On Hold, Completed or Dropped, or leave it without one: the list shows each status, and the sidebar filters by it.',
         ],
       },
       {

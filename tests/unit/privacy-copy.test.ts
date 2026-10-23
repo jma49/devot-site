@@ -33,6 +33,12 @@ it('names every outbound connection, each with a term and a sentence', () => {
   for (const item of items) expect(words(item.text), item.term).toBeLessThanOrEqual(30)
 })
 
+it('promises plain files only with the Markdown mirror, which Devot writes but never reads', () => {
+  expect(en.privacy.lede).toMatch(/mirror/i)
+  expect(en.privacy.body).toMatch(/mirror/i)
+  expect(en.privacy.body).toMatch(/never reads/i)
+})
+
 it('keeps the paragraph beside the heading short', () => {
   expect(words(en.privacy.body)).toBeLessThanOrEqual(55)
 })

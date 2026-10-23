@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
-import { SITE_URL } from '../../src/site.ts'
+import { OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
@@ -81,11 +81,24 @@ describe.each(pages)('%s', (page) => {
     expect(html).toMatch(/<title>[^<]+<\/title>/)
     expect(meta(html, 'description')).toBeTruthy()
     expect(meta(html, 'og:title')).toBeTruthy()
-    expect(meta(html, 'twitter:card')).toBe('summary')
+    expect(meta(html, 'twitter:card')).toBe('summary_large_image')
     expect(
       tags(html, 'meta').filter(({ attrs }) => attrs.get('name') === 'theme-color'),
     ).toHaveLength(2)
     expect(tags(html, 'h1')).toHaveLength(1)
+  })
+
+  it('announces a large link-preview image with its size and a description', () => {
+    const image = new URL(OG_IMAGE.path, SITE_URL).href
+    expect(meta(html, 'og:image')).toBe(image)
+    expect(meta(html, 'og:image:type')).toBe('image/png')
+    expect(meta(html, 'og:image:width')).toBe(String(OG_IMAGE.width))
+    expect(meta(html, 'og:image:height')).toBe(String(OG_IMAGE.height))
+    expect(meta(html, 'og:image:alt')).toBe(en.meta.imageAlt)
+    expect(meta(html, 'twitter:image')).toBe(image)
+    expect(meta(html, 'twitter:image:alt')).toBe(en.meta.imageAlt)
+    expect(meta(html, 'twitter:title')).toBe(meta(html, 'og:title'))
+    expect(meta(html, 'twitter:description')).toBe(meta(html, 'og:description'))
   })
 
   it('takes all its text from src/i18n/en.ts', () => {
@@ -144,6 +157,16 @@ describe('icons', () => {
     const size = (file: string) => pngSize(readFileSync(join(REPO, 'dist', file)))
     expect(size('favicon-192.png')).toEqual({ width: 192, height: 192 })
     expect(size('apple-touch-icon.png')).toEqual({ width: 180, height: 180 })
+  })
+})
+
+describe('link-preview image', () => {
+  it('is in the build at the size the pages announce, small enough for every preview', () => {
+    const file = join(REPO, 'dist', OG_IMAGE.path)
+    expect(existsSync(file)).toBe(true)
+    const png = readFileSync(file)
+    expect(pngSize(png)).toEqual({ width: OG_IMAGE.width, height: OG_IMAGE.height })
+    expect(png.byteLength).toBeLessThan(600 * 1024)
   })
 })
 
