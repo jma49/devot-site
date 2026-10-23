@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cardsCopy, type CardText } from '../../src/i18n/en/cards.ts'
-import { SLOTS } from '../../src/media.ts'
+import { media, SLOTS } from '../../src/media.ts'
 
 const { items } = cardsCopy.cards
 const plain = (body: readonly CardText[]) =>
@@ -10,6 +10,13 @@ const words = (text: string) => text.split(/\s+/).filter((word) => /\p{L}|\d|\{/
 describe('feature card copy', () => {
   it('covers every card slot of the media manifest, in order', () => {
     expect(Object.keys(items)).toEqual(SLOTS.filter((slot) => slot.startsWith('card-')))
+  })
+
+  it('labels each card with the topic its clip shows', () => {
+    for (const [slot, { label }] of Object.entries(items)) {
+      const topic = label.toLowerCase().replace(/s$/, '')
+      expect(media[slot as keyof typeof items].alt.toLowerCase(), slot).toContain(topic)
+    }
   })
 
   it('gives each card a short label and one benefit sentence of 15 to 25 words', () => {

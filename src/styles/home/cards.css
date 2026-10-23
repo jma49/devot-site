@@ -1,5 +1,5 @@
 .cards {
-  --cards-brand: var(--color-activity-level-4);
+  --cards-brand: var(--site-brand);
   --cards-gap: 1.25rem;
   --cards-pad: 2rem;
   --cards-radius: 1.25rem;
@@ -239,29 +239,20 @@
   border-start-end-radius: var(--cards-window-radius);
 }
 
-.card-lights {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+.card[data-corner='top'] .card-crop {
+  mask-image:
+    linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
+    linear-gradient(
+      to right,
+      transparent,
+      var(--cards-mask) 10%,
+      var(--cards-mask) 84%,
+      transparent
+    );
 }
 
-.card-lights circle {
-  stroke: var(--color-line-hairline);
-  stroke-width: 0.5;
-}
-
-.card-light-close {
-  fill: var(--color-tag-red);
-}
-
-.card-light-minimise {
-  fill: var(--color-tag-yellow);
-}
-
-.card-light-zoom {
-  fill: var(--color-tag-green);
+.card[data-corner='top'] .card-window {
+  border-start-start-radius: 0;
 }
 
 .cards-sr {

@@ -4,7 +4,7 @@
  * line (keep the breakpoint in step with DESKTOP_QUERY there).
  */
 .features {
-  --features-brand: var(--color-activity-level-4);
+  --features-brand: var(--site-brand);
   --features-rail: 2px;
   --features-rail-inset: 1.75rem;
   --features-window-radius: 12px;
@@ -180,35 +180,6 @@
 
 .feature-clip {
   border-radius: inherit;
-}
-
-/* Drawn by the page: the capture build has no window controls. Sized in the window's own units so
-   they stay where the app leaves room for them at any width. */
-.feature-controls {
-  position: absolute;
-  top: 2.67cqi;
-  left: 2.67cqi;
-  display: flex;
-  gap: 1.07cqi;
-}
-
-.feature-controls > span {
-  width: 1.6cqi;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 0.5px var(--color-line-separator);
-}
-
-.feature-controls > span:nth-child(1) {
-  background: var(--color-tag-red);
-}
-
-.feature-controls > span:nth-child(2) {
-  background: var(--color-tag-yellow);
-}
-
-.feature-controls > span:nth-child(3) {
-  background: var(--color-tag-green);
 }
 
 /* Stacked: media, then the number, title and the whole description. */

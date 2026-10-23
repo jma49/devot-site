@@ -6,8 +6,8 @@
 .hero {
   --hero-window-max: 70rem;
   --hero-window-width: min(var(--hero-window-max), 100cqw - 2 * var(--site-gutter));
-  /* The capture is the app's 1440 x 900 point window. */
-  --hero-window-points: 1440;
+  /* The capture is the app's 1024 x 640 point window, recorded at 2x. */
+  --hero-window-points: 1024;
   --hero-window-ratio: 0.625;
   --hero-pt: calc(var(--hero-window-width) / var(--hero-window-points));
   --hero-window-height: calc(var(--hero-window-width) * var(--hero-window-ratio));
@@ -272,30 +272,6 @@
   height: 100%;
   object-fit: cover;
   object-position: left top;
-}
-
-.hero-lights {
-  position: absolute;
-  top: calc(20 * var(--hero-pt));
-  left: calc(20 * var(--hero-pt));
-  display: flex;
-  gap: calc(8 * var(--hero-pt));
-}
-
-.hero-lights i {
-  width: calc(12 * var(--hero-pt));
-  height: calc(12 * var(--hero-pt));
-  border-radius: 50%;
-  background: var(--color-tag-red);
-  box-shadow: inset 0 0 0 0.5px var(--color-line-hairline);
-}
-
-.hero-lights i:nth-child(2) {
-  background: var(--color-tag-yellow);
-}
-
-.hero-lights i:nth-child(3) {
-  background: var(--color-tag-green);
 }
 
 /* Entrance: everything starts within 100 ms and settles on Devot's curves. The window and its

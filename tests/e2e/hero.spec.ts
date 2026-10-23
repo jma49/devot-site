@@ -65,7 +65,6 @@ test.describe('hero at 1440 x 900', () => {
 
     const clip = page.locator('.hero-frame video[data-clip="hero"]')
     await expect(clip).toHaveAttribute('poster', /hero-poster\.webp$/)
-    await expect(page.locator('.hero-lights i')).toHaveCount(3)
   })
 
   test('paints the window poster as the largest element', async ({ page, browserName }) => {

@@ -1,6 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type { Locator, Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
+import { media } from '../../src/media.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
@@ -106,40 +107,42 @@ test.describe('feature cards at 1440', () => {
       expect(Math.max(...lines), `${slot}: longest line`).toBeLessThanOrEqual(60)
 
       const cardBox = await box(card)
-      const media = await box(card.locator('.card-media'))
+      const area = await box(card.locator('.card-media'))
       const frame = await box(card.locator('.card-window'))
-      expect(Math.abs(media.y + media.height - (cardBox.y + cardBox.height))).toBeLessThan(2)
+      expect(Math.abs(area.y + area.height - (cardBox.y + cardBox.height))).toBeLessThan(2)
       expect(frame.y + frame.height, `${slot} is cut by the card edge`).toBeGreaterThan(
         cardBox.y + cardBox.height,
       )
-      expect(frame.x + frame.width).toBeGreaterThanOrEqual(cardBox.x + cardBox.width - 1)
+      const cutAtLeft = media[slot].edges.includes('right')
+      const overhang = cutAtLeft
+        ? cardBox.x - frame.x
+        : frame.x + frame.width - (cardBox.x + cardBox.width)
+      expect(overhang, `${slot} is cut by the card's side`).toBeGreaterThanOrEqual(-1)
 
       const crop = card.locator('.card-crop')
       expect(await crop.evaluate((c) => getComputedStyle(c).maskImage)).toContain('gradient')
       const window = card.locator('.card-window')
-      expect(
-        parseFloat(await window.evaluate((w) => getComputedStyle(w).borderTopLeftRadius)),
-      ).toBeGreaterThanOrEqual(12)
       expect(await window.evaluate((w) => getComputedStyle(w).boxShadow)).not.toBe('none')
       await expect(card.locator('.card-window .clip')).toHaveCount(1)
     }
   })
 
-  test('draws the window controls in the frame, scaled with the clip', async ({ page }) => {
+  test('rounds only the window corners its clip shows and draws no controls of its own', async ({
+    page,
+  }) => {
     await page.goto('/')
-    const card = cards(page).first()
-    await scrollIntoMiddle(card)
-    const lights = card.locator('.card-lights circle')
-    await expect(lights).toHaveCount(3)
-    const frame = await box(card.locator('.card-window'))
-    const close = await box(lights.first())
-    const points = await card
-      .locator('.card-lights')
-      .evaluate((svg) => (svg as SVGSVGElement).viewBox.baseVal.width)
-    const scale = frame.width / points
-    expect(close.x - frame.x).toBeCloseTo(20.5 * scale, 0)
-    expect(close.width).toBeCloseTo(13 * scale, 0)
-    await expect(card.locator('.card-lights')).toHaveAttribute('aria-hidden', 'true')
+    for (const slot of ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6'] as const) {
+      const { edges } = media[slot]
+      const window = page.locator(`#cards .card[data-slot="${slot}"] .card-window`)
+      const radii = await window.evaluate((w) => {
+        const style = getComputedStyle(w)
+        return [parseFloat(style.borderTopLeftRadius), parseFloat(style.borderTopRightRadius)]
+      })
+      const [left = 0, right = 0] = radii
+      expect(left >= 12, `${slot} top-left`).toBe(edges.includes('left'))
+      expect(right >= 12, `${slot} top-right`).toBe(edges.includes('right'))
+    }
+    await expect(page.locator('#cards svg, #cards .card-lights')).toHaveCount(0)
   })
 
   test('plays a clip only while it is on screen', async ({ page }) => {

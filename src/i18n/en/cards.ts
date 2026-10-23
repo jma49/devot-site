@@ -27,11 +27,11 @@ export const cardsCopy = {
         keys: { glyphs: '⇧⌘D', spoken: 'Shortcut: Shift Command D' },
       },
       'card-3': {
-        label: 'Revision History',
+        label: 'Tables',
         body: [
-          'Devot keeps a version whenever you pause typing, shows what changed since, and lets you restore any of them.',
+          'Tab moves between cells and shortcuts add, move and align rows and columns, so a Markdown table stays tidy as it grows.',
         ],
-        keys: { glyphs: '⌥⌘Y', spoken: 'Shortcut: Option Command Y' },
+        keys: { glyphs: '⇥', spoken: 'Next cell: Tab' },
       },
       'card-4': {
         label: 'Command palette',
@@ -41,11 +41,11 @@ export const cardsCopy = {
         keys: { glyphs: '⌘K', spoken: 'Shortcut: Command K' },
       },
       'card-5': {
-        label: 'Tables',
+        label: 'Revision History',
         body: [
-          'Tab moves between cells and shortcuts add, move and align rows and columns, so a Markdown table stays tidy as it grows.',
+          'Devot keeps a version whenever you pause typing, shows what changed since, and lets you restore any of them.',
         ],
-        keys: { glyphs: '⇥', spoken: 'Next cell: Tab' },
+        keys: { glyphs: '⌥⌘Y', spoken: 'Shortcut: Option Command Y' },
       },
       'card-6': {
         label: 'Templates',
