@@ -1,0 +1,352 @@
+.cards {
+  --cards-brand: var(--color-activity-level-4);
+  --cards-gap: 1.25rem;
+  --cards-pad: 2rem;
+  --cards-radius: 1.25rem;
+  --cards-window-radius: 0.875rem;
+  /* One height per row on wide screens, so the window tops line up across a row. */
+  --cards-media-height: clamp(13rem, 27vw, 22rem);
+  /* Container units: the card is the container, so this is the media width less the inset. */
+  --cards-window-width: calc(100cqw - var(--cards-pad));
+  --cards-shadow-room: 2.5rem;
+  --cards-rise: 3rem;
+  --cards-lift: -6px;
+  /* Masks read only alpha, so any opaque token draws their solid part. */
+  --cards-mask: var(--color-surface-window);
+  --cards-window-shadow:
+    0 0 0 1px var(--color-line-hairline),
+    0 var(--shadow-popover-y) var(--shadow-popover-key-blur) var(--color-shadow-popover-key),
+    0 1.5rem 3rem -0.75rem var(--color-shadow-popover-ambient);
+  --cards-window-shadow-raised:
+    0 0 0 1px var(--color-line-hairline),
+    0 var(--shadow-popover-y) var(--shadow-popover-key-blur) var(--color-shadow-popover-key),
+    0 2.25rem 4rem -1rem var(--color-shadow-popover-ambient);
+
+  padding-block: var(--site-space-section);
+}
+
+.cards-inner {
+  width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+  margin-inline: auto;
+}
+
+.cards-head {
+  max-width: 40rem;
+  margin-block-end: clamp(2.25rem, 4vw, 3.5rem);
+}
+
+.cards-head h2 {
+  margin: 0;
+  font-size: clamp(2rem, 1.25rem + 2.4vw, 3rem);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.cards-lead {
+  max-width: 34rem;
+  margin-block-start: 1rem;
+  color: var(--site-color-text-muted);
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+  isolation: isolate;
+  container-type: inline-size;
+  border: 1px solid var(--color-line-separator);
+  border-radius: var(--cards-radius);
+  background: var(--color-surface-list);
+}
+
+/* data-reveal owns opacity and transform; its transitions stay in the list. */
+.cards .card {
+  transition:
+    border-color var(--site-dur-quick) var(--site-ease-out),
+    var(--site-reveal-transition);
+}
+
+.card-text {
+  position: relative;
+  z-index: 1;
+  padding: var(--cards-pad) var(--cards-pad) 1.75rem;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 1.75rem;
+}
+
+.card-label {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.3125rem 0.6875rem;
+  border-radius: var(--radius-capsule);
+  background: color-mix(in oklab, var(--cards-brand) 10%, transparent);
+  color: var(--cards-brand);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.card-keys {
+  margin: 0;
+}
+
+.card-keys kbd {
+  display: inline-block;
+  min-width: 1.75rem;
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--color-line-hairline);
+  border-radius: var(--radius-button);
+  background: var(--color-surface-editor);
+  box-shadow: 0 1px 0 var(--color-line-separator);
+  color: var(--color-text-tertiary);
+  font-family: var(--site-font);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.card-swatches {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.card-swatches > span {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--backdrop), var(--color-surface-window);
+  box-shadow: inset 0 0 0 1px var(--color-line-hairline);
+  filter: saturate(1.8);
+}
+
+/* The light stops read as plain white beside a dark card; more chroma keeps them apart. */
+@media (prefers-color-scheme: dark) {
+  .card-swatches > span {
+    filter: saturate(2.4);
+  }
+}
+
+.card-body {
+  max-width: 40ch;
+  margin: 0.875rem 0 0;
+  color: var(--site-color-text);
+  font-size: 1.125rem;
+  letter-spacing: -0.006em;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.card-body code {
+  padding: 0.0625rem 0.3125rem;
+  border-radius: var(--radius-mark);
+  background: var(--color-fill-card);
+  font-family: var(--font-family-mono);
+  font-size: 0.86em;
+}
+
+.card-media {
+  position: relative;
+  height: var(--cards-media-height);
+  margin-block-start: auto;
+}
+
+.card-well {
+  position: absolute;
+  inset: -35% -20% -10% -15%;
+  background: var(--backdrop);
+  filter: saturate(1.15);
+  mask-image: radial-gradient(
+    ellipse 55% 50% at 38% 48%,
+    var(--cards-mask) 0%,
+    var(--cards-mask) 30%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.card-well[data-appearance-preview='dark'] {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .card-well[data-appearance-preview='light'] {
+    display: none;
+  }
+
+  .card-well[data-appearance-preview='dark'] {
+    display: block;
+  }
+}
+
+.card-crop {
+  position: absolute;
+  inset-block: calc(-1 * var(--cards-shadow-room)) 0;
+  inset-inline-start: calc(var(--cards-pad) - var(--cards-shadow-room));
+  width: calc(var(--cards-window-width) + var(--cards-shadow-room));
+  padding: var(--cards-shadow-room) 0 0 var(--cards-shadow-room);
+  mask-image:
+    linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
+    linear-gradient(to right, var(--cards-mask) 84%, transparent);
+  mask-composite: intersect;
+}
+
+.card[data-corner='right'] .card-crop {
+  inset-inline: auto calc(var(--cards-pad) - var(--cards-shadow-room));
+  padding: var(--cards-shadow-room) var(--cards-shadow-room) 0 0;
+  mask-image:
+    linear-gradient(to bottom, var(--cards-mask) 62%, transparent),
+    linear-gradient(to left, var(--cards-mask) 84%, transparent);
+}
+
+.card-window {
+  position: relative;
+  overflow: hidden;
+  border-start-start-radius: var(--cards-window-radius);
+  background: var(--color-surface-window);
+  box-shadow: var(--cards-window-shadow);
+  transition:
+    transform var(--site-dur-reveal) var(--site-ease-media),
+    box-shadow var(--site-dur-reveal) var(--site-ease-media);
+}
+
+.card[data-corner='right'] .card-window {
+  border-start-start-radius: 0;
+  border-start-end-radius: var(--cards-window-radius);
+}
+
+.card-lights {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.card-lights circle {
+  stroke: var(--color-line-hairline);
+  stroke-width: 0.5;
+}
+
+.card-light-close {
+  fill: var(--color-tag-red);
+}
+
+.card-light-minimise {
+  fill: var(--color-tag-yellow);
+}
+
+.card-light-zoom {
+  fill: var(--color-tag-green);
+}
+
+.cards-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 800px) {
+  .cards-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: var(--cards-gap);
+  }
+
+  .card[data-shape='wide'] {
+    grid-column: span 6;
+  }
+
+  .card[data-shape='narrow'] {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 799.98px) {
+  .cards {
+    --cards-pad: 1.25rem;
+    --cards-radius: 1rem;
+    --cards-window-radius: 0.625rem;
+    --cards-shadow-room: 1.5rem;
+    --cards-rise: 1.5rem;
+  }
+
+  /* One column: media is cut at a share of its own window, by the clip's shape, and a 4:5 clip
+     keeps about the scale it has on wide screens. */
+  .card[data-shape='wide'] {
+    --cards-media-height: calc(var(--cards-window-width) / 1.6 * 0.84);
+  }
+
+  .card[data-shape='narrow'] {
+    --cards-window-width: min(100cqw - var(--cards-pad), 26rem);
+    --cards-media-height: min(22rem, calc(var(--cards-window-width) / 0.8 * 0.84));
+  }
+
+  .card-body {
+    font-size: 1.0625rem;
+  }
+}
+
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--color-line-control);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card:hover .card-window {
+    box-shadow: var(--cards-window-shadow-raised);
+    transform: translate3d(0, var(--cards-lift), 0);
+  }
+}
+
+@keyframes cards-rise {
+  from {
+    transform: translate3d(0, var(--cards-rise), 0);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Longhands: the build folds a shorthand plus animation-timeline into one declaration that
+       browsers reject. */
+    .card-crop {
+      animation-name: cards-rise;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+  }
+}
