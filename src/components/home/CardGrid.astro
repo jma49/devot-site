@@ -4,6 +4,7 @@ import '../../styles/clip-controls.css'
 import { messages } from '../../i18n/index.ts'
 import { media } from '../../media.ts'
 import Clip from '../Clip.astro'
+import { keyGlyphs, keySymbolsMarkup } from './card-keys.ts'
 
 const t = messages()
 
@@ -13,6 +14,8 @@ interface Layout {
   slot: CardSlot
   shape: 'wide' | 'narrow'
   swatches?: boolean
+  /** The clip's subject fills its cut from side to side, so the side fades stay at its edges. */
+  fade?: 'edge'
 }
 
 // Rows alternate wide, narrow / narrow, wide.
@@ -20,7 +23,7 @@ const layout: Layout[] = [
   { slot: 'card-1', shape: 'wide', swatches: true },
   { slot: 'card-2', shape: 'narrow' },
   { slot: 'card-3', shape: 'narrow' },
-  { slot: 'card-4', shape: 'wide' },
+  { slot: 'card-4', shape: 'wide', fade: 'edge' },
   { slot: 'card-5', shape: 'wide' },
   { slot: 'card-6', shape: 'narrow' },
 ]
@@ -35,14 +38,18 @@ const cornerOf = (slot: CardSlot) => {
 
 const themes = ['dawn', 'tide', 'sage', 'ember']
 
-const cards = layout.map(({ slot, shape, swatches = false }) => {
+const cards = layout.map(({ slot, shape, swatches = false, fade }) => {
   const copy = t.cards.items[slot]
-  const keys = 'keys' in copy ? copy.keys : undefined
-  return { slot, shape, corner: cornerOf(slot), swatches, copy, keys, heading: copy.title }
+  const keys =
+    'keys' in copy ? { spoken: copy.keys.spoken, symbols: keyGlyphs(copy.keys.glyphs) } : undefined
+  return { slot, shape, fade, corner: cornerOf(slot), swatches, copy, keys, heading: copy.title }
 })
 ---
 
 <section id="cards" class="cards" aria-labelledby="cards-title">
+  <svg class="cards-sprite" aria-hidden="true" focusable="false">
+    <Fragment set:html={keySymbolsMarkup} />
+  </svg>
   <div class="cards-inner">
     <header class="cards-head">
       <h2 id="cards-title" data-reveal>
@@ -54,15 +61,28 @@ const cards = layout.map(({ slot, shape, swatches = false }) => {
     </header>
 
     <ul class="cards-grid" role="list">
-      {cards.map(({ slot, shape, corner, swatches, copy, keys, heading }) => (
-        <li class="card" data-slot={slot} data-shape={shape} data-corner={corner} data-reveal>
+      {cards.map(({ slot, shape, fade, corner, swatches, copy, keys, heading }) => (
+        <li
+          class="card"
+          data-slot={slot}
+          data-shape={shape}
+          data-corner={corner}
+          data-fade={fade}
+          data-reveal
+        >
           <div class="card-text">
             <h3 class="card-heading">{heading}</h3>
             <div class="card-meta">
               <p class="card-label">{copy.label}</p>
               {keys && (
                 <p class="card-keys">
-                  <kbd aria-hidden="true">{keys.glyphs}</kbd>
+                  <kbd aria-hidden="true">
+                    {keys.symbols.map(({ id, viewBox }) => (
+                      <svg class="card-key" viewBox={viewBox} focusable="false">
+                        <use href={`#${id}`} />
+                      </svg>
+                    ))}
+                  </kbd>
                   <span class="cards-sr">{keys.spoken}</span>
                 </p>
               )}

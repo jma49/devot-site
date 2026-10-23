@@ -103,8 +103,27 @@ test.describe('feature cards at 1440', () => {
       )
 
       if ('keys' in copy) {
-        await expect(card.locator('.card-keys kbd')).toHaveAttribute('aria-hidden', 'true')
+        const kbd = card.locator('.card-keys kbd')
+        await expect(kbd).toHaveAttribute('aria-hidden', 'true')
         await expect(card.locator('.card-keys')).toHaveText(new RegExp(copy.keys.spoken))
+        expect(await kbd.evaluate((k) => k.textContent?.trim()), `${slot} draws its keys`).toBe('')
+        // Each symbol draws something, all of it inside the box its svg shows.
+        const drawn = await kbd.locator('svg > use').evaluateAll((uses) =>
+          uses.map((use) => {
+            const shape = (use as SVGUseElement).getBBox()
+            const shown = (use.parentElement as unknown as SVGSVGElement).viewBox.baseVal
+            return (
+              shape.width > 0 &&
+              shape.x >= shown.x &&
+              shape.y >= shown.y &&
+              shape.x + shape.width <= shown.x + shown.width &&
+              shape.y + shape.height <= shown.y + shown.height
+            )
+          }),
+        )
+        expect(drawn, `${slot}: one whole symbol per glyph`).toEqual(
+          [...copy.keys.glyphs].map(() => true),
+        )
       }
 
       const lines = await card.locator('.card-body').evaluate((body) => {
@@ -160,7 +179,7 @@ test.describe('feature cards at 1440', () => {
       expect(left >= 12, `${slot} top-left`).toBe(edges.includes('left'))
       expect(right >= 12, `${slot} top-right`).toBe(edges.includes('right'))
     }
-    await expect(page.locator('#cards svg, #cards .card-lights')).toHaveCount(0)
+    await expect(page.locator('#cards .card-window svg, #cards .card-lights')).toHaveCount(0)
   })
 
   test('plays a clip only while it is on screen', async ({ page }) => {
@@ -326,6 +345,34 @@ test.describe('feature cards at 390', () => {
       expect(
         await card.locator('.card-crop').evaluate((c) => getComputedStyle(c).maskImage),
       ).toContain('gradient')
+    }
+  })
+})
+
+test.describe('feature cards on a phone', () => {
+  test.use({ viewport: phone })
+
+  test("gives wide cards the narrow cards' media height, in their phone cut's shape", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await revealAll(page)
+    const heights = await page
+      .locator('#cards .card-media')
+      .evaluateAll((areas) => areas.map((area) => Math.round(area.getBoundingClientRect().height)))
+    expect(new Set(heights).size, `media heights ${heights.join(', ')}`).toBe(1)
+
+    for (const card of await page.locator('#cards .card[data-shape="wide"]').all()) {
+      const slot = (await card.getAttribute('data-slot')) as keyof typeof en.cards.items
+      const cut = media[slot].phone!
+      const video = card.locator('video[data-clip]')
+      await scrollIntoMiddle(card)
+      await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.videoWidth)).toBe(cut.width)
+      const { width, height } = await box(video)
+      const file = await video.evaluate((v: HTMLVideoElement) => v.videoWidth / v.videoHeight)
+      expect(width / height, slot).toBeCloseTo(cut.width / cut.height, 2)
+      expect(file, slot).toBeCloseTo(cut.width / cut.height, 2)
     }
   })
 })

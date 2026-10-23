@@ -114,7 +114,7 @@
 /* The product window, cropped by its well and dissolving towards the bottom edge. */
 .feature-well {
   position: relative;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 5 / 4;
   overflow: hidden;
   border-radius: var(--features-well-radius);
   background: var(--site-color-page);
@@ -154,22 +154,18 @@
   content: '';
 }
 
-/* Phones show a closer crop of the window, cut on the right as well as the bottom. */
 .feature-stage {
   position: absolute;
   inset: 0;
   color: var(--site-color-text);
-  mask-image:
-    linear-gradient(to bottom, currentColor 64%, transparent 98%),
-    linear-gradient(to right, currentColor 72%, transparent 99%);
-  mask-composite: intersect;
 }
 
+/* Phones show their closer cut of the window whole, with room below for the scroll drift's 6 %. */
 .feature-window {
   position: absolute;
   top: 9%;
-  left: 6%;
-  width: 132%;
+  left: 3%;
+  width: 94%;
   overflow: hidden;
   border-radius: var(--features-window-radius);
   background: var(--color-surface-window);
@@ -204,6 +200,10 @@
 }
 
 @media (min-width: 600px) {
+  .feature-well {
+    aspect-ratio: 3 / 2;
+  }
+
   .feature-stage {
     mask-image: linear-gradient(to bottom, currentColor 64%, transparent 98%);
   }

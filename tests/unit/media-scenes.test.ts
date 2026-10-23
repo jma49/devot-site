@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SLOTS } from '../../src/media.ts'
 import { edgesOf } from '../../scripts/media/manifest.ts'
-import { CUTS, SCENES, type Scene } from '../../scripts/media/scenes.ts'
+import { CUTS, frameRect, SCENES, type Scene } from '../../scripts/media/scenes.ts'
 
 // The cut each clip takes of the Devot window: a region of it, as large on the page as the app
 // needs to stay legible, the same shape for every slot of a kind, and a phone cut inside it.
@@ -35,17 +35,35 @@ describe.each(scenes)('%s', (slot, scene) => {
     },
   )
 
-  it.runIf(shape === 'wide')('shows at most 65 % of the window width on a wide card', () => {
-    expect(clip.width / viewport.width).toBeLessThanOrEqual(0.65)
+  it.runIf(shape === 'wide')('shows about half the window width on a wide card', () => {
+    expect(clip.width / viewport.width).toBeLessThanOrEqual(0.52)
   })
 
   it.runIf(shape === 'narrow')('shows at most 45 % of the window width on a narrow card', () => {
     expect(clip.width / viewport.width).toBeLessThanOrEqual(0.45)
   })
 
-  it.runIf(phone !== undefined)('cuts phones a part of the same frames at the same shape', () => {
-    expect(inside(phone!.rect, clip)).toBe(true)
-    expect(Math.abs(ratio(phone!.output) - ratio(output))).toBeLessThan(0.005)
+  it.runIf(phone !== undefined && shape !== 'wide')(
+    'cuts phones a part of the same frames at the same shape',
+    () => {
+      expect(inside(phone!.rect, clip)).toBe(true)
+      expect(Math.abs(ratio(phone!.output) - ratio(output))).toBeLessThan(0.005)
+    },
+  )
+
+  it.runIf(shape === 'wide')(
+    "gives phones the narrow cards' cut, so every card's media is as tall there",
+    () => {
+      expect(phone!.rect).toMatchObject(CUTS.narrow.clip)
+      expect(inside(phone!.rect, { x: 0, y: 0, ...viewport })).toBe(true)
+    },
+  )
+
+  it('takes each frame of the window once, for the clip and its phone cut', () => {
+    const frames = frameRect(scene!)
+    const cuts = phone && !phone.fill ? [clip, phone.rect] : [clip]
+    expect(cuts.every((part) => inside(part, frames))).toBe(true)
+    expect(inside(frames, { x: 0, y: 0, ...viewport })).toBe(true)
   })
 
   it.runIf(phone !== undefined && !phone.fill)('encodes the phone cut at twice its points', () => {
@@ -61,5 +79,27 @@ describe.each(scenes)('%s', (slot, scene) => {
 
   it.runIf(shape === 'wide' || shape === 'feature')('gives phones a closer cut', () => {
     expect(phone?.rect.width).toBe(CUTS[shape as 'wide' | 'feature'].phone.width)
+  })
+})
+
+describe('frameRect', () => {
+  const output = { width: 800, height: 1000 }
+  const clip = { x: 100, y: 0, width: 640, height: 400 }
+
+  it('is the clip when there is no phone cut, or it lies inside the clip', () => {
+    expect(frameRect({ clip })).toEqual(clip)
+    expect(
+      frameRect({ clip, phone: { rect: { x: 200, y: 0, width: 400, height: 250 }, output } }),
+    ).toEqual(clip)
+  })
+
+  it('reaches past the clip to take in a phone cut of another shape', () => {
+    const phone = { rect: { x: 60, y: 0, width: 400, height: 500 }, output }
+    expect(frameRect({ clip, phone })).toEqual({ x: 60, y: 0, width: 680, height: 500 })
+  })
+
+  it('is the clip for a phone cut that fills the rest of the frame', () => {
+    const phone = { rect: { x: 0, y: 0, width: 400, height: 500 }, output, fill: true }
+    expect(frameRect({ clip, phone })).toEqual(clip)
   })
 })

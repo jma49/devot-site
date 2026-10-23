@@ -1,7 +1,9 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type { Locator, Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
+import { media as clips } from '../../src/media.ts'
 import { ACTIVE_LINE } from '../../src/scripts/features.ts'
+import { steady } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const { items, listLabel } = en.features
@@ -379,6 +381,40 @@ test.describe('stacked, at 390', () => {
       expect(media?.width ?? 0).toBeGreaterThan(PHONE.width - 60)
     }
   })
+
+  for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+    test(`shows the whole phone clip of each feature, legible and unfaded (${reducedMotion})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      for (const [index, item] of items.entries()) {
+        const video = block(page, index).locator(`video[data-clip="${item.slot}"]`)
+        // Entering from the foot of the screen, where the scroll drift moves the window furthest down.
+        for (const at of [PHONE.height - 300, 120]) {
+          await placeWell(page, index, at)
+          await expect(well(page, index)).toHaveAttribute('data-revealed', '')
+          const [shown, frame] = await steady(page, () =>
+            Promise.all([video.boundingBox(), well(page, index).boundingBox()]),
+          )
+          expect(shown!.x, `${item.slot} left`).toBeGreaterThanOrEqual(frame!.x)
+          expect(shown!.y, `${item.slot} top`).toBeGreaterThanOrEqual(frame!.y)
+          expect(shown!.x + shown!.width, `${item.slot} right`).toBeLessThanOrEqual(
+            frame!.x + frame!.width,
+          )
+          expect(shown!.y + shown!.height, `${item.slot} bottom`).toBeLessThanOrEqual(
+            frame!.y + frame!.height,
+          )
+          const cut = clips[item.slot].phone!
+          expect(shown!.width / shown!.height).toBeCloseTo(cut.width / cut.height, 1)
+          expect((shown!.width / cut.points) * cut.minText, item.slot).toBeGreaterThanOrEqual(8)
+        }
+        const mask = await block(page, index)
+          .locator('.feature-stage')
+          .evaluate((stage) => getComputedStyle(stage).maskImage)
+        expect(mask, `${item.slot} is not faded`).toBe('none')
+      }
+    })
+  }
 
   test('fits the screen without sideways scrolling', async ({ page }) => {
     const overflow = await page.evaluate(
