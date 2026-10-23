@@ -1,5 +1,5 @@
 .closing {
-  --closing-title-size: clamp(2.25rem, 1.2rem + 3.6vw, 4rem);
+  --closing-title-size: clamp(2.25rem, 1.2rem + 3.2vw, 3.5rem);
 
   position: relative;
   isolation: isolate;

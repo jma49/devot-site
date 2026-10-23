@@ -37,9 +37,9 @@
 
 .cards-head h2 {
   margin: 0;
-  font-size: clamp(2rem, 1.25rem + 2.4vw, 3rem);
+  font-size: var(--site-font-size-title);
   font-weight: var(--font-weight-bold);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   line-height: 1.08;
   text-wrap: balance;
 }
