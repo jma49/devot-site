@@ -1,0 +1,431 @@
+/*
+ * Write, Organise, Find and connect. Stacked below 800 px; from there the numbered list sticks
+ * beside the media and src/scripts/features.ts marks the item whose media has crossed the active
+ * line (keep the breakpoint in step with DESKTOP_QUERY there).
+ */
+.features {
+  --features-brand: var(--color-activity-level-4);
+  --features-rail: 2px;
+  --features-rail-inset: 1.75rem;
+  --features-window-radius: 12px;
+  --features-well-radius: 20px;
+  --features-ease-state: var(--site-ease-text);
+  --features-dur-state: 300ms;
+
+  width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+  margin-inline: auto;
+  padding-block: var(--site-space-section);
+}
+
+.features-intro {
+  display: grid;
+  gap: var(--space-7);
+  margin-block-end: clamp(2.5rem, 6vw, 5rem);
+}
+
+.features-title {
+  margin: 0;
+  font-size: var(--site-font-size-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.features-title-line {
+  display: block;
+}
+
+.features-lead {
+  max-width: 30rem;
+  color: var(--site-color-text-muted);
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.features-list ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.feature-kicker {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+}
+
+.feature-number {
+  color: var(--features-brand);
+  font-family: var(--font-family-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.feature-name {
+  color: var(--site-color-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Read as "Write: Markdown on one side…", not run together with the title. */
+.feature-name::after {
+  content: ':';
+  font-size: 0;
+}
+
+.feature-title {
+  display: block;
+  margin-block-start: var(--space-4);
+  font-size: clamp(1.3125rem, 1.15rem + 0.5vw, 1.5rem);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.feature-text {
+  max-width: 34rem;
+  color: var(--site-color-text-muted);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.feature-text code {
+  padding: 0.0625em 0.35em;
+  border-radius: var(--radius-control);
+  background: var(--color-fill-card);
+  color: var(--site-color-text);
+  font-family: var(--font-family-mono);
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
+/* The product window, cropped by its well and dissolving towards the bottom edge. */
+.feature-well {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: var(--features-well-radius);
+  background: var(--site-color-page);
+  box-shadow: inset 0 0 0 1px var(--color-line-separator);
+  isolation: isolate;
+  /* WebKit takes the scroll-linked layers inside for moved content and scrolls the page to make
+     up for it, which feeds back into the scroll. */
+  overflow-anchor: none;
+}
+
+.feature-light {
+  position: absolute;
+  z-index: -1;
+  inset: -12% -6%;
+  background: var(--backdrop), var(--backdrop);
+}
+
+.feature-light-night {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feature-light-day {
+    display: none;
+  }
+
+  .feature-light-night {
+    display: block;
+  }
+}
+
+.feature-well::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(60% 55% at 12% 0%, var(--color-surface-editor-wash), transparent 75%);
+  content: '';
+}
+
+/* Phones show a closer crop of the window, cut on the right as well as the bottom. */
+.feature-stage {
+  position: absolute;
+  inset: 0;
+  color: var(--site-color-text);
+  mask-image:
+    linear-gradient(to bottom, currentColor 64%, transparent 98%),
+    linear-gradient(to right, currentColor 72%, transparent 99%);
+  mask-composite: intersect;
+}
+
+.feature-window {
+  position: absolute;
+  top: 9%;
+  left: 6%;
+  width: 132%;
+  overflow: hidden;
+  border-radius: var(--features-window-radius);
+  background: var(--color-surface-window);
+  box-shadow:
+    0 0 0 0.5px var(--color-line-hairline),
+    0 1px 3px var(--color-shadow-popover-key),
+    0 24px 56px -12px var(--color-shadow-popover-ambient);
+  container-type: inline-size;
+}
+
+.feature-clip {
+  border-radius: inherit;
+}
+
+/* Drawn by the page: the capture build has no window controls. Sized in the window's own units so
+   they stay where the app leaves room for them at any width. */
+.feature-controls {
+  position: absolute;
+  top: 2.67cqi;
+  left: 2.67cqi;
+  display: flex;
+  gap: 1.07cqi;
+}
+
+.feature-controls > span {
+  width: 1.6cqi;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px var(--color-line-separator);
+}
+
+.feature-controls > span:nth-child(1) {
+  background: var(--color-tag-red);
+}
+
+.feature-controls > span:nth-child(2) {
+  background: var(--color-tag-yellow);
+}
+
+.feature-controls > span:nth-child(3) {
+  background: var(--color-tag-green);
+}
+
+/* Stacked: media, then the number, title and the whole description. */
+.features-list {
+  display: none;
+}
+
+.features-media {
+  display: grid;
+  gap: clamp(3.5rem, 9vw, 5rem);
+}
+
+.feature-copy {
+  max-width: 38rem;
+  margin-block-start: var(--space-9);
+}
+
+.feature-copy .feature-text {
+  margin-block-start: var(--space-5);
+}
+
+@media (min-width: 600px) {
+  .feature-stage {
+    mask-image: linear-gradient(to bottom, currentColor 64%, transparent 98%);
+  }
+
+  .feature-window {
+    left: 5%;
+    width: 90%;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 799.98px) {
+  .feature-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: var(--space-10);
+    max-width: none;
+  }
+
+  .feature-copy .feature-text {
+    margin-block-start: var(--space-3);
+  }
+}
+
+@media (min-width: 800px) {
+  .features-intro,
+  .features-body {
+    display: grid;
+    grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+    column-gap: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .features-intro {
+    align-items: end;
+  }
+
+  .features-lead {
+    padding-block-end: 0.4em;
+  }
+
+  .features-body {
+    align-items: start;
+  }
+
+  .features-list {
+    position: sticky;
+    top: max(6rem, 20vh);
+    display: block;
+    /* Its items grow and shrink as the scroll moves; it must never steer the scroll itself. */
+    overflow-anchor: none;
+  }
+
+  .feature-copy {
+    display: none;
+  }
+
+  .feature-well {
+    --features-well-radius: 28px;
+  }
+
+  .features-media {
+    gap: clamp(6rem, 18vh, 11rem);
+    padding-block-end: 10vh;
+  }
+
+  .feature-item {
+    /* src/scripts/features.ts sets it as the scroll moves through the item's media. */
+    --feature-progress: 0;
+
+    position: relative;
+    padding-inline-start: var(--features-rail-inset);
+  }
+
+  .feature-item::before,
+  .feature-item::after {
+    position: absolute;
+    inset-block: var(--space-2);
+    inset-inline-start: 0;
+    width: var(--features-rail);
+    border-radius: var(--features-rail);
+    content: '';
+  }
+
+  .feature-item::before {
+    background: var(--color-fill-track);
+  }
+
+  .feature-item::after {
+    background: var(--features-brand);
+    transform: scaleY(var(--feature-progress));
+    transform-origin: top;
+  }
+
+  .feature-button {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: var(--space-8) 0 var(--space-7);
+    border: 0;
+    border-radius: var(--radius-button);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .feature-item .feature-number,
+  .feature-item .feature-name,
+  .feature-item .feature-title {
+    transition: color var(--features-dur-state) var(--features-ease-state);
+  }
+
+  .feature-item:not([data-active]) .feature-number,
+  .feature-item:not([data-active]) .feature-name,
+  .feature-item:not([data-active]) .feature-title {
+    color: var(--site-color-text-faint);
+  }
+
+  .feature-item:not([data-active]) .feature-button:hover .feature-title {
+    color: var(--site-color-text-muted);
+  }
+
+  .feature-detail {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows var(--features-dur-state) var(--features-ease-state),
+      opacity var(--features-dur-state) var(--features-ease-state);
+  }
+
+  .feature-detail > div {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .features-list .feature-text {
+    padding-block-end: var(--space-8);
+  }
+
+  .feature-window {
+    transition: opacity 400ms var(--features-ease-state);
+  }
+
+  [data-features-ready] .feature:not([data-active]) .feature-window {
+    opacity: 0.5;
+  }
+}
+
+/* Without scripting nothing would expand them again, so only then do the others fold away. */
+@media (min-width: 800px) and (scripting: enabled) {
+  .feature-item:not([data-active]) .feature-detail {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
+@keyframes features-window-drift {
+  from {
+    transform: translate3d(0, 6%, 0);
+  }
+  to {
+    transform: translate3d(0, -3%, 0);
+  }
+}
+
+@keyframes features-light-drift {
+  from {
+    transform: translate3d(-3%, -6%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(3%, 6%, 0) scale(1);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .feature-well {
+      view-timeline: --feature-well block;
+    }
+
+    .feature-stage {
+      animation: features-window-drift linear both;
+      animation-range: cover;
+    }
+
+    .feature-light {
+      animation: features-light-drift linear both;
+      animation-range: cover;
+    }
+
+    /* A rule of its own: the build's minifier folds a timeline set beside the shorthand into it,
+       which browsers then reject, dropping the whole animation. */
+    .feature-well > .feature-stage,
+    .feature-well > .feature-light {
+      animation-timeline: --feature-well;
+    }
+  }
+}
