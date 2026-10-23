@@ -1,6 +1,5 @@
 #!/bin/sh
-# pre-push hook: refuse pushes to main. Changes reach main through pull
-# requests only. Git passes one line per ref on stdin:
+# Changes reach main through pull requests only. Git passes one line per ref on stdin:
 #   <local ref> <local sha> <remote ref> <remote sha>
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
   if [ "$remote_ref" = "refs/heads/main" ]; then

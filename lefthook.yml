@@ -12,8 +12,11 @@ pre-commit:
 
 pre-push:
   jobs:
+    # A script, not `run:`: lefthook skips a pre-push `run:` job when the push changes no files,
+    # as in `git push origin HEAD:main` from an already pushed branch.
     - name: block-main
-      run: sh scripts/block-main-push.sh
+      script: block-main-push.sh
+      runner: sh
       use_stdin: true
     - name: format
       run: pnpm format:check
