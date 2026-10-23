@@ -55,7 +55,7 @@ describe('the pre-push hook', () => {
     git(work, 'remote', 'add', 'origin', remote)
     git(work, 'push', '--quiet', '-u', 'origin', 'main')
     const install = run(work, env.LEFTHOOK_BIN, ['install'])
-    expect(install.status, install.output).toBe(0)
+    if (install.status !== 0) throw new Error(`lefthook install: ${install.output}`)
   })
 
   it('lets a branch through', () => {
