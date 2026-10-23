@@ -1,0 +1,39 @@
+/*
+ * Site-level variables, built on devot's semantic tokens (src/theme/tokens.css). Components use
+ * these or devot's semantic tokens; this is the one stylesheet that may hold raw values.
+ */
+:root {
+  --site-color-page: var(--color-surface-editor);
+  --site-color-text: var(--color-text-primary);
+  --site-color-text-muted: var(--color-text-secondary);
+  --site-color-text-faint: var(--color-text-tertiary);
+  --site-color-link: var(--color-accent-text);
+  --site-color-line: var(--color-line-separator);
+  --site-color-action: var(--color-accent-fill);
+  --site-color-action-hover: var(--color-accent-hover);
+  --site-color-on-action: var(--color-accent-on-fill);
+  --site-color-selection: var(--color-accent-selection);
+  --site-focus-ring: var(--size-focus-ring) solid var(--color-focus-ring);
+  --site-focus-offset: 3px;
+
+  --site-font: var(--font-family-ui);
+  --site-font-size-small: 0.875rem;
+  --site-font-size-body: 1.0625rem;
+  --site-font-size-brand: 1.125rem;
+  --site-font-size-lead: clamp(1.125rem, 1rem + 0.6vw, 1.5rem);
+  --site-font-size-display: clamp(2.5rem, 1.4rem + 4.6vw, 4.75rem);
+  --site-font-size-title: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --site-line-height-body: 1.55;
+  --site-line-height-display: 1.04;
+  --site-tracking-display: -0.025em;
+  --site-tracking-brand: -0.01em;
+
+  --site-width-page: 72rem;
+  --site-width-display: 16ch;
+  --site-gutter: clamp(1.25rem, 4vw, 2.5rem);
+  --site-space-section: clamp(3.5rem, 11vh, 8rem);
+  --site-size-mark: 1.75rem;
+  --site-size-hero-mark: clamp(4rem, 3rem + 4vw, 6rem);
+  --site-size-action: 3rem;
+  --site-motion-hover: var(--motion-duration-hover) var(--motion-easing-out);
+}

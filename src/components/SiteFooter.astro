@@ -1,0 +1,36 @@
+---
+import { messages } from '../i18n/index.ts'
+import { REPO_URL } from '../site.ts'
+
+const t = messages()
+---
+
+<footer class="site-footer">
+  <p>{t.footer.copyright(new Date().getFullYear())}</p>
+  <a href={REPO_URL}>{t.footer.source}</a>
+</footer>
+
+<style>
+  .site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-9);
+    align-items: center;
+    justify-content: space-between;
+    width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+    margin-inline: auto;
+    padding-block: var(--space-9) var(--space-10);
+    border-top: 1px solid var(--site-color-line);
+    color: var(--site-color-text-muted);
+    font-size: var(--site-font-size-small);
+  }
+
+  a {
+    border-radius: var(--radius-control);
+    color: inherit;
+  }
+
+  a:hover {
+    color: var(--site-color-text);
+  }
+</style>

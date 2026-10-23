@@ -1,4 +1,7 @@
 node_modules/
-dist/
+/dist/
+/.astro/
+/playwright-report/
+/test-results/
 .env*
 .DS_Store

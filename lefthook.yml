@@ -1,0 +1,26 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      glob: '*.{ts,js,mjs,json,md,css,html,yml,yaml,astro}'
+      # Generated files are ignored by .oxfmtrc.json; a commit of only those must not fail.
+      run: pnpm exec oxfmt --no-error-on-unmatched-pattern {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: '*.{ts,js,mjs,astro}'
+      run: pnpm exec oxlint {staged_files}
+
+pre-push:
+  jobs:
+    # A script, not `run:`: lefthook skips a pre-push `run:` job when the push changes no files,
+    # as in `git push origin HEAD:main` from an already pushed branch.
+    - name: block-main
+      script: block-main-push.sh
+      runner: sh
+      use_stdin: true
+    - name: format
+      run: pnpm format:check
+    - name: typecheck
+      run: pnpm typecheck
+    - name: unit-tests
+      run: pnpm test
