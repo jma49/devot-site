@@ -1,7 +1,112 @@
 ---
+import '../../styles/home/cards.css'
 import { messages } from '../../i18n/index.ts'
+import { media } from '../../media.ts'
+import Clip from '../Clip.astro'
 
 const t = messages()
+
+type CardSlot = keyof typeof t.cards.items
+
+interface Layout {
+  slot: CardSlot
+  shape: 'wide' | 'narrow'
+  /** The window corner the clip's crop keeps: rounded and, on the left, with the window controls. */
+  corner: 'left' | 'right'
+  swatches?: boolean
+}
+
+// Rows alternate wide, narrow / narrow, wide.
+const layout: Layout[] = [
+  { slot: 'card-1', shape: 'wide', corner: 'left', swatches: true },
+  { slot: 'card-2', shape: 'narrow', corner: 'left' },
+  { slot: 'card-3', shape: 'narrow', corner: 'left' },
+  { slot: 'card-4', shape: 'wide', corner: 'left' },
+  { slot: 'card-5', shape: 'wide', corner: 'left' },
+  { slot: 'card-6', shape: 'narrow', corner: 'left' },
+]
+
+const themes = ['dawn', 'tide', 'sage', 'ember']
+
+const cards = layout.map(({ slot, shape, corner, swatches = false }) => {
+  const copy = t.cards.items[slot]
+  // The clips are recorded at two device pixels to the app's point, so the frame works in points.
+  const app = { width: media[slot].width / 2, height: media[slot].height / 2 }
+  const keys = 'keys' in copy ? copy.keys : undefined
+  return { slot, shape, corner, swatches, app, copy, keys }
+})
 ---
 
-<section id="cards" aria-label={t.cards.label}></section>
+<section id="cards" class="cards" aria-labelledby="cards-title">
+  <div class="cards-inner">
+    <header class="cards-head">
+      <h2 id="cards-title" data-reveal>
+        {t.cards.label}
+      </h2>
+      <p class="cards-lead" data-reveal>
+        {t.cards.lead}
+      </p>
+    </header>
+
+    <ul class="cards-grid" role="list">
+      {cards.map(({ slot, shape, corner, swatches, app, copy, keys }) => (
+        <li class="card" data-slot={slot} data-shape={shape} data-corner={corner} data-reveal>
+          <div class="card-text">
+            <div class="card-meta">
+              <h3 class="card-label">{copy.label}</h3>
+              {keys && (
+                <p class="card-keys">
+                  <kbd aria-hidden="true">{keys.glyphs}</kbd>
+                  <span class="cards-sr">{keys.spoken}</span>
+                </p>
+              )}
+              {swatches && (
+                <span class="card-swatches" aria-hidden="true">
+                  {themes.map((theme) => (
+                    <span data-theme-preview={theme} data-appearance-preview="light" />
+                  ))}
+                </span>
+              )}
+            </div>
+            <p class="card-body">
+              {copy.body.map((run) => (typeof run === 'string' ? run : <code>{run.code}</code>))}
+            </p>
+          </div>
+
+          <div class="card-media">
+            <div
+              class="card-well"
+              data-theme-preview="tide"
+              data-appearance-preview="light"
+              aria-hidden="true"
+            />
+            <div
+              class="card-well"
+              data-theme-preview="tide"
+              data-appearance-preview="dark"
+              aria-hidden="true"
+            />
+            <div class="card-crop">
+              <div class="card-window">
+                <Clip name={slot} />
+                {corner === 'left' && (
+                  <svg
+                    class="card-lights"
+                    viewBox={`0 0 ${app.width} ${app.height}`}
+                    preserveAspectRatio="xMinYMin meet"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <circle class="card-light-close" cx="27" cy="26" r="6.5" />
+                    <circle class="card-light-minimise" cx="47" cy="26" r="6.5" />
+                    <circle class="card-light-zoom" cx="67" cy="26" r="6.5" />
+                  </svg>
+                )}
+              </div>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
