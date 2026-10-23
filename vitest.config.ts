@@ -13,7 +13,7 @@ export default defineConfig({
         test: { name: 'unit', include: ['tests/unit/**/*.test.ts', 'tests/policy/**/*.test.ts'] },
       },
       // Reads dist/, so it runs only after `pnpm build`.
-      { extends: true, test: { name: 'dist', include: ['tests/dist/**/*.test.ts'] } },
+      { extends: true, test: { name: 'dist', include: ['tests/built/**/*.test.ts'] } },
     ],
   },
 })
