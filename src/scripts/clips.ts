@@ -1,18 +1,27 @@
-import { browserEnv, REDUCED_MOTION_QUERY, type DomEnv, type ObserverLike } from '../lib/dom-env.ts'
+import {
+  browserEnv,
+  REDUCED_MOTION_QUERY,
+  type DomEnv,
+  type MediaQueryLike,
+  type ObserverLike,
+} from '../lib/dom-env.ts'
 
 export interface ClipOptions {
   /** Pixels outside the viewport at which a clip starts loading its sources. */
   loadMargin?: number
   /** Share of a clip that must be visible for it to play; 0 is any part of it. */
   threshold?: number
+  /** Matches while every clip holds still; by default, while reduced motion is on. */
+  still?: MediaQueryLike
 }
 
 /**
  * Plays each `video[data-clip]` only while it is in view and the tab is visible, and pauses it
  * otherwise. Its `<source data-src>` files are not requested until the clip is near the viewport,
  * and the browser then picks the one whose `media` matches (scheme, width); when that changes, a
- * loaded clip loads again so it follows. With reduced motion nothing loads or plays, so the poster
- * stays. Returns a function that stops it all.
+ * loaded clip loads again so it follows. While `still` matches (reduced motion, or animations
+ * paused) nothing loads or plays: a playing clip stops on its frame, the others keep their posters.
+ * Returns a function that stops it all.
  */
 export function initClips(
   root: ParentNode = document,
@@ -23,7 +32,7 @@ export function initClips(
   const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-clip]')]
   const inView = new Set<HTMLVideoElement>()
   const loaded = new WeakSet<HTMLVideoElement>()
-  const reduced = env.matchMedia(REDUCED_MOTION_QUERY)
+  const still = options.still ?? env.matchMedia(REDUCED_MOTION_QUERY)
   const variants = [
     ...new Set(
       videos.flatMap((video) =>
@@ -88,7 +97,7 @@ export function initClips(
     videos.forEach((video) => video.pause())
   }
 
-  const onReducedMotion = (event: { matches: boolean }) => (event.matches ? stop() : start())
+  const onStill = (event: { matches: boolean }) => (event.matches ? stop() : start())
   const stopVisibility = env.onPageVisibility(() => inView.forEach(sync))
   const reload = () => {
     for (const video of videos.filter((each) => loaded.has(each))) {
@@ -97,13 +106,13 @@ export function initClips(
     }
   }
 
-  if (!reduced.matches) start()
-  reduced.addEventListener('change', onReducedMotion)
+  if (!still.matches) start()
+  still.addEventListener('change', onStill)
   variants.forEach((query) => query.addEventListener('change', reload))
   return () => {
     stop()
     stopVisibility()
-    reduced.removeEventListener('change', onReducedMotion)
+    still.removeEventListener('change', onStill)
     variants.forEach((query) => query.removeEventListener('change', reload))
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { MediaQueryLike } from '../../src/lib/dom-env.ts'
 import { initClips } from '../../src/scripts/clips.ts'
 import { fakeEnv, FakeSource, FakeVideo, rootOf } from '../support/dom-fakes.ts'
 
@@ -183,5 +184,58 @@ describe('initClips', () => {
       { rootMargin: '100px 0px' },
       { threshold: 0.5 },
     ])
+  })
+})
+
+describe('initClips with a pause', () => {
+  type Listener = (event: { matches: boolean }) => void
+  const stillSource = (initial: boolean) => {
+    const listeners = new Set<Listener>()
+    const query = {
+      matches: initial,
+      addEventListener: (_type: string, listener: unknown) => listeners.add(listener as Listener),
+      removeEventListener: (_type: string, listener: unknown) =>
+        listeners.delete(listener as Listener),
+    }
+    return {
+      query: query as unknown as MediaQueryLike,
+      listeners,
+      set(matches: boolean) {
+        query.matches = matches
+        listeners.forEach((listener) => listener({ matches }))
+      },
+    }
+  }
+
+  it('holds still in place of the reduced-motion query when given one', () => {
+    const still = stillSource(true)
+    const fake = fakeEnv()
+    const video = new FakeVideo()
+
+    initClips(rootOf([video]), { still: still.query }, fake.env)
+
+    expect(fake.observers).toEqual([])
+    expect([video.loads, video.plays]).toEqual([0, 0])
+    expect(fake.reducedListeners.size).toBe(0)
+  })
+
+  it('pauses every playing clip where it is, and plays the ones in view on resume', () => {
+    const still = stillSource(false)
+    const fake = fakeEnv()
+    const videos = [new FakeVideo(), new FakeVideo()]
+    const stop = initClips(rootOf(videos), { still: still.query }, fake.env)
+    fake.observers[1]?.deliver({ target: videos[0], isIntersecting: true })
+    expect(videos.map((video) => video.paused)).toEqual([false, true])
+
+    still.set(true)
+    expect(videos.map((video) => video.paused)).toEqual([true, true])
+    expect(fake.observers.every((observer) => observer.disconnected)).toBe(true)
+    still.set(false)
+    fake.observers[3]?.deliver({ target: videos[0], isIntersecting: true })
+
+    expect(videos.map((video) => video.paused)).toEqual([false, true])
+    expect(videos[0]?.loads).toBe(1)
+    stop()
+    expect(still.listeners.size).toBe(0)
   })
 })

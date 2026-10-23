@@ -1,0 +1,192 @@
+import { AxeBuilder } from '@axe-core/playwright'
+import type { Locator, Page } from '@playwright/test'
+import { en } from '../../src/i18n/en.ts'
+import { PAUSE_ATTRIBUTE, PAUSE_KEY } from '../../src/scripts/pause.ts'
+import { animationsDone, frames } from '../support/settle.ts'
+import { expect, test } from './fixtures.ts'
+
+const DESKTOP = { width: 1440, height: 900 }
+const PHONE = { width: 390, height: 844 }
+
+const toggle = (page: Page) => page.getByRole('button', { name: en.chrome.pause, exact: true })
+const hero = (page: Page) => page.locator('[data-hero]')
+const heroClip = (page: Page) => page.locator('video[data-clip="hero"]')
+const isPlaying = (video: Locator) =>
+  video.evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0)
+const stored = (page: Page) => page.evaluate((key) => localStorage.getItem(key), PAUSE_KEY)
+/** Every clip's state: paused or not, and where it stands. */
+const clipStates = (page: Page) =>
+  page.locator('video[data-clip]').evaluateAll((videos) =>
+    videos.map((v) => ({
+      paused: (v as HTMLVideoElement).paused,
+      time: (v as HTMLVideoElement).currentTime,
+    })),
+  )
+/** The play state of the drifting CSS layers under the hero's backdrop. */
+const driftStates = (page: Page) =>
+  page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter((a) => a instanceof CSSAnimation && a.animationName.startsWith('hero-drift'))
+      .map((a) => a.playState),
+  )
+
+for (const viewport of [DESKTOP, PHONE]) {
+  test.describe(`pause toggle at ${viewport.width}`, () => {
+    test.use({ viewport })
+
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+    })
+
+    test('is one labelled toggle in the header bar, 24 px or larger, not pressed', async ({
+      page,
+    }) => {
+      await page.goto('/')
+
+      await expect(toggle(page)).toHaveCount(1)
+      await expect(toggle(page)).toBeVisible()
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+      expect(await toggle(page).evaluate((button) => !!button.closest('[data-menu-scope]'))).toBe(
+        true,
+      )
+      const box = await toggle(page).boundingBox()
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(24)
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(24)
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width)
+    })
+
+    test('is reached by keyboard before anything in the page content', async ({
+      page,
+      browserName,
+    }) => {
+      // WebKit, as Safari by default, moves Tab between text fields only; Option-Tab reaches all.
+      const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab'
+      await page.goto('/')
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+
+      let reached = false
+      for (let step = 0; step < 12 && !reached; step++) {
+        await page.keyboard.press(tab)
+        const where = await page.evaluate(() => {
+          const active = document.activeElement
+          return {
+            toggle: active?.hasAttribute('data-motion-toggle') ?? false,
+            inMain: !!active?.closest('main'),
+          }
+        })
+        expect(where.inMain, `step ${step}`).toBe(false)
+        reached = where.toggle
+      }
+      expect(reached).toBe(true)
+      await expect(toggle(page)).toBeFocused()
+      await expect(toggle(page)).toHaveCSS('outline-style', 'solid')
+
+      await page.keyboard.press('Space')
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+      await page.keyboard.press('Enter')
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    test('stops every clip and the backdrop at once, and starts them again', async ({ page }) => {
+      await page.goto('/')
+      await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
+      await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
+
+      await toggle(page).click()
+
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.locator('html')).toHaveAttribute(PAUSE_ATTRIBUTE, '')
+      await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'idle')
+      const paused = await clipStates(page)
+      expect(paused.every((clip) => clip.paused)).toBe(true)
+      expect((await driftStates(page)).filter((state) => state === 'running')).toEqual([])
+      await frames(page, 10)
+      expect(await clipStates(page)).toEqual(paused)
+      expect(await stored(page)).toBe('true')
+
+      await toggle(page).click()
+
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+      await expect(page.locator('html')).not.toHaveAttribute(PAUSE_ATTRIBUTE)
+      await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
+      await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
+      expect(await stored(page)).toBe('false')
+    })
+
+    test('remembers the pause on the next visit: nothing loads or plays', async ({ page }) => {
+      await page.goto('/')
+      await toggle(page).click()
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+
+      await page.reload()
+
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+      await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'idle')
+      await animationsDone(page, '#hero')
+      expect((await driftStates(page)).filter((state) => state === 'running')).toEqual([])
+      const clip = heroClip(page)
+      expect(await clip.evaluate((v: HTMLVideoElement) => [v.paused, v.currentSrc])).toEqual([
+        true,
+        '',
+      ])
+    })
+
+    test('gives each clip its own play button while paused, as reduced motion does', async ({
+      page,
+    }) => {
+      await page.goto('/')
+      await expect(page.locator('.clip-control')).toHaveCount(0)
+
+      await toggle(page).click()
+
+      const slots = await page.locator('video[data-clip]').count()
+      await expect(page.locator('.clip-control')).toHaveCount(slots)
+      const button = page.locator('.clip-control[data-for="card-2"]')
+      await button.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+      await button.click()
+      await expect(button).toHaveAttribute('aria-pressed', 'true')
+      await expect
+        .poll(() => isPlaying(page.locator('video[data-clip="card-2"]')), { timeout: 10_000 })
+        .toBe(true)
+
+      await toggle(page).click()
+      await expect(page.locator('.clip-control')).toHaveCount(0)
+    })
+  })
+}
+
+test.describe('with reduced motion', () => {
+  test.use({ viewport: DESKTOP })
+
+  test('leaves the toggle out, since nothing moves, and keeps the play buttons', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+
+    await expect(page.locator('.clip-control')).not.toHaveCount(0)
+    await expect(toggle(page)).toHaveCount(0)
+    await expect(page.locator('[data-motion-toggle]')).toHaveCount(2)
+  })
+})
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  for (const viewport of [DESKTOP, PHONE]) {
+    test(`passes an accessibility scan while paused, ${colorScheme} at ${viewport.width}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport)
+      await page.emulateMedia({ colorScheme, reducedMotion: 'no-preference' })
+      await page.goto('/')
+      await toggle(page).click()
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+      await animationsDone(page)
+
+      const scan = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
+        .analyze()
+      expect(scan.violations.map(({ id, nodes }) => `${id} (${nodes.length})`)).toEqual([])
+    })
+  }
+}
