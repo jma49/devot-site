@@ -1,5 +1,6 @@
 ---
 import '../../styles/home/cards.css'
+import '../../styles/clip-controls.css'
 import { messages } from '../../i18n/index.ts'
 import { media } from '../../media.ts'
 import Clip from '../Clip.astro'
@@ -37,7 +38,8 @@ const themes = ['dawn', 'tide', 'sage', 'ember']
 const cards = layout.map(({ slot, shape, swatches = false }) => {
   const copy = t.cards.items[slot]
   const keys = 'keys' in copy ? copy.keys : undefined
-  return { slot, shape, corner: cornerOf(slot), swatches, copy, keys }
+  const heading = t.cardHeadings[slot]
+  return { slot, shape, corner: cornerOf(slot), swatches, copy, keys, heading }
 })
 ---
 
@@ -53,11 +55,12 @@ const cards = layout.map(({ slot, shape, swatches = false }) => {
     </header>
 
     <ul class="cards-grid" role="list">
-      {cards.map(({ slot, shape, corner, swatches, copy, keys }) => (
+      {cards.map(({ slot, shape, corner, swatches, copy, keys, heading }) => (
         <li class="card" data-slot={slot} data-shape={shape} data-corner={corner} data-reveal>
           <div class="card-text">
+            <h3 class="card-heading">{heading}</h3>
             <div class="card-meta">
-              <h3 class="card-label">{copy.label}</h3>
+              <p class="card-label">{copy.label}</p>
               {keys && (
                 <p class="card-keys">
                   <kbd aria-hidden="true">{keys.glyphs}</kbd>
@@ -77,7 +80,7 @@ const cards = layout.map(({ slot, shape, swatches = false }) => {
             </p>
           </div>
 
-          <div class="card-media">
+          <div class="card-media" data-clip-dock>
             <div
               class="card-well"
               data-theme-preview="tide"

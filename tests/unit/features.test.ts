@@ -5,6 +5,7 @@ import {
   ACTIVE_LINE,
   activeIndex,
   followScroll,
+  markerFrame,
   progressPast,
   scrollTarget,
 } from '../../src/scripts/features.ts'
@@ -114,6 +115,27 @@ describe('followScroll', () => {
 
   it('lets go when the time is up, whatever the scroll reached', () => {
     expect(followScroll(1, { index: 2, until: 1000 }, 1000)).toEqual({ index: 1, hold: null })
+  })
+})
+
+describe('markerFrame', () => {
+  // Each item is its heading button plus its description, which only the active item shows.
+  const heads = [96, 128, 96]
+  const bodies = [160, 190, 140]
+
+  it('spans the active item as it will be once the others have folded', () => {
+    expect(markerFrame(heads, bodies, 0)).toEqual({ top: 0, height: 256 })
+    expect(markerFrame(heads, bodies, 1)).toEqual({ top: 96, height: 318 })
+    expect(markerFrame(heads, bodies, 2)).toEqual({ top: 224, height: 236 })
+  })
+
+  it('ignores the descriptions of the items that fold', () => {
+    expect(markerFrame(heads, [999, 190, 999], 1)).toEqual({ top: 96, height: 318 })
+  })
+
+  it('has no extent without an active item', () => {
+    expect(markerFrame(heads, bodies, -1)).toEqual({ top: 0, height: 0 })
+    expect(markerFrame([], [], 0)).toEqual({ top: 0, height: 0 })
   })
 })
 

@@ -1,5 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { ACTIVE_LINE } from '../../src/scripts/features.ts'
 import { expect, test } from './fixtures.ts'
@@ -39,6 +39,52 @@ async function violations(page: Page): Promise<string[]> {
     .analyze()
   return scan.violations.map(({ id, nodes }) => `${id} (${nodes.length})`)
 }
+
+/** Waits until no transition runs in the section, so nothing is caught mid-change. */
+async function settled(page: Page): Promise<void> {
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const section = document.querySelector('#write')
+        return document
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation instanceof CSSTransition &&
+              animation.playState === 'running' &&
+              animation.effect instanceof KeyframeEffect &&
+              animation.effect.target instanceof Element &&
+              section?.contains(animation.effect.target),
+          ).length
+      }),
+    )
+    .toBe(0)
+}
+
+/** The WCAG contrast of an element's text against the page, with colours resolved by the browser. */
+const contrastOnPage = (locator: Locator) =>
+  locator.evaluate((element) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    const rgb = (colour: string) => {
+      context!.clearRect(0, 0, 1, 1)
+      context!.fillStyle = colour
+      context!.fillRect(0, 0, 1, 1)
+      return [...context!.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+    }
+    const luminance = (colour: string) => {
+      const [r = 0, g = 0, b = 0] = rgb(colour).map((value) => {
+        const c = value / 255
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const text = luminance(getComputedStyle(element).color)
+    const page = luminance(getComputedStyle(document.body).backgroundColor)
+    return (Math.max(text, page) + 0.05) / (Math.min(text, page) + 0.05)
+  })
 
 test.describe('beside the media, at 1440', () => {
   test.use({ viewport: DESKTOP })
@@ -143,6 +189,70 @@ test.describe('beside the media, at 1440', () => {
     await expect.poll(() => wellTop(page, 2)).toBeLessThan(line)
   })
 
+  test('slides one marker to the active item and spans it once the list settles', async ({
+    page,
+  }) => {
+    const marker = page.locator('[data-features-marker]')
+    const frame = () =>
+      marker.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const nav = element.parentElement!.getBoundingClientRect()
+        return { top: Math.round(rect.top - nav.top), height: Math.round(rect.height) }
+      })
+    const itemFrame = (index: number) =>
+      listItems(page)
+        .nth(index)
+        .evaluate((item) => {
+          const nav = item.closest('nav')!.getBoundingClientRect()
+          const rect = item.getBoundingClientRect()
+          return { top: Math.round(rect.top - nav.top) + 4, height: Math.round(rect.height) - 8 }
+        })
+    await expect(marker).toHaveCSS('transition-property', /transform/)
+    const duration = parseFloat(
+      await marker.evaluate((m) => getComputedStyle(m).transitionDuration),
+    )
+    expect(duration).toBeGreaterThanOrEqual(0.25)
+    expect(duration).toBeLessThanOrEqual(0.35)
+
+    for (const index of [1, 2, 0]) {
+      await placeWell(page, index, line - 40)
+      await expect.poll(() => current(page)).toBe(index)
+      await settled(page)
+      const [at, item] = await Promise.all([frame(), itemFrame(index)])
+      expect(Math.abs(at.top - item.top), `marker top at item ${index}`).toBeLessThanOrEqual(1)
+      expect(
+        Math.abs(at.height - item.height),
+        `marker height at item ${index}`,
+      ).toBeLessThanOrEqual(1)
+    }
+  })
+
+  test('answers a pointer over an inactive item and keeps it readable', async ({ page }) => {
+    await placeWell(page, 0, line - 40)
+    await expect.poll(() => current(page)).toBe(0)
+    await settled(page)
+    const title = listItems(page).nth(2).locator('.feature-title')
+    const rest = await title.evaluate((element) => getComputedStyle(element).color)
+    expect(await contrastOnPage(title)).toBeGreaterThanOrEqual(4.5)
+
+    await button(page, 2).hover()
+
+    await expect
+      .poll(() => title.evaluate((element) => getComputedStyle(element).color))
+      .not.toBe(rest)
+  })
+
+  test('gives the media at least 60 % of the container', async ({ page }) => {
+    await placeWell(page, 0, 120)
+    await expect(well(page, 0)).toHaveAttribute('data-revealed', '')
+    await settled(page)
+    const [container, media] = await Promise.all([
+      page.locator('.features-body').boundingBox(),
+      block(page, 0).locator('.feature-window').boundingBox(),
+    ])
+    expect((media?.width ?? 0) / (container?.width ?? 1)).toBeGreaterThanOrEqual(0.6)
+  })
+
   test('brings the media in with a fade and a slight scale', async ({ page }) => {
     const state = () =>
       well(page, 1).evaluate((element) => {
@@ -211,6 +321,12 @@ test.describe('with reduced motion, at 1440', () => {
     )
   })
 
+  test('moves the marker at once', async ({ page }) => {
+    const marker = page.locator('[data-features-marker]')
+    const durations = await marker.evaluate((m) => getComputedStyle(m).transitionDuration)
+    expect(durations.split(', ').every((d) => parseFloat(d) < 0.001)).toBe(true)
+  })
+
   test('jumps to the media of a chosen item without a smooth scroll', async ({ page }) => {
     await placeWell(page, 0, 120)
 
@@ -264,9 +380,24 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.goto('/')
       await placeWell(page, 1, line - 40)
       await expect.poll(() => current(page)).toBe(1)
-      // Lets the reveal and the item change finish, so no text is caught half faded.
-      await page.waitForTimeout(1000)
+      await expect
+        .poll(() =>
+          page.locator('#write [data-reveal]').evaluateAll((all) =>
+            all
+              .filter((element) => {
+                const rect = element.getBoundingClientRect()
+                return rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight
+              })
+              .every((element) => element.hasAttribute('data-revealed')),
+          ),
+        )
+        .toBe(true)
+      await settled(page)
 
+      for (const index of [0, 2]) {
+        const title = listItems(page).nth(index).locator('.feature-title')
+        expect(await contrastOnPage(title), `inactive item ${index}`).toBeGreaterThanOrEqual(4.5)
+      }
       expect(await violations(page)).toEqual([])
     })
 

@@ -1,0 +1,29 @@
+---
+import type { NoteStatus } from '../../scripts/demo.ts'
+
+interface Props {
+  status: NoteStatus
+}
+
+// The inner marks of Devot's own status glyphs (src/core/preview/glyphs.ts in devot), drawn in a
+// disc of the status colour as its sidebar shows them; a note without a status gets a dashed ring.
+const marks: Record<Exclude<NoteStatus, 'none'>, string> = {
+  active: 'M10 8.6v6.8l5.4-3.4Z',
+  on_hold: 'M10 9v6M14 9v6',
+  completed: 'm8 12.4 2.7 2.7L16 9.6',
+  dropped: 'm9 9 6 6M15 9l-6 6',
+}
+
+const { status } = Astro.props
+---
+
+<svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  {status === 'none' ? (
+    <circle class="status-ring" cx="12" cy="12" r="8.5" />
+  ) : (
+    <>
+      <circle class="status-disc" cx="12" cy="12" r="10" />
+      <path class="status-mark" d={marks[status]} />
+    </>
+  )}
+</svg>

@@ -54,6 +54,21 @@ export function scrollTarget(
   return Math.max(0, Math.round(scrollY + block.top - offset))
 }
 
+/**
+ * Where the marker settles beside the active item: from its top to its bottom once the list has
+ * folded the others. `heads` are the items' heights without a description, `bodies` the heights
+ * of their descriptions in full, so the answer holds while the descriptions are still moving.
+ */
+export function markerFrame(
+  heads: readonly number[],
+  bodies: readonly number[],
+  active: number,
+): { top: number; height: number } {
+  if (active < 0 || active >= heads.length) return { top: 0, height: 0 }
+  const top = heads.slice(0, active).reduce((sum, head) => sum + head, 0)
+  return { top, height: (heads[active] ?? 0) + (bodies[active] ?? 0) }
+}
+
 /** The item to show as active, given the one the scroll position points at and any held choice. */
 export function followScroll(
   scrolled: number,
@@ -68,14 +83,17 @@ export function followScroll(
 
 /**
  * Wires the feature list to the media beside it: the item whose media has crossed the active
- * line is marked current and its rail fills with the scroll; choosing an item scrolls to its
- * media. Only while the list sits beside the media; stacked, every feature shows in full.
+ * line is marked current, the marker slides to it and its rail fills with the scroll; choosing an
+ * item scrolls to its media. Only while the list sits beside the media; stacked, every feature shows in full.
  */
 export function initFeatures(root: ParentNode = document, env: DomEnv = browserEnv()): () => void {
   const section = root.querySelector<HTMLElement>('[data-features]')
   if (section === null) return () => {}
   const items = [...section.querySelectorAll<HTMLElement>('[data-feature-item]')]
   const buttons = items.map((item) => item.querySelector<HTMLButtonElement>('button'))
+  const heads = items.map((item) => item.querySelector<HTMLElement>('.feature-heading'))
+  const bodies = items.map((item) => item.querySelector<HTMLElement>('.feature-detail > div'))
+  const marker = section.querySelector<HTMLElement>('[data-features-marker]')
   const blocks = [...section.querySelectorAll<HTMLElement>('[data-feature]')]
   const wells = blocks.map(
     (block) => block.querySelector<HTMLElement>('[data-feature-well]') ?? block,
@@ -88,9 +106,21 @@ export function initFeatures(root: ParentNode = document, env: DomEnv = browserE
   let hold: Hold | null = null
   let frame = 0
 
+  const placeMarker = () => {
+    if (marker === null || active < 0) return
+    const { top, height } = markerFrame(
+      heads.map((head) => head?.offsetHeight ?? 0),
+      bodies.map((body) => body?.scrollHeight ?? 0),
+      active,
+    )
+    setVar(marker, '--features-marker-y', `${top}px`)
+    setVar(marker, '--features-marker-height', String(height))
+  }
+
   const setActive = (index: number) => {
     if (index === active) return
     active = index
+    placeMarker()
     items.forEach((item, i) => {
       const on = i === index
       item.toggleAttribute('data-active', on)
@@ -152,10 +182,14 @@ export function initFeatures(root: ParentNode = document, env: DomEnv = browserE
     const method = on ? 'addEventListener' : 'removeEventListener'
     window[method]('scroll', schedule, passive)
     window[method]('resize', schedule, passive)
+    window[method]('resize', placeMarker, passive)
     for (const type of ['wheel', 'touchstart', 'keydown'] as const) {
       window[method](type, release, passive)
     }
-    if (on) schedule()
+    if (on) {
+      placeMarker()
+      schedule()
+    }
   }
   const onDesktopChange = (event: { matches: boolean }) => follow(event.matches)
   const onReducedChange = () => schedule()

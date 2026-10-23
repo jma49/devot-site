@@ -1,5 +1,6 @@
 import { cardsCopy } from './en/cards.ts'
 import { chromeCopy } from './en/chrome.ts'
+import { demoCopy } from './en/demo.ts'
 import { featuresCopy } from './en/features.ts'
 import { heroCopy } from './en/hero.ts'
 import { mediaCopy } from './en/media.ts'
@@ -18,6 +19,7 @@ export const en = {
   ...cardsCopy,
   ...privacyCopy,
   ...mediaCopy,
+  ...demoCopy,
 }
 
 export type Messages = typeof en
