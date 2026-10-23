@@ -12,6 +12,7 @@ The landing page for Devot at https://devot.online: static Astro, plain CSS, dep
 - User-facing text is English and lives in `src/i18n/en.ts`; templates take it from there, never inline it. A policy test enforces it.
 - The Content-Security-Policy in `public/_headers` allows no inline script or style. Keep scripts and styles external: no `is:inline`, `define:vars`, `style=` attributes or inline event handlers. Change the policy only in `public/_headers`, in its one `/*` rule.
 - Respect `prefers-reduced-motion` for any motion, and keep the visible focus ring (`--site-focus-ring`).
+- Commits and pull requests carry no AI attribution: no `Co-Authored-By` trailers, no "Generated with" lines.
 - Comment sparingly: only for what the code cannot say (a non-obvious reason, a constraint, a workaround with its cause). Never restate code, narrate a change or leave commented-out code.
 - Repository text (docs, issues, commits, comments, code) describes Devot on its own terms. Never name other apps or websites as a source or model for Devot or this site.
 - Local test runs are capped: Vitest 3 workers (`SITE_TEST_WORKERS`), Playwright 2 (`SITE_UI_WORKERS`). Raise them with those variables if you like; CI sets its own.

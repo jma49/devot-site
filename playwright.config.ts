@@ -1,8 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Smoke tests against the built site (`pnpm build` first), served by `astro preview`.
-// SITE_UI_PORT moves the server so checkouts can run side by side. A server already on the port fails
-// the run, since it may be another checkout's; SITE_REUSE_SERVER=1 reuses it.
+// A server already on the port fails the run, since it may be another checkout's.
 const port = Number(process.env['SITE_UI_PORT'] ?? 4322)
 const ci = !!process.env['CI']
 
@@ -11,7 +9,6 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: ci,
   retries: ci ? 1 : 0,
-  // Two workers: the hosted runner has two cores, and a local run leaves the machine usable.
   workers: ci ? 2 : Number(process.env['SITE_UI_WORKERS'] ?? 2),
   reporter: ci ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {

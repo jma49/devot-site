@@ -1,6 +1,3 @@
-// The patterns behind tests/policy/copy.test.ts and the copy check of the built pages, kept here so
-// tests can check them against samples.
-
 import { tags } from './html.ts'
 
 const LABEL_ATTRIBUTES = ['alt', 'title', 'aria-label', 'aria-description', 'placeholder']

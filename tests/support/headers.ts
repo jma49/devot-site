@@ -30,7 +30,6 @@ export function parseHeaders(text: string): HeaderRule[] {
   return rules
 }
 
-/** The site's one Content-Security-Policy, from public/_headers. */
 export function siteCsp(text = readRepoFile('public/_headers')): string {
   const values = parseHeaders(text).flatMap(({ headers }) =>
     headers.filter(([name]) => name.toLowerCase() === 'content-security-policy').map(([, v]) => v),

@@ -9,7 +9,6 @@ export const OUTPUTS = [
   { from: 'design/app-icon/dove.svg', to: 'src/assets/dove.svg' },
 ] as const
 
-/** Returns the body of a GET request; rejects on network errors and non-2xx answers. */
 export type FetchText = (url: string) => Promise<string>
 
 export type SyncMode = 'write' | 'check' | 'update'

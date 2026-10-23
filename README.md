@@ -50,7 +50,7 @@ Components use Devot's semantic tokens (`--color-text-*`, `--color-surface-*`, `
 
 ## Security headers
 
-`public/_headers` sets the Content-Security-Policy and the other response headers on Cloudflare. The policy allows no inline script or style, so `astro.config.ts` turns off Astro's stylesheet and asset inlining; `pnpm test:dist` fails if the build ever emits inline code, and the Playwright tests serve every page with the same policy, so a violation fails them.
+`public/_headers` sets the Content-Security-Policy and the other response headers. The policy allows no inline script or style, so `astro.config.ts` turns off Astro's inlining. `pnpm test:dist` fails if the build emits inline code, and the Playwright tests serve every page under the same policy.
 
 The policy already allows Cloudflare Web Analytics (`static.cloudflareinsights.com` for the beacon, `cloudflareinsights.com` and `/cdn-cgi/rum` for reports). Turning analytics on needs no code change.
 
@@ -78,7 +78,7 @@ If the first build log does not show pnpm 12.10.1 being installed (or shows a co
 
 The build image reads the Node version from `.node-version`; no `NODE_VERSION` variable is needed.
 
-The build writes a top-level `404.html`. Pages serves it, with status 404, for any path that matches no file; without it, Pages would treat the site as a single-page app and answer every unknown path with the home page and status 200. The immutable `Cache-Control` of `/_astro/*` still applies to a 404 at a missing asset URL, since `_headers` cannot match on status.
+The build writes a top-level `404.html`, so Pages answers unknown paths with status 404 instead of serving the home page as a single-page app.
 
 After the first preview deployment, check the headers with `curl -I`: the page should carry the Content-Security-Policy, and files under `/_astro/` should have `Cache-Control: public, max-age=31536000, immutable`.
 

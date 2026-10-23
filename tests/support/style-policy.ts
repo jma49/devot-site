@@ -1,5 +1,3 @@
-// Patterns behind tests/policy/colors.test.ts, kept here so tests can check them against samples.
-
 /** Generated from devot, and the one site file that may name raw values. */
 export const GENERATED_TOKENS = 'src/theme/tokens.css'
 export const SITE_TOKENS = 'src/styles/site-tokens.css'
