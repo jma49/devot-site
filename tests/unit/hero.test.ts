@@ -52,6 +52,12 @@ describe('heroScroll', () => {
     expect(heroScroll(2000, viewport).lift).toBe(140)
   })
 
+  it('leaves the stylesheet room for the whole lift', () => {
+    expect(readRepoFile('src/styles/home/hero.css')).toContain(
+      `--hero-lift-room: ${HERO_SCROLL.liftMax}px;`,
+    )
+  })
+
   it('fades the sheen out over the first 200 px and the dome in from 60 to 180 px', () => {
     expect(heroScroll(100, viewport).sheen).toBeCloseTo(0.5)
     expect(heroScroll(200, viewport).sheen).toBe(0)

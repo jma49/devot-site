@@ -107,7 +107,8 @@ const sections = [
 
 <style>
   /* The brand button: the one call to action, in the hero, the pill, the menu and the closing
-     section. Devot's teal; in dark it is deepened toward the window colour so white text keeps AA. */
+     section. Devot's teal; in dark it is deepened toward the window colour so white text keeps AA.
+     The transparent borders on the button, the bar and the pill become edges in forced colours. */
   :global(:root) {
     --brand-fill: var(--color-activity-level-4);
     --brand-fill-hover: color-mix(
@@ -138,12 +139,12 @@ const sections = [
     :global(:root) {
       --brand-fill: color-mix(
         in oklab,
-        var(--color-activity-level-4) 56%,
+        var(--color-activity-level-4) 62%,
         var(--color-surface-window)
       );
       --brand-fill-hover: color-mix(
         in oklab,
-        var(--color-activity-level-4) 64%,
+        var(--color-activity-level-4) 68%,
         var(--color-surface-window)
       );
       --brand-glow: color-mix(in oklab, var(--color-activity-level-4) 22%, transparent);
@@ -154,6 +155,11 @@ const sections = [
 
   :global(html[data-menu-open]) {
     overflow: hidden;
+  }
+
+  /* Section links land below the floating bar rather than under it. */
+  :global(main [id]) {
+    scroll-margin-top: calc(var(--chrome-bar-height) + 2 * var(--chrome-inset));
   }
 
   :global(.visually-hidden) {
@@ -172,6 +178,7 @@ const sections = [
     gap: var(--space-4);
     min-height: var(--site-size-action);
     padding-inline: 1.25rem 1.375rem;
+    border: 1px solid transparent;
     border-radius: var(--radius-capsule);
     background: var(--brand-fill);
     color: var(--brand-ink);
@@ -280,6 +287,7 @@ const sections = [
     position: absolute;
     inset: 0;
     z-index: -2;
+    border: 1px solid transparent;
     border-radius: inherit;
     background: var(--chrome-glass);
     box-shadow:
@@ -420,6 +428,7 @@ const sections = [
     width: fit-content;
     margin-inline: auto;
     padding: var(--space-3) var(--space-3) var(--space-3) var(--space-7);
+    border: 1px solid transparent;
     border-radius: var(--radius-capsule);
     background: var(--chrome-glass-strong);
     box-shadow:

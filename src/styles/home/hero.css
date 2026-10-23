@@ -10,10 +10,17 @@
   --hero-window-points: 1440;
   --hero-window-ratio: 0.625;
   --hero-pt: calc(var(--hero-window-width) / var(--hero-window-points));
-  /* Share of the window above the hero's bottom edge, where it dissolves into the page. */
+  --hero-window-height: calc(var(--hero-window-width) * var(--hero-window-ratio));
+  /* At rest the window dissolves into the page below this share of its height; as it settles the
+     edge recedes until the whole window shows (--hero-reveal 1), or stays put (0). */
   --hero-window-shown: 0.86;
-  --hero-fade: 8rem;
+  --hero-reveal: 1;
+  --hero-dissolve: 8rem;
   --hero-shadow-room: 2.5rem;
+  --hero-shadow-tail: 4rem;
+  /* Room for the window to trail the page by: HERO_SCROLL.liftMax in hero.ts. */
+  --hero-lift-room: 140px;
+  --hero-lift-scale: 1;
   --hero-tilt: 10deg;
   --hero-rest-scale: 0.94;
   --hero-perspective: 2200px;
@@ -43,7 +50,8 @@
   text-align: center;
 }
 
-/* Background */
+/* Background. Masks read only alpha: the page colour stands for opaque, since colour literals are
+   kept to the token files. */
 
 .hero-backdrop {
   position: absolute;
@@ -198,11 +206,22 @@
 /* The window */
 
 .hero-stage {
+  --hero-cut: calc(
+    var(--hero-shadow-room) + var(--hero-window-height) *
+      (
+        var(--hero-window-shown) + (1 - var(--hero-window-shown)) * var(--hero-settle) *
+          var(--hero-reveal)
+      ) +
+      var(--hero-lift) * var(--hero-lift-scale) * 1px + var(--hero-shadow-tail) *
+      var(--hero-settle) * var(--hero-reveal)
+  );
+
   grid-area: stage;
   width: 100%;
   height: calc(
-    var(--hero-window-width) * var(--hero-window-ratio) * var(--hero-window-shown) +
-      var(--hero-shadow-room)
+    var(--hero-shadow-room) + var(--hero-window-height) *
+      (var(--hero-window-shown) + (1 - var(--hero-window-shown)) * var(--hero-reveal)) +
+      var(--hero-lift-room) * var(--hero-lift-scale) + var(--hero-shadow-tail) * var(--hero-reveal)
   );
   margin-block-start: calc(clamp(2rem, 0.75rem + 3vh, 3rem) - var(--hero-shadow-room));
   padding-block-start: var(--hero-shadow-room);
@@ -210,8 +229,8 @@
   perspective-origin: 50% 0%;
   mask-image: linear-gradient(
     to bottom,
-    var(--site-color-page) calc(100% - var(--hero-fade)),
-    transparent
+    var(--site-color-page) calc(var(--hero-cut) - var(--hero-dissolve)),
+    transparent var(--hero-cut)
   );
 }
 
@@ -219,7 +238,7 @@
   width: var(--hero-window-width);
   margin-inline: auto;
   transform-origin: 50% 0%;
-  transform: translate3d(0, calc(var(--hero-lift) * 1px), 0)
+  transform: translate3d(0, calc(var(--hero-lift) * var(--hero-lift-scale) * 1px), 0)
     rotateX(calc(var(--hero-tilt) * (1 - var(--hero-settle))))
     scale(calc(1 - (1 - var(--hero-rest-scale)) * (1 - var(--hero-settle))));
 }
@@ -388,7 +407,7 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 640px) {
   .hero-line {
     display: block;
   }
@@ -406,7 +425,9 @@
   .hero {
     --hero-window-width: 170cqw;
     --hero-window-shown: 0.78;
-    --hero-fade: 5rem;
+    --hero-reveal: 0;
+    --hero-lift-scale: 0;
+    --hero-dissolve: 5rem;
     --hero-tilt: 6deg;
     --hero-drift-distance: -2.5rem;
 

@@ -69,29 +69,25 @@ export function startHeader(root: Document = document): void {
   const wide = window.matchMedia(WIDE_QUERY)
   let open = false
 
+  // Every measurement comes before the first write, so a frame lays out once.
   const update = () => {
     const viewport = window.innerHeight
-    header.toggleAttribute('data-scrolled', window.scrollY > SCROLLED_AT)
-    const active = activeSection(
-      targets.map((target) => {
-        const { top, bottom } = target.getBoundingClientRect()
-        return { id: target.id, top, bottom }
-      }),
-      viewport,
-    )
+    const scrolled = window.scrollY > SCROLLED_AT
+    const sections = targets.map((target) => {
+      const { top, bottom } = target.getBoundingClientRect()
+      return { id: target.id, top, bottom }
+    })
+    const ctaBottom = heroCta?.getBoundingClientRect().bottom
+    const closingTop = closing?.getBoundingClientRect().top ?? null
+
+    const active = activeSection(sections, viewport)
+    const shown = !open && ctaBottom !== undefined && pillShown({ ctaBottom, closingTop, viewport })
+    header.toggleAttribute('data-scrolled', scrolled)
+    pill.toggleAttribute('data-shown', shown)
     for (const link of links) {
       if (link.hash === `#${active}`) link.setAttribute('aria-current', 'true')
       else link.removeAttribute('aria-current')
     }
-    const shown =
-      !open &&
-      heroCta !== null &&
-      pillShown({
-        ctaBottom: heroCta.getBoundingClientRect().bottom,
-        closingTop: closing?.getBoundingClientRect().top ?? null,
-        viewport,
-      })
-    pill.toggleAttribute('data-shown', shown)
   }
 
   let queued = false
