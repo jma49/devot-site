@@ -1,5 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
+import { media, type SlotName } from '../../src/media.ts'
 import { openFixture } from '../support/browser-fixture.ts'
 import { expect, test } from './fixtures.ts'
 
@@ -192,8 +193,8 @@ test.describe('scrollEffects', () => {
 test.describe('clips', () => {
   const clip = (
     id: string,
-    slot: string,
-  ) => `<video id="${id}" data-clip="${slot}" width="1500" height="1080"
+    slot: SlotName,
+  ) => `<video id="${id}" data-clip="${slot}" width="${media[slot].width}" height="${media[slot].height}"
     poster="/media/${slot}/${slot}-poster.webp" aria-label="A placeholder clip of the Devot window." preload="none" muted loop playsinline>
     <source data-src="/media/${slot}/${slot}.mp4" type="video/mp4">
     <source data-src="/media/${slot}/${slot}.webm" type="video/webm"></video>`
@@ -265,7 +266,7 @@ test.describe('clips', () => {
 
     const box = await page.locator('#near').boundingBox()
     expect(box?.width).toBe(400)
-    expect(box?.height).toBeCloseTo((400 * 1080) / 1500, 0)
+    expect(box?.height).toBeCloseTo((400 * media.hero.height) / media.hero.width, 0)
   })
 
   test('passes an accessibility scan', async ({ page }) => {
