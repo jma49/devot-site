@@ -1,24 +1,65 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AURORA_RECIPE,
+  auroraPalette,
   BACKDROP_LOOK,
   frameDue,
   parseBackdrop,
+  parseColour,
   srgbToOklab,
   tuneStop,
+  type AuroraInputs,
+  type Lab,
+  type Scheme,
 } from '../../src/scripts/hero-backdrop.ts'
 import { HERO_SCROLL, heroScroll, WEBGL_QUERY } from '../../src/scripts/hero.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
 const tokensCss = readRepoFile('src/theme/tokens.css')
 
-/** The --backdrop value the generated tokens give a Tide preview in one appearance. */
-function tideBackdrop(appearance: 'light' | 'dark'): string {
+/** The --backdrop value the generated tokens give a theme's preview in one appearance. */
+function themeBackdrop(theme: string, appearance: Scheme): string {
   const rule = new RegExp(
-    `\\[data-theme-preview='tide'\\]\\[data-appearance-preview='${appearance}'\\] \\{[^}]*--backdrop: ([^;]+);`,
+    `\\[data-theme-preview='${theme}'\\]\\[data-appearance-preview='${appearance}'\\] \\{[^}]*--backdrop: ([^;]+);`,
   ).exec(tokensCss)
-  if (!rule?.[1]) throw new Error(`no Tide ${appearance} backdrop in tokens.css`)
+  if (!rule?.[1]) throw new Error(`no ${theme} ${appearance} backdrop in tokens.css`)
   return rule[1]
 }
+
+const tideBackdrop = (appearance: Scheme) => themeBackdrop('tide', appearance)
+
+/** A semantic colour token as the default theme sets it in one appearance. */
+function token(name: string, appearance: Scheme): string {
+  const block = new RegExp(`\\[data-appearance-preview='${appearance}'\\] \\{([^}]*)\\}`).exec(
+    tokensCss,
+  )?.[1]
+  const value = new RegExp(`${name}: ([^;]+);`).exec(block ?? '')?.[1]
+  if (!value) throw new Error(`no ${name} for ${appearance} in tokens.css`)
+  return value
+}
+
+function auroraInputs(appearance: Scheme): AuroraInputs {
+  const backdrop = (theme: string) => {
+    const parsed = parseBackdrop(themeBackdrop(theme, appearance))
+    if (!parsed) throw new Error(`unreadable ${theme} backdrop`)
+    return parsed
+  }
+  const colour = (name: string) => {
+    const parsed = parseColour(token(name, appearance))
+    if (!parsed) throw new Error(`unreadable ${name}`)
+    return parsed
+  }
+  return {
+    tide: backdrop('tide'),
+    sage: backdrop('sage'),
+    ember: backdrop('ember'),
+    teal: colour('--color-activity-level-4'),
+    blue: colour('--color-accent-fill'),
+    amber: colour('--color-tag-icon-orange'),
+  }
+}
+
+const hue = ([, a, b]: Lab) => (Math.atan2(b, a) * 180) / Math.PI
 
 const chroma = ([, a, b]: readonly number[]) => Math.hypot(a ?? 0, b ?? 0)
 
@@ -157,6 +198,66 @@ describe('colour', () => {
     expect(chroma(tuned) / chroma(stop)).toBeCloseTo(1.1, 5)
     expect(tuned[0] - stop[0]).toBeCloseTo(0.02, 5)
     expect(Math.atan2(tuned[2], tuned[1])).toBeCloseTo(Math.atan2(stop[2], stop[1]), 5)
+  })
+})
+
+describe('parseColour', () => {
+  it('reads one colour in hex or functional notation, including inside a var() fallback', () => {
+    expect(parseColour('#0e6b62')).toEqual([14, 107, 98])
+    expect(parseColour(' rgb(99 205 191)')).toEqual([99, 205, 191])
+    expect(parseColour('var(--system-accent-fill-light, #3472d6)')).toEqual([52, 114, 214])
+  })
+
+  it('refuses empty values and gradients', () => {
+    expect(parseColour('')).toBeNull()
+    expect(parseColour(tideBackdrop('light'))).toBeNull()
+  })
+})
+
+describe('auroraPalette', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    const palette = auroraPalette(auroraInputs(scheme), scheme)
+
+    it(`keeps Tide's gradient for the sky, no more saturated than the backdrop boost, ${scheme}`, () => {
+      expect(palette.angle).toBe(160)
+      const stops = auroraInputs(scheme).tide.stops.map(srgbToOklab)
+      palette.sky.forEach((sky, index) => {
+        expect(chroma(sky) / chroma(stops[index] ?? [0, 0, 0])).toBeLessThanOrEqual(1.15 + 1e-9)
+      })
+    })
+
+    it(`hangs a teal-green Sage band and a Tide-blue band, ${scheme}`, () => {
+      expect(hue(palette.sage)).toBeGreaterThan(150)
+      expect(hue(palette.sage)).toBeLessThan(200)
+      expect(hue(palette.tide)).toBeLessThan(-90)
+      expect(hue(palette.tide)).toBeGreaterThan(-130)
+    })
+
+    it(`warms the edges with Ember, ${scheme}`, () => {
+      expect(hue(palette.warm)).toBeGreaterThan(20)
+      expect(hue(palette.warm)).toBeLessThan(90)
+    })
+  }
+
+  it('keeps light bands pale under dark text and dark bands deep under light text', () => {
+    const light = auroraPalette(auroraInputs('light'), 'light')
+    const dark = auroraPalette(auroraInputs('dark'), 'dark')
+    for (const band of [light.sage, light.tide, light.fringe, light.warm]) {
+      expect(band[0]).toBeGreaterThanOrEqual(0.8)
+    }
+    for (const band of [dark.sage, dark.tide, dark.fringe, dark.warm]) {
+      expect(band[0]).toBeLessThanOrEqual(0.48)
+    }
+  })
+
+  it('mixes the bands from the tokens, never past the pigment itself', () => {
+    for (const recipe of Object.values(AURORA_RECIPE)) {
+      for (const band of [recipe.sage, recipe.tide, recipe.warm]) {
+        expect(band.toward).toBeGreaterThan(0)
+        expect(band.toward).toBeLessThanOrEqual(0.6)
+      }
+      expect(recipe.sky).toBeLessThanOrEqual(1)
+    }
   })
 })
 

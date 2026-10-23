@@ -29,6 +29,32 @@ describe('type scale', () => {
     }
   })
 
+  it('sets the display and section tiers in Fraunces over its sized fallback', () => {
+    expect(declarations(tokens, '--site-font-display')).toEqual([
+      "'Fraunces', 'Fraunces Fallback', Georgia, serif",
+    ])
+    for (const tier of ['display', 'section']) {
+      expect(declarations(tokens, `--site-type-${tier}-family`)).toEqual([
+        'var(--site-font-display)',
+      ])
+    }
+  })
+
+  it('gives each headline stylesheet its tier’s family', () => {
+    const uses: [string, string][] = [
+      ['src/styles/home/hero.css', 'display'],
+      ['src/styles/home/features.css', 'section'],
+      ['src/styles/home/cards.css', 'section'],
+      ['src/styles/home/privacy.css', 'section'],
+      ['src/styles/home/closing.css', 'display'],
+    ]
+    for (const [file, tier] of uses) {
+      expect(declarations(readRepoFile(file), 'font-family'), file).toContain(
+        `var(--site-type-${tier}-family)`,
+      )
+    }
+  })
+
   it('documents every tier beside the values', () => {
     const doc = /\/\*[\s\S]*?Type scale[\s\S]*?\*\//.exec(tokens)?.[0] ?? ''
     for (const tier of TIERS) expect(doc, tier).toMatch(new RegExp(`\\b${tier}\\b`))

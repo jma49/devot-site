@@ -2,6 +2,7 @@
 import '../../styles/home/hero.css'
 import { messages } from '../../i18n/index.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
+import Aurora from '../Aurora.astro'
 import Clip from '../Clip.astro'
 import InstallNote from '../InstallNote.astro'
 
@@ -11,20 +12,10 @@ const t = messages()
 <section id="hero" class="hero" aria-labelledby="hero-title" data-hero data-backdrop="css">
   <div class="hero-backdrop" aria-hidden="true">
     <div class="hero-sky">
-      <div
-        class="hero-fallback"
-        data-backdrop-source="light"
-        data-theme-preview="tide"
-        data-appearance-preview="light"
-      ></div>
-      <div
-        class="hero-fallback"
-        data-backdrop-source="dark"
-        data-theme-preview="tide"
-        data-appearance-preview="dark"
-      ></div>
+      <Aurora class="hero-fallback" />
       <canvas class="hero-canvas" data-hero-canvas></canvas>
     </div>
+    <div class="hero-grain"></div>
     <div class="hero-sheen"></div>
     <div class="hero-dome"></div>
   </div>
@@ -34,7 +25,11 @@ const t = messages()
       {t.hero.titleLines.map((line, index) => (
         <>
           {index > 0 && ' '}
-          <span class="hero-line">{line}</span>
+          <span
+            class:list={['hero-line', { 'site-accent': index === t.hero.titleLines.length - 1 }]}
+          >
+            {line}
+          </span>
         </>
       ))}
     </h1>

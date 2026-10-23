@@ -27,7 +27,7 @@ const driftStates = (page: Page) =>
   page.evaluate(() =>
     document
       .getAnimations()
-      .filter((a) => a instanceof CSSAnimation && a.animationName.startsWith('hero-drift'))
+      .filter((a) => a instanceof CSSAnimation && a.animationName.startsWith('aurora-sway'))
       .map((a) => a.playState),
   )
 

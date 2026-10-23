@@ -21,15 +21,118 @@ export interface Look {
 }
 
 export const BACKDROP_LOOK: Record<Scheme, Look> = {
-  light: { gain: 1.15, lift: -0.03, glow: 0.05 },
-  dark: { gain: 1.1, lift: 0.035, glow: 0.06 },
+  light: { gain: 1.15, lift: 0.04, glow: 0.03 },
+  dark: { gain: 1.1, lift: -0.06, glow: 0.035 },
+}
+
+/** The token colours the aurora is mixed from, read from the page in one appearance. */
+export interface AuroraInputs {
+  tide: Backdrop
+  sage: Backdrop
+  ember: Backdrop
+  /** Devot's teal (`--color-activity-level-4`). */
+  teal: Rgb
+  /** Devot's accent blue (`--color-accent-fill`). */
+  blue: Rgb
+  /** Devot's orange tag colour (`--color-tag-icon-orange`), which warms Ember's peach. */
+  amber: Rgb
+}
+
+/**
+ * How a band is mixed: a backdrop stop pulled `toward` a pigment token, then set to `lightness`
+ * in OKLab with its chroma scaled by `gain` (at most the backdrop's own boost).
+ */
+interface BandRecipe {
+  toward: number
+  lightness: number
+}
+
+export interface AuroraRecipe {
+  /** Scales the chroma of Tide's stops in the sky, so the bands stand out against it. */
+  sky: number
+  sage: BandRecipe
+  tide: BandRecipe
+  /** Lightness of the Ember violet that fringes the bands and the Ember peach at the edges. */
+  fringe: number
+  warm: BandRecipe
+  /** Band opacity, caustic shimmer (OKLab lightness), and the Ember edge glow's opacity. */
+  bands: number
+  shimmer: number
+  edges: number
+}
+
+/** Light bands stay pale so dark text keeps AA on them; dark bands stay deep under light text. */
+export const AURORA_RECIPE: Record<Scheme, AuroraRecipe> = {
+  light: {
+    sky: 0.75,
+    sage: { toward: 0.6, lightness: 0.82 },
+    tide: { toward: 0.55, lightness: 0.81 },
+    fringe: 0.87,
+    warm: { toward: 0.22, lightness: 0.88 },
+    bands: 1,
+    shimmer: 0.08,
+    edges: 0.75,
+  },
+  dark: {
+    sky: 1,
+    sage: { toward: 0.6, lightness: 0.47 },
+    tide: { toward: 0.55, lightness: 0.4 },
+    fringe: 0.32,
+    warm: { toward: 0.5, lightness: 0.4 },
+    bands: 1,
+    shimmer: 0.08,
+    edges: 0.42,
+  },
+}
+
+export interface AuroraPalette {
+  angle: number
+  sky: Lab[]
+  sage: Lab
+  tide: Lab
+  fringe: Lab
+  warm: Lab
+  strength: readonly [number, number, number]
+  glow: number
+}
+
+const mixLab = (from: Lab, to: Lab, amount: number): Lab =>
+  [0, 1, 2].map((i) => (from[i] ?? 0) + ((to[i] ?? 0) - (from[i] ?? 0)) * amount) as unknown as Lab
+
+const withLightness = ([, a, b]: Lab, lightness: number, gain: number): Lab => [
+  lightness,
+  a * gain,
+  b * gain,
+]
+
+/** The shader's colours: Tide's gradient for the sky, Sage and Tide bands, Ember at the edges. */
+export function auroraPalette(inputs: AuroraInputs, scheme: Scheme): AuroraPalette {
+  const look = BACKDROP_LOOK[scheme]
+  const recipe = AURORA_RECIPE[scheme]
+  const band = (stop: Rgb, pigment: Rgb, { toward, lightness }: BandRecipe) =>
+    withLightness(mixLab(srgbToOklab(stop), srgbToOklab(pigment), toward), lightness, look.gain)
+  const [sageStop] = inputs.sage.stops
+  const [tideStop] = inputs.tide.stops
+  const [violet, , peach] = inputs.ember.stops
+  return {
+    angle: inputs.tide.angle,
+    sky: inputs.tide.stops.map((stop) =>
+      tuneStop(stop, { gain: look.gain * recipe.sky, lift: look.lift }),
+    ),
+    sage: band(sageStop ?? inputs.teal, inputs.teal, recipe.sage),
+    tide: band(tideStop ?? inputs.blue, inputs.blue, recipe.tide),
+    fringe: withLightness(srgbToOklab(violet ?? inputs.blue), recipe.fringe, look.gain),
+    warm: band(peach ?? inputs.amber, inputs.amber, recipe.warm),
+    strength: [recipe.bands, recipe.shimmer, recipe.edges],
+    glow: look.glow,
+  }
 }
 
 const FPS = 30
 /** The shader draws at this share of CSS pixels; the gradient is soft, so upscaling hides nothing. */
 const RENDER_SCALE = 0.5
 const MAX_RENDER_WIDTH = 1100
-/** Seconds into the flow field at which the page opens: a calm arrangement of the warps. */
+/** Seconds into the flow field at which the page opens: a calm arrangement of the bands. */
 const FLOW_ORIGIN = 14
 
 const GRADIENT = /^\s*linear-gradient\(\s*(-?[\d.]+)deg\s*,/
@@ -43,17 +146,24 @@ function hexChannels(hex: string): Rgb | null {
   return [r ?? 0, g ?? 0, b ?? 0]
 }
 
+const channels = (match: RegExpMatchArray): Rgb | null =>
+  match[4]
+    ? hexChannels(match[4])
+    : ([Number(match[1]), Number(match[2]), Number(match[3])] as const)
+
 /** The angle and the opaque stop colours of a token gradient such as `--backdrop`. */
 export function parseBackdrop(value: string): Backdrop | null {
   const gradient = GRADIENT.exec(value)
   if (!gradient) return null
-  const stops = [...value.matchAll(COLOUR)].map((match) =>
-    match[4]
-      ? hexChannels(match[4])
-      : ([Number(match[1]), Number(match[2]), Number(match[3])] as const),
-  )
+  const stops = [...value.matchAll(COLOUR)].map(channels)
   if (stops.length !== 3 || stops.some((stop) => stop === null)) return null
   return { angle: Number(gradient[1]), stops: stops as Rgb[] }
+}
+
+/** The opaque channels of a single token colour, in hex or functional notation. */
+export function parseColour(value: string): Rgb | null {
+  const matches = [...value.matchAll(COLOUR)]
+  return matches.length === 1 && matches[0] ? channels(matches[0]) : null
 }
 
 const linear = (channel: number) => {
@@ -86,12 +196,19 @@ export function frameDue(now: number, last: number, fps: number = FPS): boolean 
 const VERTEX = `attribute vec2 aPos;
 void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`
 
-// The token's gradient line, warped by a slow flow field; stops mix in OKLab and the result is
-// dithered so the soft ramp does not band.
+// Tide's gradient line under a slow warp is the sky. Two aurora bands, Sage and Tide, hang across
+// it: a bright lower edge, a long glow above fringed with Ember violet, faint curtain rays, and
+// a caustic shimmer where they are brightest. Ember peach warms the side edges. Colours mix in
+// OKLab and the result is dithered so the soft ramps do not band.
 const FRAGMENT = `precision highp float;
 uniform vec2 uRes;
 uniform float uTime;
-uniform vec3 uStops[3];
+uniform vec3 uSky[3];
+uniform vec3 uSage;
+uniform vec3 uTide;
+uniform vec3 uFringe;
+uniform vec3 uWarm;
+uniform vec3 uStrength;
 uniform float uGlow;
 uniform vec2 uDir;
 
@@ -112,17 +229,33 @@ float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
   mat2 turn = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 3; i++) {
     v += a * noise(p);
     p = turn * p;
     a *= 0.5;
   }
-  return v;
+  return v / 0.875;
 }
 
 vec3 ramp(float t) {
   t = clamp(t, 0.0, 1.0);
-  return t < 0.5 ? mix(uStops[0], uStops[1], smoothstep(0.0, 0.5, t)) : mix(uStops[1], uStops[2], smoothstep(0.5, 1.0, t));
+  return t < 0.5 ? mix(uSky[0], uSky[1], smoothstep(0.0, 0.5, t)) : mix(uSky[1], uSky[2], smoothstep(0.5, 1.0, t));
+}
+
+// A band's profile across its centre line: tight below, a long glow above (screen y grows down).
+float band(float d, float width) {
+  float w = d > 0.0 ? width * 0.4 : width * 1.7;
+  return exp(-d * d / (w * w));
+}
+
+// Thin bright filaments where two warped ridged noises cross, drifting slowly.
+float caustic(vec2 p, float t) {
+  vec2 w = vec2(noise(p * 1.1 + vec2(0.0, t * 0.05)), noise(p * 1.1 + vec2(7.1, -t * 0.04)));
+  float a = noise(p * 2.6 + w * 2.2 + vec2(t * 0.035, 0.0));
+  float b = noise(p * 3.1 - w * 1.8 + vec2(3.7, t * 0.03));
+  a = 1.0 - abs(a * 2.0 - 1.0);
+  b = 1.0 - abs(b * 2.0 - 1.0);
+  return pow(a, 6.0) + pow(b, 6.0) * 0.7;
 }
 
 vec3 oklabToLinear(vec3 c) {
@@ -146,22 +279,58 @@ vec3 toSrgb(vec3 c) {
 
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-  vec2 p = px / uRes.y * 1.15;
-  float t = uTime;
-  vec2 q = vec2(fbm(p + vec2(0.0, 0.031 * t)), fbm(p + vec2(5.2, 1.3) - vec2(0.027 * t, 0.0)));
-  vec2 r = vec2(fbm(p + 2.4 * q + vec2(1.7, 9.2) + 0.019 * t), fbm(p + 2.4 * q + vec2(8.3, 2.8) - 0.023 * t));
+  vec2 uv = px / uRes;
+  vec2 p = px / uRes.y;
+  float aspect = uRes.x / uRes.y;
+  float t = uTime * 1.5;
+
+  vec2 q = vec2(fbm(p * 1.2 + vec2(0.0, 0.02 * t)), fbm(p * 1.2 + vec2(5.2, 1.3) - vec2(0.017 * t, 0.0)));
   float len = abs(uRes.x * uDir.x) + abs(uRes.y * uDir.y);
-  float g = dot(px - 0.5 * uRes, uDir) / len + 0.5;
-  g += (r.x - 0.5) * 2.6 + (q.y - 0.5) * 0.8;
+  float g = dot(px - 0.5 * uRes, uDir) / len + 0.5 + (q.x - 0.5) * 1.4;
   vec3 lab = ramp(g);
-  lab.x += (r.y - 0.5) * 2.0 * uGlow + (q.x - 0.5) * uGlow;
+  lab.x += (q.y - 0.5) * 2.0 * uGlow;
+
+  float x = p.x - 0.5 * aspect;
+  float flow = fbm(vec2(p.x * 0.8 - t * 0.012, t * 0.02)) - 0.5;
+  float lineA = 0.14 - 0.14 * x + 0.05 * sin(p.x * 2.6 + t * 0.05) + 0.025 * sin(p.x * 5.3 - t * 0.07 + 1.0) + flow * 0.26;
+  float lineB = 0.34 - 0.07 * x + 0.07 * sin(p.x * 1.9 + 2.0 - t * 0.04) - flow * 0.16;
+  float lineC = 0.05 - 0.06 * x + 0.035 * sin(p.x * 3.1 + 1.0 + t * 0.03) + flow * 0.1;
+  float presA = 0.7 + 0.3 * smoothstep(0.25, 0.65, fbm(vec2(p.x * 1.4 + t * 0.016, 3.0)));
+  float presB = 0.75 + 0.25 * smoothstep(0.2, 0.6, fbm(vec2(p.x * 1.1 - t * 0.013, 7.0)));
+  float rays = noise(vec2(p.x * 22.0 + q.y * 6.0 + t * 0.04, t * 0.03));
+  rays = 0.55 + 0.45 * rays * rays;
+  float dA = p.y - lineA;
+  float dB = p.y - lineB;
+  float dC = p.y - lineC;
+  float a = band(dA, 0.09) * presA * mix(1.0, rays, smoothstep(0.02, -0.14, dA));
+  float b = band(dB, 0.1) * presB * mix(1.0, rays, 0.6 * smoothstep(0.02, -0.14, dB));
+  float c = band(dC, 0.05) * (1.0 - presA * 0.5) * mix(1.0, rays, 0.7);
+  float fringe = band(dA + 0.17, 0.11) * presA * 0.4 + band(dB + 0.2, 0.13) * presB * 0.3;
+  vec3 sageTide = mix(uSage, uTide, 0.35 * smoothstep(0.3, 0.7, fbm(vec2(p.x * 0.9 - t * 0.01, 11.0))));
+
+  lab = mix(lab, uFringe, fringe * uStrength.x);
+  lab = mix(lab, mix(uTide, uFringe, 0.35), c * 0.6 * uStrength.x);
+  lab = mix(lab, uTide, b * uStrength.x);
+  lab = mix(lab, sageTide, a * uStrength.x);
+
+  vec2 left = (p - vec2(-0.08, 0.42 + flow * 0.1)) / vec2(0.34, 0.26);
+  vec2 right = (p - vec2(aspect + 0.06, 0.1 - flow * 0.1)) / vec2(0.3, 0.24);
+  float warmth = (exp(-dot(left, left)) + exp(-dot(right, right)) * 0.85) * (0.6 + 0.4 * q.x);
+  lab = mix(lab, uWarm, min(warmth, 1.0) * uStrength.z);
+
+  float coreA = exp(-pow((dA - 0.01) / 0.012, 2.0)) * presA;
+  float coreB = exp(-pow((dB - 0.014) / 0.016, 2.0)) * presB;
+  coreA += exp(-pow((dC - 0.006) / 0.008, 2.0)) * 0.4;
+  float shimmer = caustic(p * vec2(5.0, 7.0), t) * (a * a + b * b * 0.8) * 0.3;
+  lab.x += (shimmer + (coreA * 0.8 + coreB * 0.5) * rays) * uStrength.y;
+
   vec3 colour = toSrgb(oklabToLinear(lab));
   colour += (hash(gl_FragCoord.xy + fract(t)) - 0.5) / 255.0;
   gl_FragColor = vec4(colour, 1.0);
 }`
 
 interface Renderer {
-  setPalette(backdrop: Backdrop, look: Look): void
+  setPalette(palette: AuroraPalette): void
   draw(seconds: number): void
   lost(): boolean
 }
@@ -223,7 +392,12 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   const u = {
     res: uniform('uRes'),
     time: uniform('uTime'),
-    stops: uniform('uStops'),
+    sky: uniform('uSky'),
+    sage: uniform('uSage'),
+    tide: uniform('uTide'),
+    fringe: uniform('uFringe'),
+    warm: uniform('uWarm'),
+    strength: uniform('uStrength'),
     glow: uniform('uGlow'),
     dir: uniform('uDir'),
   }
@@ -238,14 +412,16 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   }
 
   return {
-    setPalette({ angle, stops }, look) {
-      const radians = (angle * Math.PI) / 180
+    setPalette(palette) {
+      const radians = (palette.angle * Math.PI) / 180
       gl.uniform2f(u.dir, Math.sin(radians), -Math.cos(radians))
-      gl.uniform3fv(
-        u.stops,
-        stops.flatMap((stop) => tuneStop(stop, look)),
-      )
-      gl.uniform1f(u.glow, look.glow)
+      gl.uniform3fv(u.sky, palette.sky.flat())
+      gl.uniform3fv(u.sage, palette.sage)
+      gl.uniform3fv(u.tide, palette.tide)
+      gl.uniform3fv(u.fringe, palette.fringe)
+      gl.uniform3fv(u.warm, palette.warm)
+      gl.uniform3fv(u.strength, palette.strength)
+      gl.uniform1f(u.glow, palette.glow)
     },
     draw(seconds) {
       resize()
@@ -257,10 +433,29 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   }
 }
 
+function readAurora(root: HTMLElement): AuroraInputs | null {
+  const read = (element: Element | null, name: string) =>
+    element ? getComputedStyle(element).getPropertyValue(name) : ''
+  const theme = (name: string) =>
+    parseBackdrop(read(root.querySelector(`[data-aurora-source="${name}"]`), '--backdrop'))
+  const tide = parseBackdrop(read(root, '--backdrop'))
+  const sage = theme('sage')
+  const ember = theme('ember')
+  const teal = parseColour(read(root, '--color-activity-level-4'))
+  const blue = parseColour(read(root, '--color-accent-fill'))
+  const amber = parseColour(read(root, '--color-tag-icon-orange'))
+  return tide && sage && ember && teal && blue && amber
+    ? { tide, sage, ember, teal, blue, amber }
+    : null
+}
+
 export interface BackdropParts {
   hero: HTMLElement
   canvas: HTMLCanvasElement
-  /** Elements whose computed `--backdrop` is the Tide gradient in each appearance. */
+  /**
+   * Per appearance, the element whose computed `--backdrop` is the Tide gradient; inside it,
+   * `[data-aurora-source]` elements carry Sage's and Ember's.
+   */
   sources: Record<Scheme, HTMLElement>
   /** False keeps the CSS layers and only tracks whether they should move. */
   webgl?: boolean
@@ -294,9 +489,9 @@ export function startBackdrop({
 
   const palette = () => {
     const scheme: Scheme = dark.matches ? 'dark' : 'light'
-    const backdrop = parseBackdrop(getComputedStyle(sources[scheme]).getPropertyValue('--backdrop'))
-    if (!backdrop || !renderer) return false
-    renderer.setPalette(backdrop, BACKDROP_LOOK[scheme])
+    const inputs = readAurora(sources[scheme])
+    if (!inputs || !renderer) return false
+    renderer.setPalette(auroraPalette(inputs, scheme))
     return true
   }
 

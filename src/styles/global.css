@@ -54,6 +54,30 @@ a {
   background: var(--site-color-selection);
 }
 
+/* A headline's last line: italic, inked with the accent gradient. The padding keeps the italic
+   overhang and the descenders inside the painted box; forced colours show plain text. */
+.site-accent {
+  width: fit-content;
+  margin-block: -0.1em -0.2em;
+  margin-inline-end: -0.1em;
+  padding-block: 0.1em 0.2em;
+  padding-inline-end: 0.1em;
+  background: var(--site-ink-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: italic;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@media (forced-colors: active) {
+  .site-accent {
+    background: none;
+    color: var(--site-color-text);
+  }
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -16,7 +16,13 @@ const number = (index: number) => String(index + 1).padStart(2, '0')
       {t.features.titleLines.map((line, index) => (
         <>
           {index > 0 && ' '}
-          <span class="features-title-line" data-reveal>
+          <span
+            class:list={[
+              'features-title-line',
+              { 'site-accent': index === t.features.titleLines.length - 1 },
+            ]}
+            data-reveal
+          >
             {line}
           </span>
         </>
