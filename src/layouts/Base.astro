@@ -2,6 +2,7 @@
 import '../theme/tokens.css'
 import '../styles/site-tokens.css'
 import '../styles/global.css'
+import '../styles/motion.css'
 import SiteFooter from '../components/SiteFooter.astro'
 import SiteHeader from '../components/SiteHeader.astro'
 import { messages, type Locale } from '../i18n/index.ts'
@@ -55,5 +56,10 @@ const themeColor = themeColors(tokensCss)
       <slot />
     </main>
     <SiteFooter />
+    <script>
+      import { startSite } from '../scripts/site.ts'
+
+      startSite()
+    </script>
   </body>
 </html>

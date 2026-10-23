@@ -1,0 +1,48 @@
+---
+import { media, type SlotName } from '../media.ts'
+
+interface Props {
+  name: SlotName
+  class?: string
+}
+
+const { name, class: className } = Astro.props
+const slot = media[name]
+---
+
+{slot.clip ? (
+  <video
+    class:list={['clip', className]}
+    data-clip={name}
+    width={slot.width}
+    height={slot.height}
+    poster={slot.poster}
+    aria-label={slot.alt}
+    preload="none"
+    muted
+    loop
+    playsinline
+  >
+    {slot.sources.map(({ src, type }) => (
+      <source data-src={src} type={type} />
+    ))}
+  </video>
+) : (
+  <img
+    class:list={['clip', className]}
+    src={slot.poster}
+    width={slot.width}
+    height={slot.height}
+    alt={slot.alt}
+    loading="lazy"
+    decoding="async"
+  />
+)}
+
+<style>
+  .clip {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

@@ -9,7 +9,7 @@ The landing page for Devot at https://devot.online: static Astro, plain CSS, dep
 - Work test-first. Every PR includes tests for the logic it changes.
 - Node 24 (exact version in `.node-version`) and pnpm 12.10.1 (`packageManager`). Dependencies are pinned to exact versions.
 - Colours come from Devot's semantic tokens (`src/theme/tokens.css`, generated: never edit it, run `pnpm tokens`) or from site variables defined once in `src/styles/site-tokens.css`. No colour literals (hex, `rgb()`, `hsl()`, named colours) anywhere else in `src/`; a policy test enforces it.
-- User-facing text is English and lives in `src/i18n/en.ts`; templates take it from there, never inline it. A policy test enforces it.
+- User-facing text is English and lives in the catalog `src/i18n/en.ts`, whose per-area namespace files are in `src/i18n/en/`; templates take it from there, never inline it. A policy test enforces it.
 - The Content-Security-Policy in `public/_headers` allows no inline script or style. Keep scripts and styles external: no `is:inline`, `define:vars`, `style=` attributes or inline event handlers. Change the policy only in `public/_headers`, in its one `/*` rule.
 - Respect `prefers-reduced-motion` for any motion, and keep the visible focus ring (`--site-focus-ring`).
 - Commits and pull requests carry no AI attribution: no `Co-Authored-By` trailers, no "Generated with" lines.

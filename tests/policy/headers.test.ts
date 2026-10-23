@@ -32,6 +32,7 @@ describe('public/_headers', () => {
     expect(csp.get('connect-src')).toEqual(["'self'", 'https://cloudflareinsights.com'])
     expect(csp.get('style-src')).toEqual(["'self'"])
     expect(csp.get('img-src')).toEqual(["'self'"])
+    expect(csp.get('media-src')).toEqual(["'self'"])
     for (const directive of ['frame-ancestors', 'base-uri', 'form-action', 'object-src']) {
       expect(csp.get(directive), directive).toEqual(["'none'"])
     }

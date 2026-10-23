@@ -18,10 +18,12 @@
     "tokens": "node scripts/tokens/cli.ts",
     "tokens:check": "node scripts/tokens/cli.ts --check",
     "tokens:update": "node scripts/tokens/cli.ts --update",
+    "media:placeholders": "node scripts/placeholders/cli.ts",
     "check": "pnpm tokens:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:e2e"
   },
   "dependencies": {
-    "astro": "7.4.2"
+    "astro": "7.4.2",
+    "gsap": "3.15.0"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",

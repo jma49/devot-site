@@ -1,0 +1,98 @@
+/*
+ * The motion vocabulary: one easing set, one duration scale and two utilities. Nothing is hidden
+ * unless scripting is on and reduced motion is not requested, so the page reads in full without
+ * either.
+ */
+:root {
+  --site-ease-out: var(--motion-easing-out);
+  --site-ease-text: var(--motion-easing-standard);
+  --site-ease-media: var(--motion-easing-move);
+
+  --site-dur-quick: 200ms;
+  --site-dur-reveal: 400ms;
+  --site-dur-media: 700ms;
+  --site-dur-hero: 1000ms;
+  --site-stagger-step: 50ms;
+
+  --site-reveal-rise: 12px;
+  --site-reveal-scale: 0.97;
+  --site-drift-distance: 8vw;
+}
+
+[data-reveal] {
+  --site-reveal-duration: var(--site-dur-reveal);
+  --site-reveal-ease: var(--site-ease-out);
+  /* motion.ts sets the delay of staggered arrivals. It sits in this list only, so a hover
+     transition on the same element is never delayed; add to the list instead of replacing it. */
+  --site-reveal-delay: 0ms;
+  --site-reveal-transition:
+    opacity var(--site-reveal-duration) var(--site-reveal-ease) var(--site-reveal-delay),
+    transform var(--site-reveal-duration) var(--site-reveal-ease) var(--site-reveal-delay);
+}
+
+[data-reveal='scale'] {
+  --site-reveal-duration: var(--site-dur-media);
+  --site-reveal-ease: var(--site-ease-media);
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    transition: var(--site-reveal-transition);
+  }
+
+  [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translate3d(0, var(--site-reveal-rise), 0);
+    will-change: opacity, transform;
+  }
+
+  [data-reveal='scale']:not([data-revealed]) {
+    transform: scale(var(--site-reveal-scale));
+  }
+
+  [data-reveal='fade']:not([data-revealed]) {
+    transform: none;
+  }
+}
+
+@keyframes site-scroll-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--site-reveal-rise), 0);
+  }
+}
+
+@keyframes site-scroll-drift {
+  from {
+    transform: translate3d(calc(var(--site-drift-distance) * -1), 0, 0);
+  }
+  to {
+    transform: translate3d(var(--site-drift-distance), 0, 0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-scroll='rise'] {
+      animation: site-scroll-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+
+    [data-scroll='drift'] {
+      animation: site-scroll-drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-scroll] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

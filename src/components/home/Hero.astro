@@ -1,0 +1,77 @@
+---
+import dove from '../../assets/dove.svg'
+import { messages } from '../../i18n/index.ts'
+import { DOWNLOAD_URL } from '../../site.ts'
+
+const t = messages()
+---
+
+<section id="hero" class="hero" aria-labelledby="hero-title">
+  <img class="mark" src={dove.src} width={dove.width} height={dove.height} alt="" />
+  <h1 id="hero-title">{t.hero.title}</h1>
+  <p class="lead">{t.hero.lead}</p>
+  <a class="download" href={DOWNLOAD_URL} aria-describedby="download-requirements">
+    {t.download.label}
+  </a>
+  <p class="requirements" id="download-requirements">
+    {t.download.requirements}
+  </p>
+</section>
+
+<style>
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100% - 2 * var(--site-gutter), var(--site-width-page));
+    margin-inline: auto;
+    padding-block: var(--site-space-section);
+    text-align: center;
+  }
+
+  .mark {
+    width: var(--site-size-hero-mark);
+    height: auto;
+    margin-block-end: var(--space-10);
+  }
+
+  h1 {
+    max-width: var(--site-width-display);
+    font-size: var(--site-font-size-display);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--site-tracking-display);
+    line-height: var(--site-line-height-display);
+    text-wrap: balance;
+  }
+
+  .lead {
+    margin-block-start: var(--space-9);
+    color: var(--site-color-text-muted);
+    font-size: var(--site-font-size-lead);
+    text-wrap: balance;
+  }
+
+  .download {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--site-size-action);
+    margin-block-start: var(--space-10);
+    padding-inline: var(--space-9);
+    border-radius: var(--radius-capsule);
+    background: var(--site-color-action);
+    color: var(--site-color-on-action);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    transition: background-color var(--site-motion-hover);
+  }
+
+  .download:hover {
+    background: var(--site-color-action-hover);
+  }
+
+  .requirements {
+    margin-block-start: var(--space-6);
+    color: var(--site-color-text-faint);
+    font-size: var(--site-font-size-small);
+  }
+</style>

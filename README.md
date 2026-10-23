@@ -2,7 +2,7 @@
 
 The landing page for [Devot](https://github.com/jma49/devot), local-first Markdown notes for macOS, served at https://devot.online.
 
-A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, no client-side JavaScript yet, deployed by Cloudflare Pages.
+A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, a few small scripts for scroll motion and clip playback, deployed by Cloudflare Pages.
 
 ## Requirements
 
@@ -13,21 +13,22 @@ A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, 
 
 ## Commands
 
-| Command              | What it does                                                               |
-| -------------------- | -------------------------------------------------------------------------- |
-| `pnpm dev`           | Development server                                                         |
-| `pnpm build`         | Static build into `dist/`                                                  |
-| `pnpm preview`       | Serves `dist/` (without the headers in `public/_headers`)                  |
-| `pnpm format`        | Formats with oxfmt (`pnpm format:check` only checks)                       |
-| `pnpm lint`          | oxlint                                                                     |
-| `pnpm typecheck`     | `astro check`: `.astro` and `.ts` files                                    |
-| `pnpm test`          | Vitest unit and policy tests                                               |
-| `pnpm test:dist`     | Vitest checks of the built site; run `pnpm build` first                    |
-| `pnpm test:e2e`      | Playwright smoke tests in Chromium and WebKit against `dist/`; build first |
-| `pnpm tokens`        | Regenerates the files copied from Devot at the pinned commit               |
-| `pnpm tokens:check`  | Fails with `E_TOKENS_STALE` when the committed copies differ from the pin  |
-| `pnpm tokens:update` | Moves the pin to Devot's current `main` and regenerates                    |
-| `pnpm check`         | Everything CI runs, in order                                               |
+| Command                   | What it does                                                               |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `pnpm dev`                | Development server                                                         |
+| `pnpm build`              | Static build into `dist/`                                                  |
+| `pnpm preview`            | Serves `dist/` (without the headers in `public/_headers`)                  |
+| `pnpm format`             | Formats with oxfmt (`pnpm format:check` only checks)                       |
+| `pnpm lint`               | oxlint                                                                     |
+| `pnpm typecheck`          | `astro check`: `.astro` and `.ts` files                                    |
+| `pnpm test`               | Vitest unit and policy tests                                               |
+| `pnpm test:dist`          | Vitest checks of the built site; run `pnpm build` first                    |
+| `pnpm test:e2e`           | Playwright smoke tests in Chromium and WebKit against `dist/`; build first |
+| `pnpm tokens`             | Regenerates the files copied from Devot at the pinned commit               |
+| `pnpm tokens:check`       | Fails with `E_TOKENS_STALE` when the committed copies differ from the pin  |
+| `pnpm tokens:update`      | Moves the pin to Devot's current `main` and regenerates                    |
+| `pnpm media:placeholders` | Writes the missing placeholder posters and clips (needs ffmpeg)            |
+| `pnpm check`              | Everything CI runs, in order                                               |
 
 Playwright needs its browsers once: `pnpm exec playwright install chromium webkit`.
 
@@ -48,11 +49,38 @@ The build derives the square icons from the dove, at stable unhashed paths: `/fa
 
 Components use Devot's semantic tokens (`--color-text-*`, `--color-surface-*`, `--color-accent-*` and so on) or the site variables built on them in `src/styles/site-tokens.css`. A policy test refuses colour literals anywhere else in `src/`.
 
+## The page
+
+`src/pages/index.astro` composes five sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `privacy.ts` and `media.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when two files define the same top-level key.
+
+## Motion
+
+`src/styles/motion.css` holds the vocabulary: three easings (`--site-ease-out`, `--site-ease-text`, `--site-ease-media`, built on Devot's motion tokens), a duration scale (`--site-dur-quick`, `-reveal`, `-media`, `-hero`) and a stagger step. `src/lib/motion.ts` mirrors the numbers for scripts, and a unit test keeps the two in step.
+
+- `data-reveal` (optionally `scale` or `fade`, and `data-reveal-index` to fix the stagger order): `revealOnScroll` sets `data-revealed` once the element scrolls in, and the stylesheet turns that into a transition. Nothing is hidden without scripting or with reduced motion; with reduced motion every element is revealed at once.
+- `data-scroll="rise"` or `"drift"`: a scroll-linked effect in browsers with scroll-driven animations (`@supports (animation-timeline: view())`); elsewhere the element simply stays in its end state.
+- `src/lib/scroll.ts` wraps GSAP and ScrollTrigger for pinning and scrubbed effects that CSS cannot express. `scrollEffects(setup, { when })` runs `setup` only while reduced motion is off and the extra media query matches, and reverts everything it created when that stops being true.
+- Scripts set values through the CSS object model (`element.style.setProperty`, `setVar` in `motion.ts`), which the CSP allows; `style=` attributes it does not. A policy test refuses them in `src/`.
+
+`src/scripts/site.ts`, loaded by `Base.astro`, starts `revealOnScroll` and `initClips` for the whole page.
+
+### GSAP
+
+GSAP 3.15.0 is a dependency (exact version) and Astro bundles it from `node_modules`; nothing loads from a CDN. It is not MIT: it ships under GreenSock's standard "no charge" licence (https://gsap.com/standard-license), which GSAP's own site calls free for everyone, thanks to Webflow's support. Read the terms before using GSAP in another project. Import it through `src/lib/scroll.ts` so every script shares one registration.
+
+## Product media
+
+`src/media.ts` lists every slot: `hero`, `write`, `organise`, `find` and `card-1` to `card-6`, each with width and height in pixels (2x of the size it is shown at), duration in seconds, alt text (from `src/i18n/en/media.ts`), poster path and whether it is a clip or a still. `public/media/<slot>/` holds `<slot>.mp4`, `<slot>.webm` and `<slot>-poster.webp`; `tests/unit/media.test.ts` checks the files against the manifest (WebP poster at the stated size under 80 KB, clip files under 700 KB each, the hero under 2 MB for both).
+
+`src/components/Clip.astro` renders a slot, `<Clip name="card-1" class="…" />`: a `video` with `width`, `height`, `poster`, `muted loop playsinline`, `preload="none"` and `data-clip`, and its files in `source data-src`. There is no `autoplay` attribute and no `src`, so the browser requests nothing but the poster. `src/scripts/clips.ts` gives the sources their `src` when a clip comes within 600 px of the viewport, plays it while any part of it is visible and the tab is shown, and pauses it otherwise; with reduced motion nothing loads or plays and the poster stays. A slot with `clip: false` renders its poster as an image instead.
+
+Until real captures land, `pnpm media:placeholders` writes neutral posters and 2-second clips from Devot's tokens at each slot's size, and skips files that exist (`--force` replaces them). It needs ffmpeg with libx264 and libvpx-vp9.
+
 ## Security headers
 
 `public/_headers` sets the Content-Security-Policy and the other response headers. The policy allows no inline script or style, so `astro.config.ts` turns off Astro's inlining. `pnpm test:dist` fails if the build emits inline code, and the Playwright tests serve every page under the same policy.
 
-The policy already allows Cloudflare Web Analytics (`static.cloudflareinsights.com` for the beacon, `cloudflareinsights.com` and `/cdn-cgi/rum` for reports). Turning analytics on needs no code change.
+The policy allows media from this site only (`media-src 'self'`), for the clips. It already allows Cloudflare Web Analytics (`static.cloudflareinsights.com` for the beacon, `cloudflareinsights.com` and `/cdn-cgi/rum` for reports). Turning analytics on needs no code change.
 
 ## Deploying on Cloudflare Pages
 

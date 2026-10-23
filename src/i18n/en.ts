@@ -1,30 +1,23 @@
+import { cardsCopy } from './en/cards.ts'
+import { chromeCopy } from './en/chrome.ts'
+import { featuresCopy } from './en/features.ts'
+import { heroCopy } from './en/hero.ts'
+import { mediaCopy } from './en/media.ts'
+import { privacyCopy } from './en/privacy.ts'
+
+/** Copy shared by several sections lives here; each package's own copy lives in `en/<package>.ts`. */
 export const en = {
   siteName: 'Devot',
-  meta: {
-    title: 'Devot: local-first Markdown notes for macOS',
-    description:
-      'Local-first Markdown notes for macOS. Your notes stay on your Mac, in your hands.',
-    ogLocale: 'en_US',
-  },
-  hero: {
-    title: 'Local-first Markdown notes for macOS.',
-    lead: 'Your notes stay on your Mac, in your hands.',
-  },
   download: {
     label: 'Download for macOS',
     requirements: 'macOS 26+ · Apple Silicon',
   },
-  notFound: {
-    title: 'Devot: page not found',
-    description: 'There is no page at this address on devot.online.',
-    heading: 'Page not found',
-    body: 'The link may be out of date, or the address may have a typo.',
-    home: 'Go to the home page',
-  },
-  footer: {
-    source: 'Source on GitHub',
-    copyright: (year: number) => `© ${year} Devot`,
-  },
+  ...chromeCopy,
+  ...heroCopy,
+  ...featuresCopy,
+  ...cardsCopy,
+  ...privacyCopy,
+  ...mediaCopy,
 }
 
 export type Messages = typeof en
