@@ -112,6 +112,9 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await page.emulateMedia({ reducedMotion })
       await page.goto('/')
       await advanceUntil(page, backdropIs(page, 'webgl'))
+      // From here only runFor moves the clock: real time running on beside it lets a busy machine
+      // put draws closer than the frames that timed them.
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 500)
     })
 
     test(`drifts at ${rate === 1 ? 'full' : 'a third of its'} pace, 30 frames a second`, async ({
