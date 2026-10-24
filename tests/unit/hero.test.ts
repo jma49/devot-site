@@ -3,9 +3,13 @@ import {
   AURORA_RECIPE,
   auroraPalette,
   BACKDROP_LOOK,
+  FRAME_CHECK,
   frameDue,
+  framesTooSlow,
   parseBackdrop,
   parseColour,
+  renderSize,
+  softwareRenderer,
   srgbToOklab,
   tuneStop,
   type AuroraInputs,
@@ -267,5 +271,61 @@ describe('frameDue', () => {
     expect(frameDue(1000, 1000 - 31.5)).toBe(true)
     expect(frameDue(1000, 1000 - 16.7)).toBe(false)
     expect(frameDue(1000, -1)).toBe(true)
+  })
+})
+
+describe('renderSize', () => {
+  it('draws at half the CSS pixels, whatever the device pixel ratio, keeping the aspect', () => {
+    expect(renderSize(1440, 1554)).toEqual({ width: 720, height: 777 })
+    expect(renderSize(1024, 900)).toEqual({ width: 512, height: 450 })
+  })
+
+  it('caps the width at 1100 pixels on very wide windows and never reaches zero', () => {
+    expect(renderSize(3840, 2160)).toEqual({ width: 1100, height: 619 })
+    expect(renderSize(0, 0)).toEqual({ width: 1, height: 1 })
+  })
+})
+
+describe('softwareRenderer', () => {
+  it('knows the CPU renderers, which cost a frame of main thread per draw', () => {
+    for (const name of [
+      'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)',
+      'Google SwiftShader',
+      'llvmpipe (LLVM 15.0.7, 256 bits)',
+      'Mesa softpipe',
+      'ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11 vs_5_0 ps_5_0)',
+    ]) {
+      expect(softwareRenderer(name), name).toBe(true)
+    }
+  })
+
+  it('lets a real GPU, or a renderer the browser does not name, draw the shader', () => {
+    for (const name of [
+      'Apple GPU',
+      'ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)',
+      'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      '',
+    ]) {
+      expect(softwareRenderer(name), name).toBe(false)
+    }
+  })
+})
+
+describe('framesTooSlow', () => {
+  const frames = (count: number, ms: number) => Array.from({ length: count }, () => ms)
+
+  it(`waits for ${FRAME_CHECK.frames} frames before deciding`, () => {
+    expect(framesTooSlow(frames(FRAME_CHECK.frames - 1, 40))).toBeNull()
+  })
+
+  it(`falls back when the median frame takes longer than ${FRAME_CHECK.medianMs} ms`, () => {
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 16.7))).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 8.3))).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4))).toBe(true)
+  })
+
+  it('shrugs off a few long frames, such as the first draw', () => {
+    const intervals = [...frames(FRAME_CHECK.frames - 10, 16.7), ...frames(10, 120)]
+    expect(framesTooSlow(intervals)).toBe(false)
   })
 })

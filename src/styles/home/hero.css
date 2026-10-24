@@ -77,7 +77,12 @@
   transform: translate3d(0, calc(var(--hero-sky) * 1px), 0);
 }
 
-/* The CSS aurora (aurora.css) stands in until the canvas fades in over it, then stops moving. */
+/* The CSS aurora (aurora.css) stands in until the canvas fades in over it, then stops moving;
+   it also holds still while the hero is off screen or in a hidden tab. */
+.hero[data-backdrop-state='idle'] .aurora-band {
+  animation-play-state: paused;
+}
+
 .hero[data-backdrop='webgl'] .hero-fallback .aurora-band {
   visibility: hidden;
   transition: visibility 0s linear var(--site-dur-media);
@@ -346,11 +351,6 @@
 
   .hero-requirements {
     animation: hero-fade 900ms var(--site-ease-text) 100ms both;
-  }
-
-  .hero[data-backdrop-state='idle'] .aurora-band,
-  html[data-animations-paused] .aurora-band {
-    animation-play-state: paused;
   }
 }
 

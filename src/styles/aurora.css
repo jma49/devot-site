@@ -100,14 +100,26 @@
   right: -30vmax;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+/* The sway runs on transforms only, so the compositor carries it without repainting. */
+.aurora-band-sage {
+  animation: aurora-sway-a var(--aurora-drift) var(--site-ease-text) infinite alternate;
+}
+
+.aurora-band-tide {
+  animation: aurora-sway-b calc(var(--aurora-drift) * 1.3) var(--site-ease-text) infinite alternate;
+}
+
+/* With reduced motion the aurora still drifts, at a third of the pace; global.css holds every
+   other animation still, so these declarations need to outrank it. */
+@media (prefers-reduced-motion: reduce) {
   .aurora-band-sage {
-    animation: aurora-sway-a var(--aurora-drift) var(--site-ease-text) infinite alternate;
+    animation-duration: calc(var(--aurora-drift) * 3) !important;
+    animation-iteration-count: infinite !important;
   }
 
   .aurora-band-tide {
-    animation: aurora-sway-b calc(var(--aurora-drift) * 1.3) var(--site-ease-text) infinite
-      alternate;
+    animation-duration: calc(var(--aurora-drift) * 3.9) !important;
+    animation-iteration-count: infinite !important;
   }
 }
 

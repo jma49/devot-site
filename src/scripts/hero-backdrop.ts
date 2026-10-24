@@ -129,11 +129,46 @@ export function auroraPalette(inputs: AuroraInputs, scheme: Scheme): AuroraPalet
 }
 
 const FPS = 30
-/** The shader draws at this share of CSS pixels; the gradient is soft, so upscaling hides nothing. */
+/**
+ * The shader draws at this share of CSS pixels, so device pixels never count: the aurora is soft,
+ * and upscaling hides nothing.
+ */
 const RENDER_SCALE = 0.5
 const MAX_RENDER_WIDTH = 1100
 /** Seconds into the flow field at which the page opens: a calm arrangement of the bands. */
 const FLOW_ORIGIN = 14
+/** With reduced motion the aurora still drifts, at this share of its pace. */
+export const REDUCED_FLOW = 1 / 3
+/** The first frames that decide whether the GPU keeps up, and the median interval it must keep. */
+export const FRAME_CHECK = { frames: 60, medianMs: 20 } as const
+
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
+
+/** The canvas size for a canvas `width` by `height` CSS pixels. */
+export function renderSize(width: number, height: number): { width: number; height: number } {
+  const drawn = Math.min(MAX_RENDER_WIDTH, Math.round(width * RENDER_SCALE))
+  return {
+    width: Math.max(1, drawn),
+    height: Math.max(1, Math.round((drawn * height) / Math.max(1, width))),
+  }
+}
+
+/** Whether a WebGL renderer name is a CPU rasteriser, which `failIfMajorPerformanceCaveat` misses. */
+export function softwareRenderer(name: string): boolean {
+  return SOFTWARE_RENDERER.test(name)
+}
+
+/**
+ * Whether the frame intervals (milliseconds) seen while drawing say the GPU cannot keep up; null
+ * until there are enough of them.
+ */
+export function framesTooSlow(intervals: readonly number[]): boolean | null {
+  if (intervals.length < FRAME_CHECK.frames) return null
+  const sorted = intervals.slice(0, FRAME_CHECK.frames).toSorted((a, b) => a - b)
+  const middle = sorted.length / 2
+  const median = ((sorted[Math.floor(middle - 0.5)] ?? 0) + (sorted[Math.floor(middle)] ?? 0)) / 2
+  return median > FRAME_CHECK.medianMs
+}
 
 const GRADIENT = /^\s*linear-gradient\(\s*(-?[\d.]+)deg\s*,/
 // A stop in functional notation with spaces or commas, or in hex, which minified stylesheets carry.
@@ -333,6 +368,16 @@ interface Renderer {
   setPalette(palette: AuroraPalette): void
   draw(seconds: number): void
   lost(): boolean
+  release(): void
+}
+
+/** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
+function rendererName(gl: WebGLRenderingContext): string {
+  const plain: unknown = gl.getParameter(gl.RENDERER)
+  if (typeof plain === 'string' && !/webkit webgl/i.test(plain)) return plain
+  const debug = gl.getExtension('WEBGL_debug_renderer_info')
+  const unmasked: unknown = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : ''
+  return typeof unmasked === 'string' ? unmasked : ''
 }
 
 /**
@@ -362,6 +407,10 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     failIfMajorPerformanceCaveat: true,
   })
   if (!gl) return null
+  if (softwareRenderer(rendererName(gl))) {
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return null
+  }
   const shader = (type: number, source: string) => {
     const created = gl.createShader(type)
     if (!created) throw new Error('E_HERO_SHADER_CREATE')
@@ -403,12 +452,11 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   }
 
   const resize = () => {
-    const width = Math.min(MAX_RENDER_WIDTH, Math.round(canvas.clientWidth * RENDER_SCALE))
-    const height = Math.round((width * canvas.clientHeight) / Math.max(1, canvas.clientWidth))
+    const { width, height } = renderSize(canvas.clientWidth, canvas.clientHeight)
     if (canvas.width === width && canvas.height === height) return
-    canvas.width = Math.max(1, width)
-    canvas.height = Math.max(1, height)
-    gl.viewport(0, 0, canvas.width, canvas.height)
+    canvas.width = width
+    canvas.height = height
+    gl.viewport(0, 0, width, height)
   }
 
   return {
@@ -430,6 +478,9 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
     lost: () => gl.isContextLost(),
+    release: () => {
+      if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
+    },
   }
 }
 
@@ -464,11 +515,12 @@ export interface BackdropParts {
 }
 
 /**
- * Draws the hero's gradient with WebGL at up to 30 frames a second while the hero is on screen
- * and the tab is shown, once its shaders are built; with reduced motion it draws one still frame.
- * Until then, and without WebGL, the CSS layers underneath show. `data-backdrop` on the hero says
- * which one shows (`webgl` or `css`) and `data-backdrop-state` whether it moves (`running`;
- * `idle` while off screen, in a hidden tab or paused; `still` with reduced motion).
+ * Draws the hero's aurora with WebGL at up to 30 frames a second while the hero is on screen and
+ * the tab is shown, once its shaders are built; with reduced motion it drifts at a third of the
+ * pace. The CSS layers underneath show until then, without WebGL, on a software renderer and when
+ * the first frames run slow. `data-backdrop` on the hero says which one shows (`webgl` or `css`)
+ * and `data-backdrop-state` whether it moves (`running`, or `idle` while off screen, in a hidden
+ * tab or paused).
  */
 export function startBackdrop({
   hero,
@@ -486,6 +538,8 @@ export function startBackdrop({
   let lastDraw = -1
   let lastTick = 0
   let flow = FLOW_ORIGIN
+  /** Frame intervals seen so far, until the GPU has shown it keeps up. */
+  let intervals: number[] | null = []
 
   const palette = () => {
     const scheme: Scheme = dark.matches ? 'dark' : 'light'
@@ -496,7 +550,9 @@ export function startBackdrop({
   }
 
   const fallBack = () => {
+    const released = renderer
     renderer = null
+    released?.release()
     hero.dataset['backdrop'] = 'css'
   }
 
@@ -506,22 +562,10 @@ export function startBackdrop({
     renderer.draw(flow)
   }
 
-  const loop = (now: number) => {
-    frame = 0
-    if (lastTick) flow += (now - lastTick) / 1000
-    lastTick = now
-    if (frameDue(now, lastDraw)) {
-      lastDraw = now
-      draw()
-    }
-    frame = requestAnimationFrame(loop)
-  }
-
   const sync = () => {
     const moving = visible && !document.hidden && !pause.paused
-    const state = reduced.matches ? 'still' : moving ? 'running' : 'idle'
-    hero.dataset['backdropState'] = state
-    const animate = state === 'running' && renderer !== null
+    hero.dataset['backdropState'] = moving ? 'running' : 'idle'
+    const animate = moving && renderer !== null
     if (animate && !frame) {
       lastTick = 0
       frame = requestAnimationFrame(loop)
@@ -529,10 +573,33 @@ export function startBackdrop({
       cancelAnimationFrame(frame)
       frame = 0
     }
-    if (state === 'still') {
-      flow = FLOW_ORIGIN
+  }
+
+  const keepsUp = (interval: number) => {
+    if (!intervals) return true
+    intervals.push(interval)
+    const slow = framesTooSlow(intervals)
+    if (slow === null) return true
+    intervals = null
+    return !slow
+  }
+
+  function loop(now: number) {
+    frame = 0
+    if (lastTick) {
+      const interval = now - lastTick
+      flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
+      if (!keepsUp(interval)) {
+        fallBack()
+        return sync()
+      }
+    }
+    lastTick = now
+    if (frameDue(now, lastDraw)) {
+      lastDraw = now
       draw()
     }
+    if (renderer) frame = requestAnimationFrame(loop)
   }
 
   const repaint = () => {
@@ -541,7 +608,7 @@ export function startBackdrop({
   }
 
   const begin = (created: Renderer | null) => {
-    if (stopped) return
+    if (stopped) return created?.release()
     renderer = created
     if (renderer && palette()) {
       draw()
@@ -574,7 +641,6 @@ export function startBackdrop({
   }
   canvas.addEventListener('webglcontextlost', onLost)
   document.addEventListener('visibilitychange', sync)
-  reduced.addEventListener('change', sync)
   dark.addEventListener('change', repaint)
   const stopPause = pause.subscribe(sync)
   sync()
@@ -587,7 +653,6 @@ export function startBackdrop({
     resize.disconnect()
     canvas.removeEventListener('webglcontextlost', onLost)
     document.removeEventListener('visibilitychange', sync)
-    reduced.removeEventListener('change', sync)
     dark.removeEventListener('change', repaint)
     stopPause()
   }
