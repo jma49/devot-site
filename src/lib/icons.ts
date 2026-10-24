@@ -26,6 +26,23 @@ export function squareSvg(svg: string): string {
   return svg.replace(tag, squared)
 }
 
+// Devot's app icons draw their tile on the macOS grid: 824 px, 100 px in from each edge of a
+// 1024 px canvas. A browser tab has no room for that margin.
+const CANVAS = '0 0 1024 1024'
+const TILE = { at: 100, side: 824 }
+
+/** One of Devot's app icons cropped to its tile. */
+export function tileSvg(svg: string): string {
+  const tag = SVG_TAG.exec(svg)?.[0] ?? ''
+  if (!tag.includes(`viewBox="${CANVAS}"`))
+    throw new Error(`E_ICON_VIEWBOX an app icon needs viewBox="${CANVAS}"`)
+  const cropped = tag
+    .replace(`viewBox="${CANVAS}"`, `viewBox="${TILE.at} ${TILE.at} ${TILE.side} ${TILE.side}"`)
+    .replace(/(?<![\w-])width="[^"]*"/, `width="${TILE.side}"`)
+    .replace(/(?<![\w-])height="[^"]*"/, `height="${TILE.side}"`)
+  return svg.replace(tag, cropped)
+}
+
 /** A square PNG of an SVG, the mark `inset` pixels from each edge, over `background` if given. */
 export async function iconPng(
   svg: string,

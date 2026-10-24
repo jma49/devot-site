@@ -250,10 +250,15 @@ const sections = [
   .pill-mark {
     flex: none;
     width: 1.625rem;
-    aspect-ratio: 92 / 86;
-    background: var(--site-brand-mark);
-    mask: url('../assets/dove.svg') center / contain no-repeat;
-    -webkit-mask: url('../assets/dove.svg') center / contain no-repeat;
+    aspect-ratio: 85 / 74;
+    background: url('../assets/dove.svg') center / contain no-repeat;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .brand-mark,
+    .pill-mark {
+      background-image: url('../assets/dove-dark.svg');
+    }
   }
 
   .nav-list {

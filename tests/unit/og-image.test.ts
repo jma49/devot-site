@@ -83,4 +83,25 @@ describe('ogImage', () => {
     expect(near(pixel(4, 4))).toBe(false)
     expect(Math.min(...pixel(4, 4))).toBeGreaterThan(180)
   })
+
+  it("draws Devot's dove above the window in its own ink", async () => {
+    const realDove = readFileSync(join(repo, 'src/assets/dove.svg'), 'utf8')
+    const inks = [...realDove.matchAll(/stop-color="#([0-9a-f]{6})"/g)].map(([, hex]) =>
+      [0, 2, 4].map((i) => Number.parseInt(hex?.slice(i, i + 2) ?? '', 16)),
+    )
+    const png = await ogImage({ poster: await poster(), dove: realDove, tokensCss })
+    const { data, info } = await sharp(png)
+      .removeAlpha()
+      .extract({ left: OG_IMAGE.width / 2 - 40, top: 24, width: 80, height: 80 })
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    const inked = new Set<number>()
+    for (let i = 0; i < info.width * info.height; i++) {
+      const rgb = [...data.subarray(i * 3, i * 3 + 3)]
+      const ink = inks.findIndex((stop) => stop.every((v, c) => Math.abs(v - (rgb[c] ?? 0)) <= 6))
+      if (ink >= 0) inked.add(ink)
+    }
+    expect(inks.length).toBeGreaterThanOrEqual(2)
+    expect(inked.size).toBeGreaterThanOrEqual(2)
+  })
 })
