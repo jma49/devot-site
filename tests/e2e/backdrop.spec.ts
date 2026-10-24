@@ -67,6 +67,21 @@ async function advanceUntil(page: Page, check: () => Promise<boolean>, limit = 2
   }
 }
 
+/**
+ * Pauses the fake clock half a second ahead of the page's time. That time runs on in real time until
+ * then, so on a busy machine the target can pass first; it is read again and the pause retried.
+ */
+async function pauseSoon(page: Page) {
+  for (let tries = 1; ; tries++) {
+    const now = await page.evaluate(() => Date.now())
+    try {
+      return await page.clock.pauseAt(now + 500)
+    } catch (error) {
+      if (tries === 5 || !String(error).includes('past')) throw error
+    }
+  }
+}
+
 const backdropIs = (page: Page, kind: 'webgl' | 'css') => () =>
   hero(page).evaluate((element, expected) => element.dataset['backdrop'] === expected, kind)
 
@@ -114,7 +129,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await advanceUntil(page, backdropIs(page, 'webgl'))
       // From here only runFor moves the clock: real time running on beside it lets a busy machine
       // put draws closer than the frames that timed them.
-      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 500)
+      await pauseSoon(page)
     })
 
     test(`drifts at ${rate === 1 ? 'full' : 'a third of its'} pace, 30 frames a second`, async ({
@@ -233,5 +248,30 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     expect(
       (await swayStates(page)).filter(({ state }) => state === 'running').length,
     ).toBeGreaterThan(0)
+  })
+
+  test('hands back to the CSS aurora when the GPU drops its context', async ({
+    page,
+    problems,
+  }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await advanceUntil(page, async () => (await draws(page)).length > 0)
+
+    await page.locator('.hero-canvas').evaluate((canvas: HTMLCanvasElement) => {
+      canvas.getContext('webgl')?.getExtension('WEBGL_lose_context')?.loseContext()
+    })
+    await advanceUntil(page, backdropIs(page, 'css'))
+    const held = (await draws(page)).length
+    await page.clock.runFor(1000)
+    expect(await draws(page)).toHaveLength(held)
+    expect(
+      (await swayStates(page)).filter(({ state }) => state === 'running').length,
+    ).toBeGreaterThan(0)
+    // WebKit logs every lost context, this deliberate one too.
+    const logged = problems.filter((text) => text !== 'WebGL: context lost.')
+    problems.splice(0, problems.length, ...logged)
   })
 })

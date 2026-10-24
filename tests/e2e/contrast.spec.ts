@@ -69,11 +69,11 @@ const hideText = (page: Page, selectors: string[]) =>
     }
   }, selectors)
 
+/** Shows the text again at once: with its colour transition back, a read could land mid-fade. */
 const showText = (page: Page, selectors: string[]) =>
   page.evaluate((list) => {
     for (const root of document.querySelectorAll<HTMLElement>(list.join(','))) {
       for (const element of [root, ...root.querySelectorAll<HTMLElement>('*')]) {
-        element.style.removeProperty('transition')
         element.style.removeProperty('color')
       }
     }
