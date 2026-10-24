@@ -346,6 +346,51 @@ test.describe('scroll-linked amplitude on the page at 1440 x 900', () => {
   }
 })
 
+test.describe('the page under reduced motion', () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`moves nothing with the scroll at ${viewport.width}`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.goto('/')
+      await page.waitForLoadState('load')
+      // The layers in the sky drift on the clock, not the scroll; the pill and the features marker
+      // switch between states as sections change.
+      const placed = () =>
+        page.evaluate(() => {
+          const skip = '.hero-sky *, [data-download-pill], [data-features-marker]'
+          const out: Record<string, string> = {}
+          document.querySelectorAll('body *').forEach((element, index) => {
+            if (element.closest(skip)) return
+            const style = getComputedStyle(element)
+            const value = [style.transform, style.translate, style.scale, style.rotate].join(' | ')
+            if (!/^(none \| )+none$/.test(value) && value !== ' |  |  | ') {
+              out[`${index} ${element.tagName} ${element.className}`] = value
+            }
+          })
+          const scrolled = document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.timeline && !(animation.timeline instanceof DocumentTimeline),
+            )
+            .map((animation) => (animation as CSSAnimation).animationName)
+          return { out, scrolled }
+        })
+
+      const rest = await placed()
+      const height = await page.evaluate(() => document.documentElement.scrollHeight)
+      for (let y = 300; y < height; y += 600) {
+        await scrollToY(page, y)
+        expect(await placed(), `at ${y}`).toEqual(rest)
+      }
+      expect(rest.scrolled).toEqual([])
+    })
+  }
+})
+
 test.describe('clips', () => {
   const clip = (
     id: string,
@@ -403,17 +448,17 @@ test.describe('clips', () => {
     expect(await paused(page, 'far')).toBe(false)
   })
 
-  test('shows only the poster under reduced motion and fetches no clip', async ({ page }) => {
+  test('plays a clip in view under reduced motion too, and still defers the far one', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     const requests = mediaRequests(page)
     await openFixture(page, fixture)
-    await page.waitForLoadState('load')
 
-    expect(await paused(page, 'near')).toBe(true)
-    expect(await sourced(page, 'near')).toBe(0)
-    await scrollToElement(page, '#far', -100)
-    expect(await paused(page, 'far')).toBe(true)
-    expect(requests).toEqual([])
+    await expect.poll(() => played(page, 'near')).toBe(true)
+    expect(await paused(page, 'near')).toBe(false)
+    expect(await sourced(page, 'far')).toBe(0)
+    expect(requests.filter((url) => url.includes('card-1'))).toEqual([])
   })
 
   test('reserves its space from width and height before anything loads', async ({ page }) => {

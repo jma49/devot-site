@@ -1,15 +1,15 @@
-import { browserEnv, REDUCED_MOTION_QUERY } from '../lib/dom-env.ts'
+import { browserEnv } from '../lib/dom-env.ts'
 import { revealOnScroll } from '../lib/motion.ts'
 import { initClipControls } from './clip-controls.ts'
 import { initClips } from './clips.ts'
-import { browserPause, stillQuery } from './pause.ts'
+import { browserPause, pausedQuery } from './pause.ts'
 import { initPosters } from './posters.ts'
 
 export function startSite(): void {
   const env = browserEnv()
-  const still = stillQuery(env.matchMedia(REDUCED_MOTION_QUERY), browserPause())
+  const still = pausedQuery(browserPause())
   revealOnScroll()
   initPosters()
-  initClips(document, { still }, env)
-  initClipControls(document, env, still)
+  const controls = initClipControls(document, still, env)
+  initClips(document, { still, onRefused: controls.offer }, env)
 }

@@ -146,9 +146,7 @@ for (const viewport of [DESKTOP, PHONE]) {
       expect((await driftStates(page)).filter((state) => state === 'running')).toEqual([])
     })
 
-    test('gives each clip its own play button while paused, as reduced motion does', async ({
-      page,
-    }) => {
+    test('gives each clip its own play button while paused', async ({ page }) => {
       await page.goto('/')
       await expect(page.locator('.clip-control')).toHaveCount(0)
 
@@ -173,15 +171,59 @@ for (const viewport of [DESKTOP, PHONE]) {
 test.describe('with reduced motion', () => {
   test.use({ viewport: DESKTOP })
 
-  test('leaves the toggle out, since nothing moves, and keeps the play buttons', async ({
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+  })
+
+  test('shows the toggle and reaches it by keyboard, and adds no play buttons', async ({
+    page,
+    browserName,
+  }) => {
+    const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab'
+    await page.goto('/')
+    await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
+
+    await expect(toggle(page)).toBeVisible()
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('.clip-control')).toHaveCount(0)
+    for (let step = 0; step < 12; step++) {
+      await page.keyboard.press(tab)
+      if (await toggle(page).evaluate((button) => button === document.activeElement)) break
+    }
+    await expect(toggle(page)).toBeFocused()
+    await page.keyboard.press('Space')
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('stops every clip where it is, remembers it on the next visit, and plays again', async ({
     page,
   }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
+    await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
 
-    await expect(page.locator('.clip-control')).not.toHaveCount(0)
-    await expect(toggle(page)).toHaveCount(0)
-    await expect(page.locator('[data-motion-toggle]')).toHaveCount(2)
+    await toggle(page).click()
+
+    await expect(page.locator('html')).toHaveAttribute(PAUSE_ATTRIBUTE, '')
+    await expect(hero(page)).not.toHaveAttribute('data-backdrop-state', 'running')
+    const paused = await clipStates(page)
+    expect(paused.every((clip) => clip.paused)).toBe(true)
+    await frames(page, 10)
+    expect(await clipStates(page)).toEqual(paused)
+    expect(await stored(page)).toBe('true')
+
+    await page.reload()
+
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true')
+    await expect(hero(page)).toHaveAttribute('data-backdrop-state', /./)
+    await expect(hero(page)).not.toHaveAttribute('data-backdrop-state', 'running')
+    expect(
+      await heroClip(page).evaluate((v: HTMLVideoElement) => [v.paused, v.currentSrc]),
+    ).toEqual([true, ''])
+
+    await toggle(page).click()
+
+    await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
+    expect(await stored(page)).toBe('false')
   })
 })
 

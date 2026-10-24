@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { MediaQueryLike } from '../../src/lib/dom-env.ts'
 import {
   bindPauseToggles,
   createPause,
   PAUSE_ATTRIBUTE,
   PAUSE_KEY,
-  stillQuery,
+  pausedQuery,
 } from '../../src/scripts/pause.ts'
 
 class MemoryStorage {
@@ -108,60 +107,45 @@ describe('createPause', () => {
   })
 })
 
-type Listener = (event: { matches: boolean }) => void
-
-function fakeQuery(initial: boolean) {
-  const listeners = new Set<Listener>()
-  const query = {
-    matches: initial,
-    addEventListener: (_type: string, listener: unknown) => listeners.add(listener as Listener),
-    removeEventListener: (_type: string, listener: unknown) =>
-      listeners.delete(listener as Listener),
-  }
-  return {
-    query: query as unknown as MediaQueryLike,
-    listeners,
-    change(matches: boolean) {
-      query.matches = matches
-      listeners.forEach((listener) => listener({ matches }))
-    },
-  }
-}
-
-describe('stillQuery', () => {
-  it('matches while reduced motion is on or animations are paused', () => {
-    const reduced = fakeQuery(false)
+describe('pausedQuery', () => {
+  it('matches while animations are paused, whatever the motion setting', () => {
     const pause = createPause(host())
-    const still = stillQuery(reduced.query, pause)
+    const paused = pausedQuery(pause)
 
-    expect(still.matches).toBe(false)
+    expect(paused.matches).toBe(false)
     pause.set(true)
-    expect(still.matches).toBe(true)
-    reduced.change(true)
+    expect(paused.matches).toBe(true)
     pause.set(false)
-    expect(still.matches).toBe(true)
-    reduced.change(false)
-    expect(still.matches).toBe(false)
+    expect(paused.matches).toBe(false)
   })
 
-  it('reports a change only when the combined answer changes', () => {
-    const reduced = fakeQuery(false)
+  it('reports each change once to each listener, until it is removed', () => {
     const pause = createPause(host())
-    const still = stillQuery(reduced.query, pause)
+    const paused = pausedQuery(pause)
     const heard: boolean[] = []
     const listener = (event: { matches: boolean }) => heard.push(event.matches)
-    still.addEventListener('change', listener)
+    paused.addEventListener('change', listener)
+    paused.addEventListener('change', listener)
 
     pause.set(true)
-    reduced.change(true)
+    pause.set(true)
     pause.set(false)
-    reduced.change(false)
 
     expect(heard).toEqual([true, false])
-    still.removeEventListener('change', listener)
+    paused.removeEventListener('change', listener)
     pause.set(true)
     expect(heard).toEqual([true, false])
-    expect(reduced.listeners.size).toBe(0)
+  })
+
+  it('hears a change made through another copy of the pause', () => {
+    const shared = host()
+    const paused = pausedQuery(createPause(shared))
+    const heard: boolean[] = []
+    paused.addEventListener('change', (event: { matches: boolean }) => heard.push(event.matches))
+
+    createPause(shared).set(true)
+
+    expect([paused.matches, heard]).toEqual([true, [true]])
   })
 })
 

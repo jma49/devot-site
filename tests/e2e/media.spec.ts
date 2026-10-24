@@ -54,6 +54,32 @@ for (const name of SLOTS) {
   })
 }
 
+// The clips are calm screen recordings, so they loop with reduced motion too; only the reader's
+// pause stops them.
+for (const [label, viewport] of [
+  ['desktop', desktop],
+  ['phone', phone],
+] as const) {
+  test(`plays every clip in view on a loop with reduced motion, ${label}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    for (const video of await page.locator('video[data-clip]').all()) {
+      const slot = await video.getAttribute('data-clip')
+      if (!(await video.isVisible())) continue
+      await video.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+      const time = () => video.evaluate((v: HTMLVideoElement) => v.currentTime)
+      await expect.poll(time, { message: `${slot} starts`, timeout: 10_000 }).toBeGreaterThan(0)
+      const at = await time()
+      await expect.poll(time, { message: `${slot} advances` }).not.toBe(at)
+      expect(await video.evaluate((v: HTMLVideoElement) => [v.paused, v.loop]), `${slot}`).toEqual([
+        false,
+        true,
+      ])
+    }
+  })
+}
+
 /** Every clip near enough to load has its sources and its poster. */
 async function scrollThrough(page: Page) {
   const height = await page.evaluate(() => document.documentElement.scrollHeight)

@@ -32,6 +32,8 @@ const heroVar = (page: Page, name: string) =>
   page
     .locator('[data-hero]')
     .evaluate((hero, prop) => Number(getComputedStyle(hero).getPropertyValue(prop)), name)
+const rigTransform = (page: Page) =>
+  page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)
 const opacity = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => Number(getComputedStyle(element).opacity))
 const heroCta = (page: Page) => page.locator('#hero').getByRole('link', { name: en.download.label })
@@ -204,24 +206,20 @@ test.describe('hero at 1440 x 900', () => {
   }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await openPage(page)
-    const rest = await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)
+    const rest = await rigTransform(page)
 
     await scrollTo(page, 300)
     await expect.poll(() => heroVar(page, '--hero-settle')).toBeCloseTo(300 / (0.6 * 900), 2)
     await expect.poll(() => heroVar(page, '--hero-sheen')).toBe(0)
     await expect.poll(() => heroVar(page, '--hero-dome')).toBe(1)
-    expect(await opacity(page, '.hero-copy')).toBeLessThan(0.5)
+    await expect.poll(() => opacity(page, '.hero-copy')).toBeLessThan(0.5)
     await expect.poll(() => heroVar(page, '--hero-lift')).toBeCloseTo(105, 0)
-    expect(
-      await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform),
-    ).not.toBe(rest)
+    await expect.poll(() => rigTransform(page)).not.toBe(rest)
 
     await scrollTo(page, 0)
     await expect.poll(() => heroVar(page, '--hero-settle')).toBe(0)
     await expect.poll(() => opacity(page, '.hero-copy')).toBe(1)
-    expect(await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)).toBe(
-      rest,
-    )
+    await expect.poll(() => rigTransform(page)).toBe(rest)
   })
 
   test('animates the backdrop only while the hero is on screen', async ({ page }) => {
@@ -458,24 +456,25 @@ for (const viewport of [phone, tablet]) {
 test.describe('hero with reduced motion', () => {
   test.use({ viewport: desktop })
 
-  test('shows final states: no entrance, an upright window, a drifting backdrop and the poster', async ({
+  test('shows final states: no entrance, an upright window that stays put, a drifting backdrop and the clip playing', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openPage(page)
 
-    // The aurora still drifts, slowly (backdrop.spec.ts); nothing else animates.
-    const keyframes = await page.evaluate(
-      () =>
-        document
-          .querySelector('#hero')
-          ?.getAnimations({ subtree: true })
-          .filter(
-            (animation) =>
-              animation instanceof CSSAnimation && !animation.animationName.startsWith('aurora-'),
-          ).length,
+    // The backdrop's own slow drift is the one animation the hero keeps.
+    const keyframes = await page.evaluate(() =>
+      document
+        .querySelector('#hero')
+        ?.getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            !(animation.effect as KeyframeEffect | null)?.target?.closest('.hero-backdrop'),
+        )
+        .map((animation) => (animation as CSSAnimation).animationName),
     )
-    expect(keyframes).toBe(0)
+    expect(keyframes).toEqual([])
     await expect(page.locator('[data-hero]')).toHaveAttribute('data-backdrop-state', 'running')
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
@@ -483,11 +482,15 @@ test.describe('hero with reduced motion', () => {
     await scrollToY(page, 300)
     await frames(page, 3)
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
+    await expect(page.locator('.hero-sky')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
     expect(await heroVar(page, '--hero-settle')).toBe(1)
     const clip = page.locator('video[data-clip="hero"]')
-    expect(await clip.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true)
-    expect(await clip.evaluate((video: HTMLVideoElement) => video.currentSrc)).toBe('')
+    await expect
+      .poll(() =>
+        clip.evaluate((video: HTMLVideoElement) => !video.paused && video.currentTime > 0),
+      )
+      .toBe(true)
   })
 
   test('shows the pill without a transition', async ({ page }) => {
