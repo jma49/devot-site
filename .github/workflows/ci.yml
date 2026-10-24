@@ -37,8 +37,9 @@ jobs:
       - run: pnpm test
 
   e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # WebKit on Linux cannot play the H.264 clips, so the browser tests run on macOS like Safari.
+    runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
@@ -47,7 +48,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm exec playwright install chromium webkit
       - run: pnpm build
       - run: pnpm test:dist
       - run: pnpm test:e2e
