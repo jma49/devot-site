@@ -162,6 +162,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       await page.goto('/')
       await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
       await expect(hero(page)).toHaveAttribute('data-backdrop', 'css')
+      await expect(page.locator('html')).not.toHaveAttribute('data-aurora-still')
 
       const running = await swayStates(page)
       // Two bands in the hero's aurora and two in the closing section's, each in two appearances.
@@ -193,7 +194,8 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
 test.describe('WebGL aurora on a slow or software renderer', () => {
   test.use({ viewport: DESKTOP })
 
-  test('keeps the CSS aurora on a software renderer', async ({ page }) => {
+  // A software GPU process spends a whole core compositing the drifting CSS bands.
+  test('keeps the CSS aurora still on a software renderer', async ({ page }) => {
     await page.clock.install()
     await watchWebgl(page, SOFTWARE)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
@@ -205,6 +207,10 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
     expect(await draws(page)).toEqual([])
     await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '0')
+    await expect(page.locator('html')).toHaveAttribute('data-aurora-still', '')
+    const bands = await swayStates(page)
+    expect(bands.length).toBeGreaterThanOrEqual(4)
+    expect(bands.filter(({ state }) => state === 'running')).toEqual([])
   })
 
   test('hands back to the CSS aurora when its first frames come 32 ms apart', async ({ page }) => {

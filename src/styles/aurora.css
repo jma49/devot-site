@@ -137,6 +137,7 @@
   }
 }
 
-:root[data-animations-paused] .aurora-band {
+:root[data-animations-paused] .aurora-band,
+:root[data-aurora-still] .aurora-band {
   animation-play-state: paused;
 }

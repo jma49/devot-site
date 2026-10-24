@@ -1,8 +1,8 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import type { Page } from '@playwright/test'
+import { devices, type Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { REPO_URL } from '../../src/site.ts'
-import { animationsDone, frames, scrollToY } from '../support/settle.ts'
+import { animationsDone, frames, scrollToY, steady } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
@@ -392,6 +392,61 @@ test.describe('hero at 390 x 844', () => {
     await page.setViewportSize(desktop)
     await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden')
     expect(await page.locator('main').evaluate((main: HTMLElement) => main.inert)).toBe(false)
+  })
+})
+
+/** Whether the topmost element at the centre of `selector` is that element or inside it. */
+const takesHitsAtCentre = (page: Page, selector: string) =>
+  page.locator(selector).evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return top !== null && element.contains(top)
+  })
+
+// On phones the window sits above the call to action but after it in the DOM; its mask hides the
+// overlap from sight but not from WebKit's hit testing.
+for (const width of [360, 390]) {
+  test.describe(`hero call to action at ${width} px`, () => {
+    test.use({ viewport: { width, height: phone.height } })
+
+    test('takes clicks on its button, requirements and install note', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await page.goto('/')
+      for (const selector of [
+        '.hero-download',
+        '.hero-requirements',
+        '#hero .install-note',
+        '#hero .install-note a',
+      ]) {
+        await page.locator(selector).scrollIntoViewIfNeeded()
+        await steady(page, () => page.locator('.hero-rig').boundingBox())
+        expect(await takesHitsAtCentre(page, selector), selector).toBe(true)
+      }
+    })
+  })
+}
+
+test.describe('hero call to action on an iPhone', () => {
+  const { viewport, userAgent, deviceScaleFactor } = devices['iPhone 14']
+  test.use({ viewport, userAgent, deviceScaleFactor, isMobile: true, hasTouch: true })
+
+  test('opens the download page when tapped', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    const button = heroCta(page)
+    const href = (await button.getAttribute('href')) ?? ''
+    await page.route(href, (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Download</title>' }),
+    )
+    await button.scrollIntoViewIfNeeded()
+    const box = await steady(page, () => button.boundingBox())
+
+    await page.touchscreen.tap(
+      (box?.x ?? 0) + (box?.width ?? 0) / 2,
+      (box?.y ?? 0) + (box?.height ?? 0) / 2,
+    )
+
+    await expect(page).toHaveURL(href)
   })
 })
 

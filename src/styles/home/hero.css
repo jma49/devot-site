@@ -125,6 +125,17 @@
   .hero {
     --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 60%, transparent);
   }
+
+  /* The muted tier falls under 4.5:1 where the aurora brightens behind it. */
+  .hero .hero-lead,
+  .hero .hero-requirements,
+  .hero .install-note {
+    color: var(--site-color-text);
+  }
+}
+
+.hero .install-note a {
+  color: var(--site-color-text);
 }
 
 /* Phones keep the CSS aurora, whose bands sit behind three lines of copy. */
@@ -435,7 +446,11 @@
     margin-inline: var(--site-gutter) 0;
   }
 
+  /* The window comes later in the DOM and overlaps the call to action under its mask, which
+     WebKit's hit testing ignores; lifting the call to action keeps it tappable. */
   .hero-cta {
+    position: relative;
+    z-index: 1;
     justify-self: stretch;
     margin-block-start: var(--space-7);
     transform: none;

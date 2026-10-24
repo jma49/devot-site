@@ -609,6 +609,8 @@ export function startBackdrop({
 
   const begin = (created: Renderer | null) => {
     if (stopped) return created?.release()
+    // Without a GPU the drifting CSS bands cost a core of compositing; they stay where they are.
+    if (created === null) document.documentElement.dataset['auroraStill'] = ''
     renderer = created
     if (renderer && palette()) {
       draw()

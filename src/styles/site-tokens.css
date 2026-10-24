@@ -146,3 +146,10 @@
     --site-glass-sheen: color-mix(in oklab, var(--color-text-primary) 16%, transparent);
   }
 }
+
+@media (forced-colors: active) {
+  :root {
+    --site-pressed-fill: Highlight;
+    --site-pressed-ink: HighlightText;
+  }
+}

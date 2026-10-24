@@ -104,7 +104,7 @@ Playwright specs wait for a settled state, never for a fixed time: `tests/suppor
 
 ### Script weight
 
-The page ships about 14 KB of script, gzipped. The hero's own script is 2 KB; its WebGL backdrop (`src/scripts/hero-backdrop.ts`, 5 KB) is a chunk of its own that loads once the page has loaded and painted, so the CSS aurora under it is the first thing drawn and the canvas fades in over it. With reduced motion the aurora, WebGL or CSS, drifts at a third of its pace. Phones (under 640 px) keep the CSS aurora, and so does a browser that draws WebGL on the CPU (a software renderer such as SwiftShader or llvmpipe) or whose first 60 frames come more than 20 ms apart at the median: the canvas gives its context back and the CSS layers show. `src/scripts/pause.ts`, the pause state that the site, header and backdrop scripts share, is a chunk of its own, under 1 KB. `tests/built/script-weight.test.ts` holds the hero's first load to 25 KB and all scripts to 35 KB, gzipped.
+The page ships about 14 KB of script, gzipped. The hero's own script is 2 KB; its WebGL backdrop (`src/scripts/hero-backdrop.ts`, 5 KB) is a chunk of its own that loads once the page has loaded and painted, so the CSS aurora under it is the first thing drawn and the canvas fades in over it. With reduced motion the aurora, WebGL or CSS, drifts at a third of its pace. Phones (under 640 px) keep the CSS aurora, and so does a browser whose first 60 frames come more than 20 ms apart at the median: the canvas gives its context back and the CSS layers show. A desktop browser without WebGL, or one that draws it on the CPU (a software renderer such as SwiftShader or llvmpipe), keeps the CSS aurora still: compositing its drifting bands without a GPU takes a whole core and slows the page (`data-aurora-still` on the root). `src/scripts/pause.ts`, the pause state that the site, header and backdrop scripts share, is a chunk of its own, under 1 KB. `tests/built/script-weight.test.ts` holds the hero's first load to 25 KB and all scripts to 35 KB, gzipped.
 
 ## Product media
 
@@ -157,7 +157,9 @@ The build image reads the Node version from `.node-version`; no `NODE_VERSION` v
 
 The build writes a top-level `404.html`, so Pages answers unknown paths with status 404 instead of serving the home page as a single-page app.
 
-After the first preview deployment, check the headers with `curl -I`: the page should carry the Content-Security-Policy, and files under `/_astro/` should have `Cache-Control: public, max-age=31536000, immutable`.
+After the first preview deployment, check the headers with `curl -I`: the page should carry the Content-Security-Policy, files under `/_astro/` should have `Cache-Control: public, max-age=31536000, immutable`, and files under `/fonts/` and `/media/` should have `Cache-Control: public, max-age=604800`.
+
+Fonts and clips keep fixed names, so they are cached for a week rather than pinned. A re-cut font or a re-recorded clip under the same name may show stale to a returning visitor for up to a week; give it a new name for an instant change.
 
 Zone settings that matter to this site:
 

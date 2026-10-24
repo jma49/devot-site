@@ -139,7 +139,7 @@ const sections = [
   @media (prefers-color-scheme: dark) {
     :global(:root) {
       --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 62%, transparent);
-      --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 84%, transparent);
+      --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 91%, transparent);
     }
   }
 
@@ -372,6 +372,14 @@ const sections = [
   .motion-toggle[aria-pressed='true'] {
     background: var(--site-brand-fill);
     color: var(--site-brand-ink);
+  }
+
+  @media (forced-colors: active) {
+    .motion-toggle[aria-pressed='true'] {
+      forced-color-adjust: none;
+      background: var(--site-pressed-fill);
+      color: var(--site-pressed-ink);
+    }
   }
 
   .motion-glyph {

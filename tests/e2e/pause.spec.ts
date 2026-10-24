@@ -1,5 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type { Locator, Page } from '@playwright/test'
+import sharp from 'sharp'
 import { en } from '../../src/i18n/en.ts'
 import { PAUSE_ATTRIBUTE, PAUSE_KEY } from '../../src/scripts/pause.ts'
 import { animationsDone, frames } from '../support/settle.ts'
@@ -246,3 +247,54 @@ for (const colorScheme of ['light', 'dark'] as const) {
     })
   }
 }
+
+/**
+ * The WCAG luminance of a button's fill as drawn, from a patch between its edge and its glyph:
+ * forced colours repaint the button without changing its computed style.
+ */
+async function fillLuminance(button: Locator) {
+  const { data, info } = await sharp(await button.screenshot({ scale: 'css', caret: 'initial' }))
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const linear = (channel: number) => {
+    const c = channel / 255
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  let sum = 0
+  let count = 0
+  const middle = Math.round(info.height / 2)
+  for (let y = middle - 3; y <= middle + 3; y++) {
+    for (let x = 6; x <= 9; x++) {
+      const at = (y * info.width + x) * 3
+      sum +=
+        0.2126 * linear(data[at]!) + 0.7152 * linear(data[at + 1]!) + 0.0722 * linear(data[at + 2]!)
+      count++
+    }
+  }
+  return sum / count
+}
+
+test.describe('in forced colours', () => {
+  test.use({ viewport: DESKTOP })
+
+  test('shows the pressed toggle in the highlight colours', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'only Chromium emulates forced colours')
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'no-preference' })
+    await page.goto('/')
+    const button = toggle(page)
+    await expect(button).toHaveAttribute('aria-pressed', 'false')
+    const resting = await fillLuminance(button)
+
+    await button.click()
+    await page.mouse.move(DESKTOP.width / 2, DESKTOP.height / 2)
+
+    await expect(button).toHaveAttribute('aria-pressed', 'true')
+    await expect
+      .poll(async () => {
+        const pressed = await fillLuminance(button)
+        return (Math.max(pressed, resting) + 0.05) / (Math.min(pressed, resting) + 0.05)
+      })
+      .toBeGreaterThanOrEqual(3)
+  })
+})
