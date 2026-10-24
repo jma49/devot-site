@@ -19,8 +19,8 @@ function variantsOf(video: HTMLVideoElement): [string, string][] {
  * Gives each `video[data-poster]` its poster once it comes near the viewport: the first of its
  * `data-poster-media` variants whose media query matches (the dark capture on a dark page, a closer
  * cut on a phone), or `data-poster`. A browser fetches a poster as soon as the attribute is set, so
- * clips carry them as data until then, and only the matching file is ever requested; with reduced
- * motion too, where the poster stands in for the clip. A shown poster follows a change of scheme.
+ * clips carry them as data until then, and only the matching file is ever requested. A shown
+ * poster follows a change of scheme.
  */
 export function initPosters(
   root: ParentNode = document,

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import sharp from 'sharp'
 import { media, SLOTS, type Scheme } from '../../src/media.ts'
+import { animationsDone } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
@@ -282,15 +283,7 @@ for (const scheme of ['light', 'dark'] as const satisfies Scheme[]) {
       HTMLMediaElement.prototype.play = () => Promise.resolve()
     })
     await page.goto('/')
-    await page.waitForFunction(() =>
-      document
-        .querySelector('#hero')
-        ?.getAnimations({ subtree: true })
-        .every(
-          (animation) =>
-            animation.timeline !== document.timeline || animation.playState !== 'running',
-        ),
-    )
+    await animationsDone(page, '#hero')
     await posterShown(page, 'video[data-clip="hero"]')
     const stage = page.locator('.hero-stage')
     const [start = 0, end = 0] = await stage.evaluate((element) =>

@@ -146,7 +146,7 @@ describe('the 404 page', () => {
 })
 
 describe('icons', () => {
-  it('serves the dove as a square SVG', () => {
+  it('serves the app icon’s small cut as a square SVG favicon', () => {
     const svg = readRepoFile('dist/favicon.svg')
     const [, , width, height] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? '').split(/\s+/)
     expect(width).toBeTruthy()

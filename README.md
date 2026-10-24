@@ -73,6 +73,18 @@ It reads the checkout `DEVOT_CHECKOUT` names; without it, the pinned commit in `
 
 `src/pages/index.astro` composes five sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `demo.ts`, `privacy.ts` and `media.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when a file is left out or two files define the same top-level key.
 
+### Fonts
+
+Display and section headings are set in Fraunces (SIL OFL 1.1, `public/fonts/OFL.txt`); body, UI and labels stay on the system font. `public/fonts/` holds two cuts of the variable files from the Google Fonts repository (`ofl/fraunces/`), 38 KB together: SOFT 100 and opsz 144 fixed, WONK 0 upright and 1 italic, weight 330 to 360, Basic Latin plus the catalog's punctuation, `kern` and `liga`, no hinting. They were cut with fontTools 4.67 (with `brotli` for woff2), once per file:
+
+```sh
+fonttools varLib.instancer 'Fraunces[SOFT,WONK,opsz,wght].ttf' SOFT=100 WONK=0 opsz=144 wght=330:360 -o instanced.ttf
+pyftsubset instanced.ttf --unicodes=U+0020-007E,U+00B7,U+201C,U+201D --layout-features=kern,liga --no-hinting \
+  --drop-tables+=gasp,DSIG --name-IDs=0,1,2,3,4,5,6,13,14 --flavor=woff2 --output-file=fraunces-roman.woff2
+```
+
+The italic takes `Fraunces-Italic[SOFT,WONK,opsz,wght].ttf` and `WONK=1`. Keep the `STAT` table: without it WebKit draws every weight at the axis minimum. `src/styles/fonts.css` swaps the faces in over `Fraunces Fallback`, Georgia sized to Fraunces' widths and line metrics so the headings keep their breaks, and `Base.astro` preloads both files. `tests/unit/fonts.test.ts` fails when the catalog gains a punctuation mark the cut lacks, when a heading tier's weight leaves the cut's range, or when the files pass 40 KB; recut then.
+
 ## Motion
 
 `src/styles/motion.css` holds the vocabulary: three easings (`--site-ease-out`, `--site-ease-text`, `--site-ease-media`, built on Devot's motion tokens), a duration scale (`--site-dur-quick`, `-reveal`, `-media`, `-hero`) and a stagger step. `src/lib/motion.ts` mirrors the numbers for scripts, and a unit test keeps the two in step.
@@ -92,7 +104,7 @@ Playwright specs wait for a settled state, never for a fixed time: `tests/suppor
 
 ### Script weight
 
-The page ships about 12 KB of script, gzipped. The hero's own script is 2 KB; its WebGL backdrop (`src/scripts/hero-backdrop.ts`, 3 KB) is a chunk of its own that loads once the page has loaded and painted, so the CSS gradient under it is the first thing drawn and the canvas fades in over it. Phones (under 640 px) keep the CSS gradient. `src/scripts/pause.ts`, the pause state that the site, header and backdrop scripts share, is a chunk of its own, under 1 KB. `tests/built/script-weight.test.ts` holds the hero's first load to 25 KB and all scripts to 35 KB, gzipped.
+The page ships about 14 KB of script, gzipped. The hero's own script is 2 KB; its WebGL backdrop (`src/scripts/hero-backdrop.ts`, 5 KB) is a chunk of its own that loads once the page has loaded and painted, so the CSS aurora under it is the first thing drawn and the canvas fades in over it. With reduced motion the aurora, WebGL or CSS, drifts at a third of its pace. Phones (under 640 px) keep the CSS aurora, and so does a browser that draws WebGL on the CPU (a software renderer such as SwiftShader or llvmpipe) or whose first 60 frames come more than 20 ms apart at the median: the canvas gives its context back and the CSS layers show. `src/scripts/pause.ts`, the pause state that the site, header and backdrop scripts share, is a chunk of its own, under 1 KB. `tests/built/script-weight.test.ts` holds the hero's first load to 25 KB and all scripts to 35 KB, gzipped.
 
 ## Product media
 

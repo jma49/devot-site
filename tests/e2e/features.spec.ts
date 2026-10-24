@@ -301,7 +301,7 @@ test.describe('beside the media, at 1440', () => {
         .evaluate((stage) => new DOMMatrix(getComputedStyle(stage).transform).m42)
 
     await placeWell(page, 1, DESKTOP.height - 100)
-    const low = await shift()
+    const low = await steady(page, shift)
     await placeWell(page, 1, 0)
     await expect.poll(shift).toBeLessThan(low - 10)
     await placeWell(page, 1, DESKTOP.height - 100)

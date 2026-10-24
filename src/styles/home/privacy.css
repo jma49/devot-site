@@ -73,8 +73,13 @@
   content: '';
   width: 54%;
   aspect-ratio: 1;
-  background: var(--site-brand);
-  mask: url('../../assets/dove.svg') center / contain no-repeat;
+  background: url('../../assets/dove.svg') center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  .local__mark::after {
+    background-image: url('../../assets/dove-dark.svg');
+  }
 }
 
 .local__title,

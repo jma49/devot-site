@@ -356,11 +356,11 @@ test.describe('the page under reduced motion', () => {
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.goto('/')
       await page.waitForLoadState('load')
-      // The layers in the sky drift on the clock, not the scroll; the pill and the features marker
-      // switch between states as sections change.
+      // The sky's layers and the aurora's bands (the hero's and the closing's) drift on the clock,
+      // not the scroll; the pill and the features marker switch between states as sections change.
       const placed = () =>
         page.evaluate(() => {
-          const skip = '.hero-sky *, [data-download-pill], [data-features-marker]'
+          const skip = '.hero-sky *, .aurora-band, [data-download-pill], [data-features-marker]'
           const out: Record<string, string> = {}
           document.querySelectorAll('body *').forEach((element, index) => {
             if (element.closest(skip)) return

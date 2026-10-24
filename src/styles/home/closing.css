@@ -74,8 +74,13 @@
   width: clamp(3.5rem, 3rem + 2vw, 4.5rem);
   aspect-ratio: 1;
   margin-bottom: var(--space-10);
-  background: var(--site-brand-mark);
-  mask: url('../../assets/dove.svg') center / contain no-repeat;
+  background: url('../../assets/dove.svg') center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  .closing__mark {
+    background-image: url('../../assets/dove-dark.svg');
+  }
 }
 
 .closing__title {
