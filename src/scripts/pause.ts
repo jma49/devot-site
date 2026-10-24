@@ -74,32 +74,20 @@ export function browserPause(): Pause {
 
 type ChangeListener = (event: { matches: boolean }) => void
 
-/**
- * A media query that matches while reduced motion is on or the reader has paused animations, for
- * scripts that already hold still under reduced motion.
- */
-export function stillQuery(reduced: MediaQueryLike, pause: Pause): MediaQueryLike {
-  const matches = () => reduced.matches || pause.paused
+/** A media query that matches while the reader has paused animations, for scripts that take one. */
+export function pausedQuery(pause: Pause): MediaQueryLike {
   const stops = new Map<ChangeListener, () => void>()
   const query = {
     get matches() {
-      return matches()
+      return pause.paused
     },
     addEventListener(_type: string, listener: unknown) {
       const notify = listener as ChangeListener
       if (stops.has(notify)) return
-      let last = matches()
-      const check = () => {
-        if (matches() === last) return
-        last = matches()
-        notify({ matches: last })
-      }
-      reduced.addEventListener('change', check)
-      const unsubscribe = pause.subscribe(check)
-      stops.set(notify, () => {
-        reduced.removeEventListener('change', check)
-        unsubscribe()
-      })
+      stops.set(
+        notify,
+        pause.subscribe((paused) => notify({ matches: paused })),
+      )
     },
     removeEventListener(_type: string, listener: unknown) {
       stops.get(listener as ChangeListener)?.()

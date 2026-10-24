@@ -118,9 +118,10 @@ const sections = [
 <style>
   /* The transparent borders on the bar and the pill become edges in forced colours. */
   :global(:root) {
-    --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 72%, transparent);
-    --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 86%, transparent);
-    --chrome-glass-filter: blur(20px) saturate(1.6);
+    --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 58%, transparent);
+    --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 82%, transparent);
+    --chrome-glass-filter: var(--site-glass-blur);
+    --chrome-glass-light: linear-gradient(to bottom, var(--site-glass-rim-faint), transparent 70%);
     --chrome-edge: var(--color-line-float-bar);
     --chrome-shadow:
       0 1px 2px var(--color-shadow-popover-key),
@@ -137,8 +138,8 @@ const sections = [
 
   @media (prefers-color-scheme: dark) {
     :global(:root) {
-      --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 70%, transparent);
-      --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 84%, transparent);
+      --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 62%, transparent);
+      --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 91%, transparent);
     }
   }
 
@@ -195,7 +196,7 @@ const sections = [
     z-index: -2;
     border: 1px solid transparent;
     border-radius: inherit;
-    background: var(--chrome-glass);
+    background: var(--chrome-glass-light), var(--chrome-glass);
     box-shadow:
       inset 0 0 0 0.5px var(--chrome-edge),
       var(--chrome-shadow);
@@ -206,8 +207,26 @@ const sections = [
     transition-timing-function: var(--site-ease-text);
   }
 
+  /* The rim: a one-pixel ring of light, brightest where the light falls from the top left. */
+  .bar::after,
+  .download-pill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--site-glass-rim-light);
+    mask-image:
+      linear-gradient(var(--site-color-page), var(--site-color-page)),
+      linear-gradient(var(--site-color-page), var(--site-color-page));
+    mask-clip: content-box, border-box;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
   [data-scrolled] .bar::before {
-    background: var(--chrome-glass-strong);
+    background: var(--chrome-glass-light), var(--chrome-glass-strong);
     box-shadow:
       inset 0 0 0 0.5px var(--chrome-edge),
       var(--chrome-shadow-raised);
@@ -231,10 +250,15 @@ const sections = [
   .pill-mark {
     flex: none;
     width: 1.625rem;
-    aspect-ratio: 92 / 86;
-    background: var(--site-brand-mark);
-    mask: url('../assets/dove.svg') center / contain no-repeat;
-    -webkit-mask: url('../assets/dove.svg') center / contain no-repeat;
+    aspect-ratio: 85 / 74;
+    background: url('../assets/dove.svg') center / contain no-repeat;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .brand-mark,
+    .pill-mark {
+      background-image: url('../assets/dove-dark.svg');
+    }
   }
 
   .nav-list {
@@ -350,6 +374,14 @@ const sections = [
     color: var(--site-brand-ink);
   }
 
+  @media (forced-colors: active) {
+    .motion-toggle[aria-pressed='true'] {
+      forced-color-adjust: none;
+      background: var(--site-pressed-fill);
+      color: var(--site-pressed-ink);
+    }
+  }
+
   .motion-glyph {
     fill: none;
     stroke: currentColor;
@@ -420,7 +452,7 @@ const sections = [
     padding: var(--space-3) var(--space-3) var(--space-3) var(--space-7);
     border: 1px solid transparent;
     border-radius: var(--radius-capsule);
-    background: var(--chrome-glass-strong);
+    background: var(--chrome-glass-light), var(--chrome-glass-strong);
     box-shadow:
       inset 0 0 0 0.5px var(--chrome-edge),
       var(--chrome-shadow-raised);
@@ -466,6 +498,7 @@ const sections = [
       -webkit-backdrop-filter: none;
     }
 
+    .download-pill::after,
     .download-pill .pill-mark {
       display: none;
     }
@@ -603,6 +636,10 @@ const sections = [
       box-shadow: none;
     }
 
+    [data-menu-open] .bar::after {
+      display: none;
+    }
+
     .nav-list {
       flex-direction: column;
       align-items: stretch;
@@ -736,14 +773,6 @@ const sections = [
       gap: var(--space-5);
       width: fit-content;
       padding-inline-start: var(--space-6);
-    }
-  }
-
-  /* With reduced motion nothing moves on its own, so there is nothing to pause. */
-  @media (prefers-reduced-motion: reduce) {
-    .motion-toggle-wide,
-    .motion-toggle-phone {
-      display: none;
     }
   }
 </style>

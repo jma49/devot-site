@@ -1,29 +1,68 @@
-import {
-  browserEnv,
-  REDUCED_MOTION_QUERY,
-  type DomEnv,
-  type MediaQueryLike,
-} from '../lib/dom-env.ts'
+import { browserEnv, type DomEnv, type MediaQueryLike } from '../lib/dom-env.ts'
 
 const controlled = new WeakSet<HTMLVideoElement>()
 
+export interface ClipControls {
+  /**
+   * Gives `video`, which the browser refused to start, a play button until it plays; while the
+   * clips hold still every clip has one already.
+   */
+  offer(video: HTMLVideoElement): void
+  stop(): void
+}
+
 /**
- * While the clips hold still (src/scripts/clips.ts), this gives each `video[data-clip]` a play
- * button from `template[data-clip-control]`, named by the clip's `data-control-label` and placed in
- * its `[data-clip-dock]` or its parent. A press plays the clip once through, in the files for the
- * scheme and width in use. One clip plays at a time, and only while it is on screen and the tab is
- * shown. `still` says when: by default, while reduced motion is on.
+ * Play buttons from `template[data-clip-control]`, named by each clip's `data-control-label` and
+ * placed in its `[data-clip-dock]` or its parent. While `still` matches (the reader paused
+ * animations) every `video[data-clip]` has one: a press plays the clip once through, in the files
+ * for the scheme and width in use, one clip at a time and only while it is on screen and the tab is
+ * shown. Otherwise only a clip passed to `offer` has one, which starts it looping as the others do.
  */
 export function initClipControls(
-  root: ParentNode = document,
+  root: ParentNode,
+  still: MediaQueryLike,
   env: DomEnv = browserEnv(),
-  still: MediaQueryLike = env.matchMedia(REDUCED_MOTION_QUERY),
-): () => void {
+): ClipControls {
   const template = root.querySelector<HTMLTemplateElement>('template[data-clip-control]')
-  if (template === null) return () => {}
+  if (template === null) return { offer: () => {}, stop: () => {} }
+  const offered = new Map<HTMLVideoElement, () => void>()
   let unmount: (() => void) | null = null
 
+  const buttonFor = (video: HTMLVideoElement) => {
+    const button = template.content.firstElementChild?.cloneNode(true)
+    if (!(button instanceof HTMLButtonElement)) return null
+    button.dataset['for'] = video.dataset['clip'] ?? ''
+    const name = video.dataset['controlLabel']
+    if (name) button.setAttribute('aria-label', name)
+    const dock = video.closest<HTMLElement>('[data-clip-dock]') ?? video.parentElement
+    dock?.append(button)
+    return button
+  }
+
+  const withdraw = (video: HTMLVideoElement) => {
+    offered.get(video)?.()
+    offered.delete(video)
+  }
+  const withdrawAll = () => [...offered.keys()].forEach(withdraw)
+
+  const offer = (video: HTMLVideoElement) => {
+    if (unmount !== null || offered.has(video)) return
+    const button = buttonFor(video)
+    if (button === null) return
+    // It only starts the clip and goes once the clip plays, so it is no toggle.
+    button.removeAttribute('aria-pressed')
+    const press = () => void Promise.resolve(video.play()).catch(() => {})
+    const played = () => withdraw(video)
+    button.addEventListener('click', press)
+    video.addEventListener('playing', played)
+    offered.set(video, () => {
+      video.removeEventListener('playing', played)
+      button.remove()
+    })
+  }
+
   const mount = () => {
+    withdrawAll()
     const controls = new Map<HTMLVideoElement, HTMLButtonElement>()
     // The browser picks a source only on load(), so a clip loaded before the scheme or width
     // changed loads again before it plays.
@@ -76,17 +115,12 @@ export function initClipControls(
 
     for (const video of root.querySelectorAll<HTMLVideoElement>('video[data-clip]')) {
       if (controlled.has(video)) continue
+      const button = buttonFor(video)
+      if (button === null) continue
       controlled.add(video)
-      const button = template.content.firstElementChild?.cloneNode(true)
-      if (!(button instanceof HTMLButtonElement)) continue
-      button.dataset['for'] = video.dataset['clip'] ?? ''
-      const name = video.dataset['controlLabel']
-      if (name) button.setAttribute('aria-label', name)
       button.addEventListener('click', () =>
         button.getAttribute('aria-pressed') === 'true' ? stop(video) : play(video),
       )
-      const dock = video.closest<HTMLElement>('[data-clip-dock]') ?? video.parentElement
-      dock?.append(button)
       controls.set(video, button)
       video.addEventListener('ended', onEnded)
       observer.observe(video)
@@ -115,9 +149,13 @@ export function initClipControls(
   }
   sync()
   still.addEventListener('change', sync)
-  return () => {
-    still.removeEventListener('change', sync)
-    unmount?.()
-    unmount = null
+  return {
+    offer,
+    stop: () => {
+      still.removeEventListener('change', sync)
+      unmount?.()
+      unmount = null
+      withdrawAll()
+    },
   }
 }

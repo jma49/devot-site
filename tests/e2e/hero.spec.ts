@@ -1,8 +1,8 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import type { Page } from '@playwright/test'
+import { devices, type Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { REPO_URL } from '../../src/site.ts'
-import { animationsDone, frames, scrollToY } from '../support/settle.ts'
+import { animationsDone, frames, scrollToY, steady } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
@@ -32,6 +32,8 @@ const heroVar = (page: Page, name: string) =>
   page
     .locator('[data-hero]')
     .evaluate((hero, prop) => Number(getComputedStyle(hero).getPropertyValue(prop)), name)
+const rigTransform = (page: Page) =>
+  page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)
 const opacity = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => Number(getComputedStyle(element).opacity))
 const heroCta = (page: Page) => page.locator('#hero').getByRole('link', { name: en.download.label })
@@ -204,24 +206,20 @@ test.describe('hero at 1440 x 900', () => {
   }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await openPage(page)
-    const rest = await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)
+    const rest = await rigTransform(page)
 
     await scrollTo(page, 300)
     await expect.poll(() => heroVar(page, '--hero-settle')).toBeCloseTo(300 / (0.6 * 900), 2)
     await expect.poll(() => heroVar(page, '--hero-sheen')).toBe(0)
     await expect.poll(() => heroVar(page, '--hero-dome')).toBe(1)
-    expect(await opacity(page, '.hero-copy')).toBeLessThan(0.5)
+    await expect.poll(() => opacity(page, '.hero-copy')).toBeLessThan(0.5)
     await expect.poll(() => heroVar(page, '--hero-lift')).toBeCloseTo(105, 0)
-    expect(
-      await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform),
-    ).not.toBe(rest)
+    await expect.poll(() => rigTransform(page)).not.toBe(rest)
 
     await scrollTo(page, 0)
     await expect.poll(() => heroVar(page, '--hero-settle')).toBe(0)
     await expect.poll(() => opacity(page, '.hero-copy')).toBe(1)
-    expect(await page.locator('.hero-rig').evaluate((rig) => getComputedStyle(rig).transform)).toBe(
-      rest,
-    )
+    await expect.poll(() => rigTransform(page)).toBe(rest)
   })
 
   test('animates the backdrop only while the hero is on screen', async ({ page }) => {
@@ -397,6 +395,61 @@ test.describe('hero at 390 x 844', () => {
   })
 })
 
+/** Whether the topmost element at the centre of `selector` is that element or inside it. */
+const takesHitsAtCentre = (page: Page, selector: string) =>
+  page.locator(selector).evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return top !== null && element.contains(top)
+  })
+
+// On phones the window sits above the call to action but after it in the DOM; its mask hides the
+// overlap from sight but not from WebKit's hit testing.
+for (const width of [360, 390]) {
+  test.describe(`hero call to action at ${width} px`, () => {
+    test.use({ viewport: { width, height: phone.height } })
+
+    test('takes clicks on its button, requirements and install note', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await page.goto('/')
+      for (const selector of [
+        '.hero-download',
+        '.hero-requirements',
+        '#hero .install-note',
+        '#hero .install-note a',
+      ]) {
+        await page.locator(selector).scrollIntoViewIfNeeded()
+        await steady(page, () => page.locator('.hero-rig').boundingBox())
+        expect(await takesHitsAtCentre(page, selector), selector).toBe(true)
+      }
+    })
+  })
+}
+
+test.describe('hero call to action on an iPhone', () => {
+  const { viewport, userAgent, deviceScaleFactor } = devices['iPhone 14']
+  test.use({ viewport, userAgent, deviceScaleFactor, isMobile: true, hasTouch: true })
+
+  test('opens the download page when tapped', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    const button = heroCta(page)
+    const href = (await button.getAttribute('href')) ?? ''
+    await page.route(href, (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Download</title>' }),
+    )
+    await button.scrollIntoViewIfNeeded()
+    const box = await steady(page, () => button.boundingBox())
+
+    await page.touchscreen.tap(
+      (box?.x ?? 0) + (box?.width ?? 0) / 2,
+      (box?.y ?? 0) + (box?.height ?? 0) / 2,
+    )
+
+    await expect(page).toHaveURL(href)
+  })
+})
+
 for (const viewport of [phone, tablet]) {
   test.describe(`download pill at ${viewport.width} x ${viewport.height}`, () => {
     test.use({ viewport })
@@ -458,32 +511,41 @@ for (const viewport of [phone, tablet]) {
 test.describe('hero with reduced motion', () => {
   test.use({ viewport: desktop })
 
-  test('shows final states: no entrance, an upright window, a still backdrop and the poster', async ({
+  test('shows final states: no entrance, an upright window that stays put, a drifting backdrop and the clip playing', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openPage(page)
 
-    const keyframes = await page.evaluate(
-      () =>
-        document
-          .querySelector('#hero')
-          ?.getAnimations({ subtree: true })
-          .filter((animation) => animation instanceof CSSAnimation).length,
+    // The backdrop's own slow drift is the one animation the hero keeps.
+    const keyframes = await page.evaluate(() =>
+      document
+        .querySelector('#hero')
+        ?.getAnimations({ subtree: true })
+        .filter(
+          (animation) =>
+            animation instanceof CSSAnimation &&
+            !(animation.effect as KeyframeEffect | null)?.target?.closest('.hero-backdrop'),
+        )
+        .map((animation) => (animation as CSSAnimation).animationName),
     )
-    expect(keyframes).toBe(0)
-    await expect(page.locator('[data-hero]')).toHaveAttribute('data-backdrop-state', 'still')
+    expect(keyframes).toEqual([])
+    await expect(page.locator('[data-hero]')).toHaveAttribute('data-backdrop-state', 'running')
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
 
     await scrollToY(page, 300)
     await frames(page, 3)
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
+    await expect(page.locator('.hero-sky')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
     expect(await heroVar(page, '--hero-settle')).toBe(1)
     const clip = page.locator('video[data-clip="hero"]')
-    expect(await clip.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true)
-    expect(await clip.evaluate((video: HTMLVideoElement) => video.currentSrc)).toBe('')
+    await expect
+      .poll(() =>
+        clip.evaluate((video: HTMLVideoElement) => !video.paused && video.currentTime > 0),
+      )
+      .toBe(true)
   })
 
   test('shows the pill without a transition', async ({ page }) => {

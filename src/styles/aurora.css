@@ -1,0 +1,143 @@
+/*
+ * The aurora in CSS: Tide's gradient for the sky, a Sage band and a Tide band laid across it, and
+ * Ember warmth at the side edges, each from its theme's --backdrop token. It stands in for the
+ * hero's shader before WebGL loads and on phones, and lights the closing section. Masks read only
+ * alpha: the page colour stands for opaque.
+ */
+.aurora {
+  --aurora-opaque: var(--site-color-page);
+  --aurora-filter: saturate(1.25) brightness(0.98);
+  --aurora-band-filter: saturate(1.9);
+  --aurora-sage-pigment: color-mix(in oklab, var(--color-activity-level-4) 20%, transparent);
+  --aurora-tide-pigment: color-mix(in oklab, var(--color-accent-fill) 16%, transparent);
+  --aurora-drift: 36s;
+
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--backdrop), var(--backdrop), var(--backdrop), var(--color-surface-editor);
+  filter: var(--aurora-filter);
+}
+
+.aurora[data-aurora='dark'] {
+  --aurora-filter: saturate(1.2) brightness(1.04);
+  --aurora-band-filter: saturate(1.6) brightness(1.25);
+  --aurora-sage-pigment: color-mix(in oklab, var(--color-activity-level-4) 26%, transparent);
+  --aurora-tide-pigment: color-mix(in oklab, var(--color-accent-fill) 24%, transparent);
+
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .aurora[data-aurora='light'] {
+    display: none;
+  }
+
+  .aurora[data-aurora='dark'] {
+    display: block;
+  }
+}
+
+/* A band: tight at its lower edge, a long glow above, fading out at both ends. */
+.aurora-band {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  background: linear-gradient(var(--aurora-pigment), var(--aurora-pigment)), var(--backdrop);
+  filter: var(--aurora-band-filter);
+  mask-image:
+    linear-gradient(to bottom, transparent, var(--aurora-opaque) 74%, transparent),
+    linear-gradient(
+      to right,
+      transparent 4%,
+      var(--aurora-opaque) 30%,
+      var(--aurora-opaque) 70%,
+      transparent 96%
+    );
+  mask-composite: intersect;
+}
+
+.aurora-band-sage {
+  --aurora-pigment: var(--aurora-sage-pigment);
+
+  top: 2%;
+  height: 26%;
+  rotate: -8deg;
+}
+
+.aurora-band-tide {
+  --aurora-pigment: var(--aurora-tide-pigment);
+
+  top: 18%;
+  height: 30%;
+  rotate: -4deg;
+}
+
+.aurora-warm {
+  position: absolute;
+  inset: 0;
+}
+
+.aurora-warm::before,
+.aurora-warm::after {
+  content: '';
+  position: absolute;
+  width: 46vmax;
+  height: 46vmax;
+  background: var(--backdrop);
+  filter: saturate(1.6);
+  mask-image: radial-gradient(closest-side, var(--aurora-opaque), transparent);
+}
+
+.aurora-warm::before {
+  top: 4%;
+  left: -30vmax;
+  rotate: 200deg;
+}
+
+.aurora-warm::after {
+  top: -6%;
+  right: -30vmax;
+}
+
+/* The sway runs on transforms only, so the compositor carries it without repainting. */
+.aurora-band-sage {
+  animation: aurora-sway-a var(--aurora-drift) var(--site-ease-text) infinite alternate;
+}
+
+.aurora-band-tide {
+  animation: aurora-sway-b calc(var(--aurora-drift) * 1.3) var(--site-ease-text) infinite alternate;
+}
+
+/* With reduced motion the aurora still drifts, at a third of the pace; global.css holds every
+   other animation still, so these declarations need to outrank it. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-band-sage {
+    animation-duration: calc(var(--aurora-drift) * 3) !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .aurora-band-tide {
+    animation-duration: calc(var(--aurora-drift) * 3.9) !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+@keyframes aurora-sway-a {
+  to {
+    translate: 6% 5%;
+    scale: 1.08 1.2;
+  }
+}
+
+@keyframes aurora-sway-b {
+  to {
+    translate: -5% -4%;
+    scale: 1.05 0.85;
+  }
+}
+
+:root[data-animations-paused] .aurora-band,
+:root[data-aurora-still] .aurora-band {
+  animation-play-state: paused;
+}

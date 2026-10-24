@@ -75,6 +75,11 @@ describe('public/_headers', () => {
     )
     expect(immutable.map(({ pattern }) => pattern)).toEqual(['/_astro/*'])
   })
+
+  // Fonts and clips keep fixed names, so a re-cut file must reach a returning visitor within a week.
+  it.each(['/fonts/*', '/media/*'])('caches %s for a week without pinning it', (pattern) => {
+    expect(headersFor(pattern).get('cache-control')).toBe('public, max-age=604800')
+  })
 })
 
 describe('parseHeaders', () => {

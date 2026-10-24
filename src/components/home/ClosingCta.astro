@@ -3,6 +3,7 @@ import '../../styles/home/closing.css'
 import { messages } from '../../i18n/index.ts'
 import { RELEASES_URL } from '../../lib/links.ts'
 import { DOWNLOAD_URL, REPO_URL } from '../../site.ts'
+import Aurora from '../Aurora.astro'
 import InstallNote from '../InstallNote.astro'
 
 const t = messages()
@@ -14,25 +15,20 @@ const links = [
 ---
 
 <section id="download" class="closing" aria-label={copy.label}>
-  <div
-    class="closing__glow"
-    data-theme-preview="tide"
-    data-appearance-preview="light"
-    aria-hidden="true"
-  ></div>
-  <div
-    class="closing__glow"
-    data-theme-preview="tide"
-    data-appearance-preview="dark"
-    aria-hidden="true"
-  ></div>
+  <div class="closing__glow" aria-hidden="true">
+    <Aurora class="closing__aurora" />
+  </div>
   <div class="closing__content">
     <span class="closing__mark" aria-hidden="true" data-reveal="scale" data-reveal-index="0"></span>
     <h2 class="closing__title">
       {copy.title.map((line, index) => (
         <Fragment>
           {index > 0 && ' '}
-          <span class="closing__line" data-reveal data-reveal-index={index + 1}>
+          <span
+            class:list={['closing__line', { 'site-accent': index === copy.title.length - 1 }]}
+            data-reveal
+            data-reveal-index={index + 1}
+          >
             {line}
           </span>
         </Fragment>

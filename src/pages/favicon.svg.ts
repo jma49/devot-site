@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
-import dove from '../assets/dove.svg?raw'
-import { squareSvg } from '../lib/icons.ts'
+import smallCut from '../assets/app-icon-small.svg?raw'
+import { tileSvg } from '../lib/icons.ts'
 
 export const GET: APIRoute = () =>
-  new Response(squareSvg(dove), { headers: { 'content-type': 'image/svg+xml' } })
+  new Response(tileSvg(smallCut), { headers: { 'content-type': 'image/svg+xml' } })

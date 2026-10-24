@@ -1,4 +1,6 @@
 .closing {
+  --closing-veil: color-mix(in oklab, var(--site-color-page) 45%, transparent);
+
   position: relative;
   isolation: isolate;
   overflow: clip;
@@ -6,17 +8,30 @@
   text-align: center;
 }
 
+/* The hero's aurora returns behind the mark and the heading, so the page ends in the light it
+   opened with; the text below it stays on the page colour. */
 .closing__glow {
   position: absolute;
   inset: -12% 0;
   z-index: -1;
-  background: var(--backdrop), var(--backdrop);
-  mask-image: linear-gradient(to bottom, transparent 14%, var(--site-color-page) 54%);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 6%,
+    var(--site-color-page) 26%,
+    var(--site-color-page) 56%,
+    transparent 66%
+  );
   pointer-events: none;
 }
 
-.closing__glow[data-appearance-preview='dark'] {
-  display: none;
+.closing__aurora .aurora-band-sage {
+  top: 33%;
+  rotate: 5deg;
+}
+
+.closing__aurora .aurora-band-tide {
+  top: 18%;
+  rotate: -3deg;
 }
 
 .closing::after {
@@ -31,16 +46,23 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .closing__glow[data-appearance-preview='light'] {
-    display: none;
-  }
-
-  .closing__glow[data-appearance-preview='dark'] {
-    display: block;
+  .closing {
+    --closing-veil: color-mix(in oklab, var(--site-color-page) 80%, transparent);
   }
 }
 
+/* A pool of the page colour under the copy keeps every line at AA over the bands. */
+.closing__content::before {
+  content: '';
+  position: absolute;
+  inset: -6rem -18rem;
+  z-index: -1;
+  background: radial-gradient(closest-side, var(--closing-veil) 40%, transparent);
+  pointer-events: none;
+}
+
 .closing__content {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -52,12 +74,18 @@
   width: clamp(3.5rem, 3rem + 2vw, 4.5rem);
   aspect-ratio: 1;
   margin-bottom: var(--space-10);
-  background: var(--site-brand-mark);
-  mask: url('../../assets/dove.svg') center / contain no-repeat;
+  background: url('../../assets/dove.svg') center / contain no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  .closing__mark {
+    background-image: url('../../assets/dove-dark.svg');
+  }
 }
 
 .closing__title {
   margin: 0;
+  font-family: var(--site-type-display-family);
   font-size: var(--site-type-display-size);
   font-weight: var(--site-type-display-weight);
   letter-spacing: var(--site-type-display-tracking);
@@ -67,6 +95,10 @@
 
 .closing__line {
   display: block;
+}
+
+.closing__line.site-accent {
+  margin-inline: auto;
 }
 
 .closing__lead {

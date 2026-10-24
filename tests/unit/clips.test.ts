@@ -82,6 +82,27 @@ describe('initClips', () => {
     expect(video.plays).toBe(1)
   })
 
+  it('reports a clip in view that the browser will not start on its own, each time it refuses', async () => {
+    const fake = fakeEnv()
+    const videos = [new FakeVideo(), new FakeVideo(), new FakeVideo()]
+    const refusals = ['NotAllowedError', 'AbortError', 'NotAllowedError']
+    videos.forEach((video, i) => {
+      video.play = () => Promise.reject(new DOMException('refused', refusals[i]))
+    })
+    const refused: unknown[] = []
+    initClips(rootOf(videos), { onRefused: (video) => refused.push(video) }, fake.env)
+    const watch = fake.observers[1]
+
+    watch?.deliver(...videos.map((target) => ({ target, isIntersecting: true })))
+    watch?.deliver({ target: videos[2], isIntersecting: false })
+    await new Promise((resolve) => setTimeout(resolve))
+    expect(refused).toEqual([videos[0]])
+    watch?.deliver({ target: videos[0], isIntersecting: true })
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(refused).toEqual([videos[0], videos[0]])
+  })
+
   it('pauses clips in view while the tab is hidden and resumes them when it is shown', () => {
     const { video, watch, setPageHidden } = setup()
     watch?.deliver({ target: video, isIntersecting: true })
@@ -104,23 +125,17 @@ describe('initClips', () => {
     expect([video.paused, video.plays]).toEqual([true, 1])
   })
 
-  it('leaves the poster alone under reduced motion: nothing observed, loaded or played', () => {
-    const { video, observers } = setup({ reduced: true })
+  it('plays under reduced motion as it does without, and does not listen for the setting', () => {
+    const { video, warm, watch, reducedListeners, setReducedMotion } = setup({ reduced: true })
 
-    expect(observers).toEqual([])
-    expect([video.loads, video.plays, video.sources[0]?.src]).toEqual([0, 0, ''])
-  })
-
-  it('stops and pauses when reduced motion is turned on, and starts again when it is turned off', () => {
-    const { video, observers, watch, setReducedMotion } = setup()
+    warm?.deliver({ target: video, isIntersecting: true })
     watch?.deliver({ target: video, isIntersecting: true })
-
-    setReducedMotion(true)
-    expect([video.paused, watch?.disconnected]).toEqual([true, true])
+    expect([video.loads, video.plays, video.paused]).toEqual([1, 1, false])
     setReducedMotion(false)
+    setReducedMotion(true)
 
-    expect(observers).toHaveLength(4)
-    expect([...(observers[3]?.observed ?? [])]).toEqual([video])
+    expect([video.paused, video.pauses, watch?.disconnected]).toEqual([false, 0, false])
+    expect(reducedListeners.size).toBe(0)
   })
 
   it('disconnects, pauses and unsubscribes when stopped', () => {
@@ -207,7 +222,7 @@ describe('initClips with a pause', () => {
     }
   }
 
-  it('holds still in place of the reduced-motion query when given one', () => {
+  it('holds still while the query it is given matches, and only then', () => {
     const still = stillSource(true)
     const fake = fakeEnv()
     const video = new FakeVideo()

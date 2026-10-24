@@ -380,7 +380,7 @@ test.describe('feature cards on a phone', () => {
 test.describe('feature cards with reduced motion', () => {
   test.use({ viewport: desktop })
 
-  test('shows every card and its poster at once, with nothing moving or playing', async ({
+  test('shows every card and its poster at once, with nothing moving and the clips playing', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -397,9 +397,11 @@ test.describe('feature cards with reduced motion', () => {
     for (const video of await videos.all()) {
       await scrollIntoMiddle(video)
       await expect(video).toHaveAttribute('poster', /-poster\.webp$/)
-      expect(await video.evaluate((v: HTMLVideoElement) => v.paused && v.currentSrc === '')).toBe(
-        true,
-      )
+      await expect
+        .poll(() => video.evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0), {
+          timeout: 10_000,
+        })
+        .toBe(true)
     }
 
     const card = cards(page).nth(1)

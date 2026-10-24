@@ -1,0 +1,35 @@
+---
+import '../styles/aurora.css'
+
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+const schemes = ['light', 'dark'] as const
+---
+
+{schemes.map((scheme) => (
+  <div
+    class:list={['aurora', className]}
+    data-aurora={scheme}
+    data-backdrop-source={scheme}
+    data-theme-preview="tide"
+    data-appearance-preview={scheme}
+    aria-hidden="true"
+  >
+    <div
+      class="aurora-band aurora-band-sage"
+      data-aurora-source="sage"
+      data-theme-preview="sage"
+      data-appearance-preview={scheme}
+    />
+    <div class="aurora-band aurora-band-tide" />
+    <div
+      class="aurora-warm"
+      data-aurora-source="ember"
+      data-theme-preview="ember"
+      data-appearance-preview={scheme}
+    />
+  </div>
+))}

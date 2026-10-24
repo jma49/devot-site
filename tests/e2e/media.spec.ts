@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import sharp from 'sharp'
 import { media, SLOTS, type Scheme } from '../../src/media.ts'
+import { animationsDone } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const desktop = { width: 1440, height: 900 }
@@ -50,6 +51,32 @@ for (const name of SLOTS) {
       expect([played.width, played.height], src).toEqual([variant.width, variant.height])
       expect(Math.abs(played.duration - media[name].duration), src).toBeLessThan(0.1)
       expect(played.advanced, src).toBe(true)
+    }
+  })
+}
+
+// The clips are calm screen recordings, so they loop with reduced motion too; only the reader's
+// pause stops them.
+for (const [label, viewport] of [
+  ['desktop', desktop],
+  ['phone', phone],
+] as const) {
+  test(`plays every clip in view on a loop with reduced motion, ${label}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    for (const video of await page.locator('video[data-clip]').all()) {
+      const slot = await video.getAttribute('data-clip')
+      if (!(await video.isVisible())) continue
+      await video.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+      const time = () => video.evaluate((v: HTMLVideoElement) => v.currentTime)
+      await expect.poll(time, { message: `${slot} starts`, timeout: 10_000 }).toBeGreaterThan(0)
+      const at = await time()
+      await expect.poll(time, { message: `${slot} advances` }).not.toBe(at)
+      expect(await video.evaluate((v: HTMLVideoElement) => [v.paused, v.loop]), `${slot}`).toEqual([
+        false,
+        true,
+      ])
     }
   })
 }
@@ -256,15 +283,7 @@ for (const scheme of ['light', 'dark'] as const satisfies Scheme[]) {
       HTMLMediaElement.prototype.play = () => Promise.resolve()
     })
     await page.goto('/')
-    await page.waitForFunction(() =>
-      document
-        .querySelector('#hero')
-        ?.getAnimations({ subtree: true })
-        .every(
-          (animation) =>
-            animation.timeline !== document.timeline || animation.playState !== 'running',
-        ),
-    )
+    await animationsDone(page, '#hero')
     await posterShown(page, 'video[data-clip="hero"]')
     const stage = page.locator('.hero-stage')
     const [start = 0, end = 0] = await stage.evaluate((element) =>

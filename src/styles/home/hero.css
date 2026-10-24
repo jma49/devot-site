@@ -1,6 +1,7 @@
 /*
- * The hero: Devot's Tide gradient, drawn by hero-backdrop.ts over CSS layers that stand in
- * without WebGL, and the app in a window that stands up as the page scrolls. hero.ts writes the
+ * The hero: an aurora over Devot's Tide gradient, drawn by hero-backdrop.ts over the CSS aurora
+ * that stands in without WebGL, and the app in a glass-set window that stands up as the page
+ * scrolls. hero.ts writes the
  * scroll state into the --hero-* variables below; with reduced motion they keep their final values.
  */
 .hero {
@@ -26,8 +27,8 @@
   --hero-perspective: 2200px;
   --hero-drift-distance: -4.5rem;
   --hero-entrance-rise: 20px;
-  --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 55%, transparent);
-  --hero-fallback-filter: saturate(1.3) brightness(0.93);
+  --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 18%, transparent);
+  --hero-grain-opacity: 0.22;
 
   --hero-settle: 0;
   --hero-drift: 0;
@@ -64,8 +65,8 @@
 }
 
 .hero-sky,
-.hero-fallback,
 .hero-canvas,
+.hero-grain,
 .hero-sheen {
   position: absolute;
   inset: 0;
@@ -76,53 +77,16 @@
   transform: translate3d(0, calc(var(--hero-sky) * 1px), 0);
 }
 
-/* Three layers of the token's translucent stops come within a few per cent of the opaque stops
-   the shader mixes, so the canvas fades in without a shift in colour. */
-.hero-fallback {
-  overflow: hidden;
-  background: var(--backdrop), var(--backdrop), var(--backdrop), var(--color-surface-editor);
-  filter: var(--hero-fallback-filter);
+/* The CSS aurora (aurora.css) stands in until the canvas fades in over it, then stops moving;
+   it also holds still while the hero is off screen or in a hidden tab. */
+.hero[data-backdrop-state='idle'] .aurora-band {
+  animation-play-state: paused;
 }
 
-.hero-fallback[data-backdrop-source='dark'] {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .hero {
-    --hero-fallback-filter: saturate(1.2) brightness(1.06);
-  }
-
-  .hero-fallback[data-backdrop-source='light'] {
-    display: none;
-  }
-
-  .hero-fallback[data-backdrop-source='dark'] {
-    display: block;
-  }
-}
-
-/* Two copies of the gradient, turned and masked to soft discs, drift over it. */
-.hero-fallback::before,
-.hero-fallback::after {
-  content: '';
-  position: absolute;
-  width: 72vmax;
-  height: 72vmax;
-  background: var(--backdrop);
-  mask-image: radial-gradient(closest-side, var(--site-color-page), transparent);
-}
-
-.hero-fallback::before {
-  top: -30vmax;
-  left: -18vmax;
-  rotate: 180deg;
-}
-
-.hero-fallback::after {
-  right: -22vmax;
-  bottom: -38vmax;
-  rotate: 90deg;
+.hero[data-backdrop='webgl'] .hero-fallback .aurora-band {
+  visibility: hidden;
+  transition: visibility 0s linear var(--site-dur-media);
+  animation-play-state: paused;
 }
 
 .hero-canvas {
@@ -135,12 +99,11 @@
   opacity: 1;
 }
 
-/* The discs stay under the canvas while it fades in, then stop drawing. */
-.hero[data-backdrop='webgl'] .hero-fallback::before,
-.hero[data-backdrop='webgl'] .hero-fallback::after {
-  visibility: hidden;
-  transition: visibility 0s linear var(--site-dur-media);
-  animation-play-state: paused;
+/* Film grain over the light, so the gradient reads as a surface rather than a screen. */
+.hero-grain {
+  background: url('../../assets/grain.svg') 0 0 / 200px 200px;
+  opacity: var(--hero-grain-opacity);
+  mix-blend-mode: soft-light;
 }
 
 .hero-sheen {
@@ -156,6 +119,34 @@
   height: 46%;
   background: radial-gradient(50% 100% at 50% 100%, var(--site-color-page) 58%, transparent 100%);
   opacity: var(--hero-dome);
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero {
+    --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 60%, transparent);
+  }
+
+  /* The muted tier falls under 4.5:1 where the aurora brightens behind it. */
+  .hero .hero-lead,
+  .hero .hero-requirements,
+  .hero .install-note {
+    color: var(--site-color-text);
+  }
+}
+
+.hero .install-note a {
+  color: var(--site-color-text);
+}
+
+/* Phones keep the CSS aurora, whose bands sit behind three lines of copy. */
+@media (prefers-color-scheme: dark) and (max-width: 639.98px) {
+  .hero {
+    --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 72%, transparent);
+  }
+
+  .hero .aurora {
+    --aurora-band-filter: saturate(1.6);
+  }
 }
 
 /* Copy */
@@ -177,11 +168,16 @@
 
 .hero-title {
   color: var(--site-color-text);
+  font-family: var(--site-type-display-family);
   font-size: var(--site-type-display-size);
   font-weight: var(--site-type-display-weight);
   letter-spacing: var(--site-type-display-tracking);
   line-height: var(--site-type-display-leading);
   text-wrap: balance;
+}
+
+.hero-line.site-accent {
+  margin-inline: auto;
 }
 
 .hero-lead {
@@ -254,17 +250,58 @@
     scale(calc(1 - (1 - var(--hero-rest-scale)) * (1 - var(--hero-settle))));
 }
 
+/* The window rests in a slab of frosted glass whose rim catches the light; a highlight crosses
+   the glass as the window stands up. Both sit outside the window's box, so the layout above is
+   measured from the window alone. */
+.hero-window {
+  --hero-glass-pad: max(0.375rem, 11 * var(--hero-pt));
+  --hero-frame-radius: max(0.5rem, 20 * var(--hero-pt));
+
+  position: relative;
+  isolation: isolate;
+}
+
+.hero-window::before,
+.hero-window::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--hero-glass-pad));
+  z-index: -1;
+  border-radius: calc(var(--hero-frame-radius) + var(--hero-glass-pad));
+  pointer-events: none;
+}
+
+.hero-window::before {
+  background:
+    linear-gradient(112deg, transparent 34%, var(--site-glass-sheen) 44%, transparent 54%)
+      calc(70% - var(--hero-settle) * 60%) 0 / 260% 100% no-repeat,
+    var(--site-glass-fill);
+  box-shadow:
+    inset 0 1px 0 var(--site-glass-rim-faint),
+    0 2px 6px var(--color-shadow-popover-key),
+    0 28px 56px -18px var(--color-shadow-popover-ambient),
+    0 64px 120px -40px var(--color-shadow-float-bar);
+}
+
+.hero-window::after {
+  padding: 1px;
+  background: var(--site-glass-rim-light);
+  mask-image:
+    linear-gradient(var(--site-color-page), var(--site-color-page)),
+    linear-gradient(var(--site-color-page), var(--site-color-page));
+  mask-clip: content-box, border-box;
+  mask-composite: exclude;
+}
+
 .hero-frame {
   position: relative;
   aspect-ratio: 1 / var(--hero-window-ratio);
   overflow: hidden;
-  border-radius: max(0.5rem, 20 * var(--hero-pt));
+  border-radius: var(--hero-frame-radius);
   background: var(--color-surface-window);
   box-shadow:
     0 0 0 0.5px var(--color-line-hairline),
-    0 2px 4px var(--color-shadow-popover-key),
-    0 24px 48px -16px var(--color-shadow-popover-ambient),
-    0 56px 110px -36px var(--color-shadow-float-bar);
+    0 1px 3px var(--color-shadow-popover-key);
 }
 
 .hero-frame::after {
@@ -326,21 +363,6 @@
   .hero-requirements {
     animation: hero-fade 900ms var(--site-ease-text) 100ms both;
   }
-
-  .hero[data-backdrop-state='idle'] .hero-fallback::before,
-  .hero[data-backdrop-state='idle'] .hero-fallback::after,
-  html[data-animations-paused] .hero-fallback::before,
-  html[data-animations-paused] .hero-fallback::after {
-    animation-play-state: paused;
-  }
-
-  .hero-fallback::before {
-    animation: hero-drift-a 28s var(--site-ease-text) infinite alternate;
-  }
-
-  .hero-fallback::after {
-    animation: hero-drift-b 34s var(--site-ease-text) infinite alternate;
-  }
 }
 
 @keyframes hero-fade {
@@ -365,20 +387,6 @@
   from {
     translate: 0 1rem;
     scale: 0.97;
-  }
-}
-
-@keyframes hero-drift-a {
-  to {
-    translate: 24vmax 12vmax;
-    scale: 1.15;
-  }
-}
-
-@keyframes hero-drift-b {
-  to {
-    translate: -20vmax -10vmax;
-    scale: 0.9;
   }
 }
 
@@ -438,7 +446,11 @@
     margin-inline: var(--site-gutter) 0;
   }
 
+  /* The window comes later in the DOM and overlaps the call to action under its mask, which
+     WebKit's hit testing ignores; lifting the call to action keeps it tappable. */
   .hero-cta {
+    position: relative;
+    z-index: 1;
     justify-self: stretch;
     margin-block-start: var(--space-7);
     transform: none;

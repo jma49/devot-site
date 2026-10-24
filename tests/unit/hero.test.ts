@@ -1,24 +1,69 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AURORA_RECIPE,
+  auroraPalette,
   BACKDROP_LOOK,
+  FRAME_CHECK,
   frameDue,
+  framesTooSlow,
   parseBackdrop,
+  parseColour,
+  renderSize,
+  softwareRenderer,
   srgbToOklab,
   tuneStop,
+  type AuroraInputs,
+  type Lab,
+  type Scheme,
 } from '../../src/scripts/hero-backdrop.ts'
 import { HERO_SCROLL, heroScroll, WEBGL_QUERY } from '../../src/scripts/hero.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
 const tokensCss = readRepoFile('src/theme/tokens.css')
 
-/** The --backdrop value the generated tokens give a Tide preview in one appearance. */
-function tideBackdrop(appearance: 'light' | 'dark'): string {
+/** The --backdrop value the generated tokens give a theme's preview in one appearance. */
+function themeBackdrop(theme: string, appearance: Scheme): string {
   const rule = new RegExp(
-    `\\[data-theme-preview='tide'\\]\\[data-appearance-preview='${appearance}'\\] \\{[^}]*--backdrop: ([^;]+);`,
+    `\\[data-theme-preview='${theme}'\\]\\[data-appearance-preview='${appearance}'\\] \\{[^}]*--backdrop: ([^;]+);`,
   ).exec(tokensCss)
-  if (!rule?.[1]) throw new Error(`no Tide ${appearance} backdrop in tokens.css`)
+  if (!rule?.[1]) throw new Error(`no ${theme} ${appearance} backdrop in tokens.css`)
   return rule[1]
 }
+
+const tideBackdrop = (appearance: Scheme) => themeBackdrop('tide', appearance)
+
+/** A semantic colour token as the default theme sets it in one appearance. */
+function token(name: string, appearance: Scheme): string {
+  const block = new RegExp(`\\[data-appearance-preview='${appearance}'\\] \\{([^}]*)\\}`).exec(
+    tokensCss,
+  )?.[1]
+  const value = new RegExp(`${name}: ([^;]+);`).exec(block ?? '')?.[1]
+  if (!value) throw new Error(`no ${name} for ${appearance} in tokens.css`)
+  return value
+}
+
+function auroraInputs(appearance: Scheme): AuroraInputs {
+  const backdrop = (theme: string) => {
+    const parsed = parseBackdrop(themeBackdrop(theme, appearance))
+    if (!parsed) throw new Error(`unreadable ${theme} backdrop`)
+    return parsed
+  }
+  const colour = (name: string) => {
+    const parsed = parseColour(token(name, appearance))
+    if (!parsed) throw new Error(`unreadable ${name}`)
+    return parsed
+  }
+  return {
+    tide: backdrop('tide'),
+    sage: backdrop('sage'),
+    ember: backdrop('ember'),
+    teal: colour('--color-activity-level-4'),
+    blue: colour('--color-accent-fill'),
+    amber: colour('--color-tag-icon-orange'),
+  }
+}
+
+const hue = ([, a, b]: Lab) => (Math.atan2(b, a) * 180) / Math.PI
 
 const chroma = ([, a, b]: readonly number[]) => Math.hypot(a ?? 0, b ?? 0)
 
@@ -160,11 +205,127 @@ describe('colour', () => {
   })
 })
 
+describe('parseColour', () => {
+  it('reads one colour in hex or functional notation, including inside a var() fallback', () => {
+    expect(parseColour('#0e6b62')).toEqual([14, 107, 98])
+    expect(parseColour(' rgb(99 205 191)')).toEqual([99, 205, 191])
+    expect(parseColour('var(--system-accent-fill-light, #3472d6)')).toEqual([52, 114, 214])
+  })
+
+  it('refuses empty values and gradients', () => {
+    expect(parseColour('')).toBeNull()
+    expect(parseColour(tideBackdrop('light'))).toBeNull()
+  })
+})
+
+describe('auroraPalette', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    const palette = auroraPalette(auroraInputs(scheme), scheme)
+
+    it(`keeps Tide's gradient for the sky, no more saturated than the backdrop boost, ${scheme}`, () => {
+      expect(palette.angle).toBe(160)
+      const stops = auroraInputs(scheme).tide.stops.map(srgbToOklab)
+      palette.sky.forEach((sky, index) => {
+        expect(chroma(sky) / chroma(stops[index] ?? [0, 0, 0])).toBeLessThanOrEqual(1.15 + 1e-9)
+      })
+    })
+
+    it(`hangs a teal-green Sage band and a Tide-blue band, ${scheme}`, () => {
+      expect(hue(palette.sage)).toBeGreaterThan(150)
+      expect(hue(palette.sage)).toBeLessThan(200)
+      expect(hue(palette.tide)).toBeLessThan(-90)
+      expect(hue(palette.tide)).toBeGreaterThan(-130)
+    })
+
+    it(`warms the edges with Ember, ${scheme}`, () => {
+      expect(hue(palette.warm)).toBeGreaterThan(20)
+      expect(hue(palette.warm)).toBeLessThan(90)
+    })
+  }
+
+  it('keeps light bands pale under dark text and dark bands deep under light text', () => {
+    const light = auroraPalette(auroraInputs('light'), 'light')
+    const dark = auroraPalette(auroraInputs('dark'), 'dark')
+    for (const band of [light.sage, light.tide, light.fringe, light.warm]) {
+      expect(band[0]).toBeGreaterThanOrEqual(0.8)
+    }
+    for (const band of [dark.sage, dark.tide, dark.fringe, dark.warm]) {
+      expect(band[0]).toBeLessThanOrEqual(0.48)
+    }
+  })
+
+  it('mixes the bands from the tokens, never past the pigment itself', () => {
+    for (const recipe of Object.values(AURORA_RECIPE)) {
+      for (const band of [recipe.sage, recipe.tide, recipe.warm]) {
+        expect(band.toward).toBeGreaterThan(0)
+        expect(band.toward).toBeLessThanOrEqual(0.6)
+      }
+      expect(recipe.sky).toBeLessThanOrEqual(1)
+    }
+  })
+})
+
 describe('frameDue', () => {
   it('draws at most 30 frames a second, allowing for a display that runs a little fast', () => {
     expect(frameDue(1000, 1000 - 1000 / 30)).toBe(true)
     expect(frameDue(1000, 1000 - 31.5)).toBe(true)
     expect(frameDue(1000, 1000 - 16.7)).toBe(false)
     expect(frameDue(1000, -1)).toBe(true)
+  })
+})
+
+describe('renderSize', () => {
+  it('draws at half the CSS pixels, whatever the device pixel ratio, keeping the aspect', () => {
+    expect(renderSize(1440, 1554)).toEqual({ width: 720, height: 777 })
+    expect(renderSize(1024, 900)).toEqual({ width: 512, height: 450 })
+  })
+
+  it('caps the width at 1100 pixels on very wide windows and never reaches zero', () => {
+    expect(renderSize(3840, 2160)).toEqual({ width: 1100, height: 619 })
+    expect(renderSize(0, 0)).toEqual({ width: 1, height: 1 })
+  })
+})
+
+describe('softwareRenderer', () => {
+  it('knows the CPU renderers, which cost a frame of main thread per draw', () => {
+    for (const name of [
+      'ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)',
+      'Google SwiftShader',
+      'llvmpipe (LLVM 15.0.7, 256 bits)',
+      'Mesa softpipe',
+      'ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11 vs_5_0 ps_5_0)',
+    ]) {
+      expect(softwareRenderer(name), name).toBe(true)
+    }
+  })
+
+  it('lets a real GPU, or a renderer the browser does not name, draw the shader', () => {
+    for (const name of [
+      'Apple GPU',
+      'ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)',
+      'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      '',
+    ]) {
+      expect(softwareRenderer(name), name).toBe(false)
+    }
+  })
+})
+
+describe('framesTooSlow', () => {
+  const frames = (count: number, ms: number) => Array.from({ length: count }, () => ms)
+
+  it(`waits for ${FRAME_CHECK.frames} frames before deciding`, () => {
+    expect(framesTooSlow(frames(FRAME_CHECK.frames - 1, 40))).toBeNull()
+  })
+
+  it(`falls back when the median frame takes longer than ${FRAME_CHECK.medianMs} ms`, () => {
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 16.7))).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 8.3))).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4))).toBe(true)
+  })
+
+  it('shrugs off a few long frames, such as the first draw', () => {
+    const intervals = [...frames(FRAME_CHECK.frames - 10, 16.7), ...frames(10, 120)]
+    expect(framesTooSlow(intervals)).toBe(false)
   })
 })

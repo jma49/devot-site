@@ -23,26 +23,27 @@ const filesFor = (slot: SlotName, scheme: 'light' | 'dark') => {
   return [variant?.webm, variant?.mp4]
 }
 
-test.describe('without a motion preference', () => {
-  test.use({ viewport: DESKTOP })
-
-  test('adds no play buttons and leaves the clips looping', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'no-preference' })
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`adds no play buttons and leaves the clips looping (${reducedMotion})`, async ({ page }) => {
+    await page.setViewportSize(DESKTOP)
+    await page.emulateMedia({ reducedMotion })
     await page.goto('/')
     await expect(page.locator('[data-features-ready]')).toHaveCount(1)
+    await expect.poll(() => isPlaying(clip(page, 'hero')), { timeout: 10_000 }).toBe(true)
     await expect(controls(page)).toHaveCount(0)
     for (const video of await page.locator('video[data-clip]').all()) {
       expect(await video.evaluate((v: HTMLVideoElement) => v.loop)).toBe(true)
     }
   })
-})
+}
 
 for (const viewport of [DESKTOP, PHONE]) {
-  test.describe(`with reduced motion, at ${viewport.width}`, () => {
+  test.describe(`with animations paused and reduced motion, at ${viewport.width}`, () => {
     test.use({ viewport })
 
     test.beforeEach(async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.addInitScript((key) => localStorage.setItem(key, 'true'), PAUSE_KEY)
       await page.goto('/')
       await expect(page.locator('[data-features-ready]')).toHaveCount(1)
     })
@@ -152,28 +153,85 @@ for (const viewport of [DESKTOP, PHONE]) {
   })
 }
 
-test.describe('when the preference changes', () => {
+test.describe('when the motion preference changes', () => {
   test.use({ viewport: DESKTOP })
 
-  test('adds the buttons with reduced motion and takes them away again without it', async ({
-    page,
-  }) => {
+  test('keeps the clips playing and adds no buttons', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
-    await expect(page.locator('[data-features-ready]')).toHaveCount(1)
-    await expect(controls(page)).toHaveCount(0)
+    await expect.poll(() => isPlaying(clip(page, 'hero')), { timeout: 10_000 }).toBe(true)
 
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await expect(controls(page)).not.toHaveCount(0)
-    await centre(control(page, 'card-2'))
-    await control(page, 'card-2').click()
-    await expect(control(page, 'card-2')).toHaveAttribute('aria-pressed', 'true')
-
-    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    const at = await clip(page, 'hero').evaluate((v: HTMLVideoElement) => v.currentTime)
+    await expect
+      .poll(() => clip(page, 'hero').evaluate((v: HTMLVideoElement) => v.currentTime))
+      .not.toBe(at)
+    expect(await isPlaying(clip(page, 'hero'))).toBe(true)
     await expect(controls(page)).toHaveCount(0)
-    expect(await clip(page, 'card-2').evaluate((v: HTMLVideoElement) => v.loop)).toBe(true)
   })
 })
+
+/**
+ * Refuses play() as a browser that blocks autoplay does (Low Power Mode, a site setting), except
+ * from a click. Playwright runs evaluate() as a user gesture in Chromium, so the stub asks for a
+ * click in progress rather than for user activation.
+ */
+const refuseAutoplay = (page: Page) =>
+  page.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+      const event = window.event
+      return event?.isTrusted && event.type === 'click'
+        ? play.call(this)
+        : Promise.reject(new DOMException('play() needs a gesture', 'NotAllowedError'))
+    }
+  })
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test.describe(`when the browser refuses to start the clips (${reducedMotion})`, () => {
+    test.use({ viewport: DESKTOP })
+
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ reducedMotion })
+      await refuseAutoplay(page)
+      await page.goto('/')
+    })
+
+    test('gives each clip it refused a named play button, which starts it looping', async ({
+      page,
+    }) => {
+      const hero = control(page, 'hero')
+      await expect(hero).toBeVisible()
+      await expect(hero).toHaveAccessibleName(en.clipControl.named(media.hero.alt))
+      await expect(hero).not.toHaveAttribute('aria-pressed')
+      await expect(control(page, 'card-2')).toHaveCount(0)
+
+      await centre(page.locator('#cards .card[data-slot="card-2"]'))
+      const button = control(page, 'card-2')
+      await expect(button).toBeVisible()
+      await button.click()
+
+      await expect.poll(() => isPlaying(clip(page, 'card-2')), { timeout: 10_000 }).toBe(true)
+      expect(await clip(page, 'card-2').evaluate((v: HTMLVideoElement) => v.loop)).toBe(true)
+      await expect(button).toHaveCount(0)
+      await expect(hero).toHaveCount(1)
+    })
+
+    test('answers the keyboard, and gives way to the buttons of the pause', async ({ page }) => {
+      const hero = control(page, 'hero')
+      await hero.focus()
+      await page.keyboard.press('Enter')
+      await expect.poll(() => isPlaying(clip(page, 'hero')), { timeout: 10_000 }).toBe(true)
+      await expect(hero).toHaveCount(0)
+
+      await page.getByRole('button', { name: en.chrome.pause, exact: true }).click()
+
+      const slots = await page.locator('video[data-clip]').count()
+      await expect(controls(page)).toHaveCount(slots)
+      await expect(control(page, 'hero')).toHaveAttribute('aria-pressed', 'false')
+    })
+  })
+}
 
 test.describe('with animations paused', () => {
   test.use({ viewport: DESKTOP })
@@ -230,6 +288,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
   }) => {
     await page.setViewportSize(DESKTOP)
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+    await page.addInitScript((key) => localStorage.setItem(key, 'true'), PAUSE_KEY)
     await page.goto('/')
     await expect(controls(page)).not.toHaveCount(0)
     await centre(control(page, 'card-2'))

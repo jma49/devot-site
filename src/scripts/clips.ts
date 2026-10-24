@@ -1,27 +1,33 @@
-import {
-  browserEnv,
-  REDUCED_MOTION_QUERY,
-  type DomEnv,
-  type MediaQueryLike,
-  type ObserverLike,
-} from '../lib/dom-env.ts'
+import { browserEnv, type DomEnv, type MediaQueryLike, type ObserverLike } from '../lib/dom-env.ts'
 
 export interface ClipOptions {
   /** Pixels outside the viewport at which a clip starts loading its sources. */
   loadMargin?: number
   /** Share of a clip that must be visible for it to play; 0 is any part of it. */
   threshold?: number
-  /** Matches while every clip holds still; by default, while reduced motion is on. */
+  /** Matches while every clip holds still (the reader paused animations); by default never. */
   still?: MediaQueryLike
+  /** Hears of a clip in view that the browser refused to start without a press of its own. */
+  onRefused?: (video: HTMLVideoElement) => void
 }
 
+const NEVER: MediaQueryLike = {
+  matches: false,
+  addEventListener: () => {},
+  removeEventListener: () => {},
+}
+
+const refusedByBrowser = (error: unknown) =>
+  (error as { name?: unknown } | null)?.name === 'NotAllowedError'
+
 /**
- * Plays each `video[data-clip]` only while it is in view and the tab is visible, and pauses it
- * otherwise. Its `<source data-src>` files are not requested until the clip is near the viewport,
- * and the browser then picks the one whose `media` matches (scheme, width); when that changes, a
- * loaded clip loads again so it follows. While `still` matches (reduced motion, or animations
- * paused) nothing loads or plays: a playing clip stops on its frame, the others keep their posters.
- * Returns a function that stops it all.
+ * Plays each `video[data-clip]` on a loop while it is in view and the tab is visible, and pauses
+ * it otherwise, with reduced motion too: the clips are calm screen recordings, and the reader's
+ * pause stops them. Its `<source data-src>` files are not requested until the clip is near the
+ * viewport, and the browser then picks the one whose `media` matches (scheme, width); when that
+ * changes, a loaded clip loads again so it follows. While `still` matches nothing loads or plays: a
+ * playing clip stops on its frame, the others keep their posters. Returns a function that stops it
+ * all.
  */
 export function initClips(
   root: ParentNode = document,
@@ -32,7 +38,7 @@ export function initClips(
   const videos = [...root.querySelectorAll<HTMLVideoElement>('video[data-clip]')]
   const inView = new Set<HTMLVideoElement>()
   const loaded = new WeakSet<HTMLVideoElement>()
-  const still = options.still ?? env.matchMedia(REDUCED_MOTION_QUERY)
+  const still = options.still ?? NEVER
   const variants = [
     ...new Set(
       videos.flatMap((video) =>
@@ -58,8 +64,10 @@ export function initClips(
   const sync = (video: HTMLVideoElement) => {
     if (!inView.has(video) || env.pageHidden()) return video.pause()
     load(video)
-    // A refused play() leaves the poster showing; there is nothing to report.
-    Promise.resolve(video.play()).catch(() => {})
+    // Any other refusal (a pause() or load() before playback began) leaves the poster showing.
+    Promise.resolve(video.play()).catch((error: unknown) => {
+      if (refusedByBrowser(error) && inView.has(video)) options.onRefused?.(video)
+    })
   }
 
   const start = () => {
