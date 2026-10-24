@@ -22,7 +22,9 @@ it('sets the closing, the footer and the install note in the type scale only', (
     const weights = declarations(css, 'font-weight').filter(
       (value) => !/^var\(--site-type-[a-z]+-weight\)$/.test(value) && value !== 'inherit',
     )
-    const families = declarations(css, 'font-family')
+    const families = declarations(css, 'font-family').filter(
+      (value) => !/^var\(--site-type-[a-z]+-family\)$/.test(value),
+    )
     return [...sizes, ...weights, ...families].map((value) => `${file}: ${value}`)
   })
   expect(offenders).toEqual([])

@@ -458,21 +458,25 @@ for (const viewport of [phone, tablet]) {
 test.describe('hero with reduced motion', () => {
   test.use({ viewport: desktop })
 
-  test('shows final states: no entrance, an upright window, a still backdrop and the poster', async ({
+  test('shows final states: no entrance, an upright window, a drifting backdrop and the poster', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await openPage(page)
 
+    // The aurora still drifts, slowly (backdrop.spec.ts); nothing else animates.
     const keyframes = await page.evaluate(
       () =>
         document
           .querySelector('#hero')
           ?.getAnimations({ subtree: true })
-          .filter((animation) => animation instanceof CSSAnimation).length,
+          .filter(
+            (animation) =>
+              animation instanceof CSSAnimation && !animation.animationName.startsWith('aurora-'),
+          ).length,
     )
     expect(keyframes).toBe(0)
-    await expect(page.locator('[data-hero]')).toHaveAttribute('data-backdrop-state', 'still')
+    await expect(page.locator('[data-hero]')).toHaveAttribute('data-backdrop-state', 'running')
     await expect(page.locator('.hero-rig')).toHaveCSS('transform', 'none')
     await expect(page.locator('.hero-copy')).toHaveCSS('opacity', '1')
 

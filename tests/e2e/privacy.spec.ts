@@ -371,27 +371,37 @@ test.describe('closing call to action', () => {
     const type = (selector: string) =>
       page.locator(selector).evaluate((element) => {
         const style = getComputedStyle(element)
-        return [style.fontSize, style.fontWeight, style.letterSpacing, style.lineHeight]
+        return [
+          style.fontFamily,
+          style.fontSize,
+          style.fontWeight,
+          style.letterSpacing,
+          style.lineHeight,
+        ]
       })
 
     expect(await type('#download h2')).toEqual(await type('#hero h1'))
   })
 
-  test('brings the gradient back, in the scheme of the page', async ({ page }) => {
+  test('brings the aurora back, in the scheme of the page', async ({ page }) => {
     for (const colorScheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme })
       await page.goto('/')
-      const shown = await page.locator('.closing__glow').evaluateAll((glows) =>
-        glows
-          .filter((glow) => getComputedStyle(glow).display !== 'none')
-          .map((glow) => ({
-            appearance: glow.getAttribute('data-appearance-preview'),
-            image: getComputedStyle(glow).backgroundImage,
+      const shown = await page.locator('.closing__aurora').evaluateAll((auroras) =>
+        auroras
+          .filter((aurora) => getComputedStyle(aurora).display !== 'none')
+          .map((aurora) => ({
+            appearance: aurora.getAttribute('data-appearance-preview'),
+            image: getComputedStyle(aurora).backgroundImage,
+            themes: [...aurora.querySelectorAll('[data-aurora-source]')].map((source) =>
+              source.getAttribute('data-theme-preview'),
+            ),
           })),
       )
       expect(shown).toHaveLength(1)
       expect(shown[0]?.appearance).toBe(colorScheme)
-      expect(shown[0]?.image.match(/linear-gradient/g)).toHaveLength(2)
+      expect(shown[0]?.image.match(/linear-gradient/g)).toHaveLength(3)
+      expect(shown[0]?.themes).toEqual(['sage', 'ember'])
     }
   })
 
@@ -403,7 +413,7 @@ test.describe('closing call to action', () => {
     test('moves the gradient against the scroll, both ways', async ({ page }) => {
       await page.goto('/')
       test.skip(!(await timelines(page)), 'no view timelines')
-      const glow = '.closing__glow[data-appearance-preview="light"]'
+      const glow = '.closing__glow'
       const top = await docTop(page, '#download')
 
       await scrollSettled(page, top - DESKTOP.height + 50)

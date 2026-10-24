@@ -25,26 +25,46 @@
 
   --site-font: var(--font-family-ui);
 
-  /*
-   * Type scale. The system face throughout (SF Pro on Apple devices), mono only for numbers and
-   * code. Each tier's size, weight, tracking and line height is defined here once:
-   *   display  the hero headline                                  36-60 px  bold
-   *   section  section headings (h2)                              32-48 px  bold
-   *   lead     the paragraph under a section heading              17-19 px  regular
-   *   card     feature titles and card headings (h3)              19-22 px  semibold
-   *   body     running text                                       17 px     regular
-   *   label    uppercase pills and kickers, tracked 0.08em        12 px     semibold
-   *   caption  small print, counts, chips and controls            14 px     regular
-   */
-  --site-type-display-size: clamp(2.25rem, min(1.2rem + 3.3vw, 6.8vh), 3.75rem);
-  --site-type-display-weight: var(--font-weight-bold);
-  --site-type-display-tracking: -0.022em;
-  --site-type-display-leading: 1.07;
+  --site-font-display: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
 
-  --site-type-section-size: clamp(2rem, 1.5rem + 2vw, 3rem);
-  --site-type-section-weight: var(--font-weight-bold);
-  --site-type-section-tracking: -0.02em;
+  /*
+   * Type scale. Headlines in Fraunces, a soft variable serif set light and large; everything a
+   * reader reads or clicks in the system face (SF Pro on Apple devices); mono only for numbers and
+   * code. A heading's last line may turn italic in the accent ink. Each tier's family, size,
+   * weight, tracking and line height is defined here once:
+   *   display  the hero headline                          Fraunces  40-76 px  light 330
+   *   section  section headings (h2)                      Fraunces  34-56 px  light 360
+   *   lead     the paragraph under a section heading      system    17-19 px  regular
+   *   card     feature titles and card headings (h3)      system    19-22 px  semibold
+   *   body     running text                               system    17 px     regular
+   *   label    uppercase pills and kickers, 0.08em        system    12 px     semibold
+   *   caption  small print, counts, chips and controls    system    14 px     regular
+   */
+  --site-type-display-family: var(--site-font-display);
+  --site-type-display-size: clamp(2.5rem, min(1.4rem + 3.9vw, 8.4vh), 4.75rem);
+  --site-type-display-weight: 330;
+  --site-type-display-tracking: -0.018em;
+  --site-type-display-leading: 1.06;
+
+  --site-type-section-family: var(--site-font-display);
+  --site-type-section-size: clamp(2.125rem, 1.5rem + 2.3vw, 3.5rem);
+  --site-type-section-weight: 360;
+  --site-type-section-tracking: -0.014em;
   --site-type-section-leading: 1.08;
+
+  /* The italic last line of a headline: Devot's teal running into the accent blue, both text
+     tokens that keep AA on the page and on the gradient in either appearance. */
+  --site-ink-accent-from: color-mix(
+    in oklab,
+    var(--color-activity-level-4) 86%,
+    var(--color-text-primary)
+  );
+  --site-ink-accent-to: var(--color-accent-text);
+  --site-ink-accent: linear-gradient(
+    100deg,
+    var(--site-ink-accent-from) 10%,
+    var(--site-ink-accent-to) 95%
+  );
 
   --site-type-lead-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
   --site-type-lead-weight: var(--font-weight-regular);
@@ -90,6 +110,23 @@
   --site-brand-fill-hover: color-mix(in oklab, var(--site-brand) 84%, var(--color-text-primary));
   --site-brand-ink: var(--color-accent-on-fill);
   --site-brand-glow: color-mix(in oklab, var(--site-brand) 38%, transparent);
+
+  /* Frosted glass: a translucent fill, a rim that catches the light at the top left and a
+     shade along the bottom. */
+  --site-glass-fill: color-mix(in oklab, var(--color-surface-window) 30%, transparent);
+  --site-glass-rim: color-mix(in oklab, var(--color-surface-window) 96%, transparent);
+  --site-glass-rim-faint: color-mix(in oklab, var(--color-surface-window) 28%, transparent);
+  --site-glass-shade: color-mix(in oklab, var(--color-text-primary) 9%, transparent);
+  --site-glass-sheen: color-mix(in oklab, var(--color-surface-window) 70%, transparent);
+  --site-glass-blur: blur(22px) saturate(1.7);
+  --site-glass-rim-light: linear-gradient(
+    165deg,
+    var(--site-glass-rim) 0%,
+    var(--site-glass-rim-faint) 28%,
+    transparent 52%,
+    var(--site-glass-shade) 80%,
+    var(--site-glass-rim-faint) 100%
+  );
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,5 +138,11 @@
       var(--color-surface-window)
     );
     --site-brand-glow: color-mix(in oklab, var(--site-brand) 22%, transparent);
+
+    --site-glass-fill: color-mix(in oklab, var(--color-text-primary) 8%, transparent);
+    --site-glass-rim: color-mix(in oklab, var(--color-text-primary) 48%, transparent);
+    --site-glass-rim-faint: color-mix(in oklab, var(--color-text-primary) 12%, transparent);
+    --site-glass-shade: color-mix(in oklab, var(--color-surface-window) 40%, transparent);
+    --site-glass-sheen: color-mix(in oklab, var(--color-text-primary) 16%, transparent);
   }
 }

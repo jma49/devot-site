@@ -80,6 +80,7 @@
 .local__title,
 .local__lede {
   margin: 0;
+  font-family: var(--site-type-section-family);
   font-size: var(--site-type-section-size);
   font-weight: var(--site-type-section-weight);
   letter-spacing: var(--site-type-section-tracking);
@@ -93,6 +94,7 @@
 
 .local__lede {
   color: var(--site-color-text-faint);
+  font-style: italic;
 }
 
 .local__strip {

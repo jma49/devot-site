@@ -26,6 +26,7 @@
 
 .features-title {
   margin: 0;
+  font-family: var(--site-type-section-family);
   font-size: var(--site-type-section-size);
   font-weight: var(--site-type-section-weight);
   letter-spacing: var(--site-type-section-tracking);
