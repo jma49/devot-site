@@ -1,0 +1,83 @@
+---
+import '../../styles/home/closing.css'
+import { messages } from '../../i18n/index.ts'
+import { RELEASES_URL } from '../../lib/links.ts'
+import { DOWNLOAD_URL, REPO_URL } from '../../site.ts'
+import InstallNote from '../InstallNote.astro'
+
+const t = messages()
+const copy = t.closing
+const links = [
+  { href: REPO_URL, label: copy.links.source },
+  { href: RELEASES_URL, label: copy.links.releases },
+]
+---
+
+<section id="download" class="closing" aria-label={copy.label}>
+  <div
+    class="closing__glow"
+    data-theme-preview="tide"
+    data-appearance-preview="light"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="closing__glow"
+    data-theme-preview="tide"
+    data-appearance-preview="dark"
+    aria-hidden="true"
+  ></div>
+  <div class="closing__content">
+    <span class="closing__mark" aria-hidden="true" data-reveal="scale" data-reveal-index="0"></span>
+    <h2 class="closing__title">
+      {copy.title.map((line, index) => (
+        <Fragment>
+          {index > 0 && ' '}
+          <span class="closing__line" data-reveal data-reveal-index={index + 1}>
+            {line}
+          </span>
+        </Fragment>
+      ))}
+    </h2>
+    <p class="closing__lead" data-reveal data-reveal-index="3">
+      {copy.lead}
+    </p>
+    <div class="closing__action" data-reveal data-reveal-index="4">
+      <a
+        class="brand-button closing__cta"
+        href={DOWNLOAD_URL}
+        aria-describedby="closing-requirements"
+      >
+        <svg
+          class="brand-button-glyph"
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <path d="M8 2.5v7.25M4.75 6.75 8 10l3.25-3.25M3 13h10"></path>
+        </svg>
+        {t.download.label}
+      </a>
+      <p class="closing__requirements" id="closing-requirements">
+        {t.download.requirements}
+      </p>
+      <InstallNote />
+    </div>
+    <ul
+      class="closing__links"
+      role="list"
+      aria-label={copy.links.label}
+      data-reveal
+      data-reveal-index="5"
+    >
+      {links.map((link) => (
+        <li>
+          <a href={link.href}>{link.label}</a>
+        </li>
+      ))}
+    </ul>
+    <p class="closing__note" data-reveal data-reveal-index="6">
+      {copy.installNote}
+    </p>
+  </div>
+</section>

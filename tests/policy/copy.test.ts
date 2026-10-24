@@ -1,9 +1,30 @@
 import { describe, expect, it } from 'vitest'
+import { en } from '../../src/i18n/en.ts'
 import { catalogStrings, inlineCopy, pageCopy } from '../support/copy-policy.ts'
 import { filesUnder, readRepoFile } from '../support/source-files.ts'
 
 // User-facing text lives in src/i18n so another language is one more catalog. tests/built checks
 // the built pages too, which also catches text a template builds in its frontmatter.
+
+// Wording the page once used that claimed more than Devot does.
+const RETIRED_CLAIMS: { wording: RegExp; why: string }[] = [
+  { wording: /any editor/i, why: 'notes are plain files only once the Markdown mirror is on' },
+  { wording: /\bnative\b/i, why: 'the window is a macOS window around a web view' },
+  { wording: /any shortcut/i, why: 'some keys are reserved for macOS and the app menu' },
+  { wording: /still open/i, why: 'there is no open state, only statuses and a status filter' },
+  { wording: /^© \d{4} Devot$/, why: 'the licence names the copyright holder' },
+  { wording: /^Highlights$/, why: 'a vague navigation label' },
+  { wording: /^devot-mcp$/, why: 'devot-mcp runs from a checkout of the source' },
+  { wording: /\bany (version|revision)/i, why: 'versions older than a day are thinned' },
+  { wording: /\brestore (any|every)\b/i, why: 'versions older than a day are thinned' },
+]
+
+it('retires wording that claimed more than Devot does', () => {
+  const offenders = [...catalogStrings(en, [2026])].flatMap((text) =>
+    RETIRED_CLAIMS.filter(({ wording }) => wording.test(text)).map(({ why }) => `${text} (${why})`),
+  )
+  expect(offenders).toEqual([])
+})
 
 it('templates take their text from src/i18n', () => {
   const templates = filesUnder('src').filter((file) => file.endsWith('.astro'))

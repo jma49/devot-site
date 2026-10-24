@@ -1,0 +1,143 @@
+---
+import { messages } from '../../i18n/index.ts'
+import Clip from '../Clip.astro'
+import StatusDemo from './StatusDemo.astro'
+import '../../styles/home/features.css'
+import '../../styles/clip-controls.css'
+
+const t = messages()
+const { items } = t.features
+const number = (index: number) => String(index + 1).padStart(2, '0')
+---
+
+<section id="write" class="features" aria-labelledby="features-title" data-features>
+  <header class="features-intro">
+    <h2 id="features-title" class="features-title">
+      {t.features.titleLines.map((line, index) => (
+        <>
+          {index > 0 && ' '}
+          <span class="features-title-line" data-reveal>
+            {line}
+          </span>
+        </>
+      ))}
+    </h2>
+    <p class="features-lead" data-reveal>
+      {t.features.lead}
+    </p>
+  </header>
+
+  <div class="features-body">
+    <nav class="features-list" aria-label={t.features.listLabel}>
+      <span class="features-marker" aria-hidden="true" data-features-marker></span>
+      <ol>
+        {items.map((item, index) => (
+          <li
+            class="feature-item"
+            data-feature-item
+            data-active={index === 0 ? '' : undefined}
+            data-reveal
+          >
+            <h3 class="feature-heading">
+              <button
+                type="button"
+                class="feature-button"
+                aria-controls={`feature-${item.slot}`}
+                aria-describedby={`feature-${item.slot}-text`}
+                aria-current={index === 0 ? 'true' : undefined}
+              >
+                <span class="feature-kicker">
+                  <span class="feature-number" aria-hidden="true">
+                    {number(index)}
+                  </span>
+                  <span class="feature-name">{item.name}</span>
+                </span>
+                <span class="feature-title">{item.title}</span>
+              </button>
+            </h3>
+            <div class="feature-detail">
+              <div>
+                <p class="feature-text" id={`feature-${item.slot}-text`}>
+                  {item.body.map((part) =>
+                    typeof part === 'string' ? part : <code>{part.code}</code>,
+                  )}
+                </p>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
+    <div class="features-media">
+      {items.map((item, index) => (
+        <div
+          class="feature"
+          id={`feature-${item.slot}`}
+          data-feature
+          data-active={index === 0 ? '' : undefined}
+        >
+          <div class="feature-well" data-feature-well data-clip-dock data-reveal="scale">
+            <span
+              class="feature-light feature-light-day"
+              data-theme-preview="tide"
+              data-appearance-preview="light"
+              aria-hidden="true"
+            />
+            <span
+              class="feature-light feature-light-night"
+              data-theme-preview="tide"
+              data-appearance-preview="dark"
+              aria-hidden="true"
+            />
+            <div class="feature-stage">
+              <div class="feature-window">
+                <Clip name={item.slot} class="feature-clip" />
+              </div>
+            </div>
+          </div>
+          <div class="feature-copy" data-reveal>
+            <h3 class="feature-heading">
+              <span class="feature-kicker">
+                <span class="feature-number" aria-hidden="true">
+                  {number(index)}
+                </span>
+                <span class="feature-name">{item.name}</span>
+              </span>
+              <span class="feature-title">{item.title}</span>
+            </h3>
+            <p class="feature-text">
+              {item.body.map((part) =>
+                typeof part === 'string' ? part : <code>{part.code}</code>,
+              )}
+            </p>
+          </div>
+          {item.slot === 'organise' && <StatusDemo />}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <template data-clip-control>
+    <button
+      type="button"
+      class="clip-control"
+      aria-pressed="false"
+      aria-label={t.clipControl.label}
+    >
+      <svg class="clip-control-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path
+          class="clip-control-play"
+          d="M5 3.4v9.2a.6.6 0 0 0 .9.5l7.3-4.6a.6.6 0 0 0 0-1L5.9 2.9a.6.6 0 0 0-.9.5Z"
+        ></path>
+        <path class="clip-control-pause" d="M5.5 3.5v9M10.5 3.5v9"></path>
+      </svg>
+    </button>
+  </template>
+</section>
+
+<script>
+  import { initFeatures } from '../../scripts/features.ts'
+
+  initFeatures()
+</script>

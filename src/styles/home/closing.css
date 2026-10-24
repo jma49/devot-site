@@ -1,0 +1,166 @@
+.closing {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding-block: clamp(5.5rem, 17vh, 10rem) clamp(4.5rem, 13vh, 8.5rem);
+  text-align: center;
+}
+
+.closing__glow {
+  position: absolute;
+  inset: -12% 0;
+  z-index: -1;
+  background: var(--backdrop), var(--backdrop);
+  mask-image: linear-gradient(to bottom, transparent 14%, var(--site-color-page) 54%);
+  pointer-events: none;
+}
+
+.closing__glow[data-appearance-preview='dark'] {
+  display: none;
+}
+
+.closing::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: -1;
+  height: clamp(5rem, 14vh, 9rem);
+  background: linear-gradient(to bottom, transparent, var(--site-color-page));
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .closing__glow[data-appearance-preview='light'] {
+    display: none;
+  }
+
+  .closing__glow[data-appearance-preview='dark'] {
+    display: block;
+  }
+}
+
+.closing__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100% - 2 * var(--site-gutter), 46rem);
+  margin-inline: auto;
+}
+
+.closing__mark {
+  width: clamp(3.5rem, 3rem + 2vw, 4.5rem);
+  aspect-ratio: 1;
+  margin-bottom: var(--space-10);
+  background: var(--site-brand-mark);
+  mask: url('../../assets/dove.svg') center / contain no-repeat;
+}
+
+.closing__title {
+  margin: 0;
+  font-size: var(--site-type-display-size);
+  font-weight: var(--site-type-display-weight);
+  letter-spacing: var(--site-type-display-tracking);
+  line-height: var(--site-type-display-leading);
+  text-wrap: balance;
+}
+
+.closing__line {
+  display: block;
+}
+
+.closing__lead {
+  max-width: 32rem;
+  margin-top: var(--space-9);
+  color: var(--site-color-text-muted);
+  font-size: var(--site-type-lead-size);
+  font-weight: var(--site-type-lead-weight);
+  line-height: var(--site-type-lead-leading);
+  text-wrap: balance;
+}
+
+.closing__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+}
+
+.closing__cta {
+  min-height: 3.25rem;
+  padding-inline: 1.75rem 2rem;
+}
+
+.closing__requirements {
+  color: var(--site-color-text-muted);
+  font-size: var(--site-type-caption-size);
+}
+
+.closing__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-10);
+  margin: var(--space-10) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closing__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  border-radius: var(--radius-button);
+  color: var(--site-color-link);
+  font-size: var(--site-type-body-size);
+  font-weight: var(--site-type-body-weight);
+  text-decoration: none;
+  transition: color var(--site-dur-quick) var(--site-ease-out);
+}
+
+.closing__links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.closing__note {
+  max-width: 36rem;
+  margin-top: var(--space-5);
+  color: var(--site-color-text-muted);
+  font-size: var(--site-type-caption-size);
+  line-height: var(--site-type-caption-leading);
+  text-wrap: balance;
+}
+
+@media (max-width: 799px) {
+  .closing {
+    padding-block: clamp(4.5rem, 14vh, 6rem) clamp(3.5rem, 10vh, 5rem);
+  }
+
+  .closing__cta {
+    width: min(100%, 20rem);
+  }
+}
+
+@keyframes closing-glow {
+  from {
+    transform: translate3d(0, -8%, 0);
+  }
+  to {
+    transform: translate3d(0, 8%, 0);
+  }
+}
+
+/* Longhands only, as in privacy.css: the minifier would fold a shorthand browsers reject. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .closing__glow {
+      animation-name: closing-glow;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}

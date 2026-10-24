@@ -1,0 +1,84 @@
+---
+import '../../styles/home/hero.css'
+import { messages } from '../../i18n/index.ts'
+import { DOWNLOAD_URL } from '../../site.ts'
+import Clip from '../Clip.astro'
+import InstallNote from '../InstallNote.astro'
+
+const t = messages()
+---
+
+<section id="hero" class="hero" aria-labelledby="hero-title" data-hero data-backdrop="css">
+  <div class="hero-backdrop" aria-hidden="true">
+    <div class="hero-sky">
+      <div
+        class="hero-fallback"
+        data-backdrop-source="light"
+        data-theme-preview="tide"
+        data-appearance-preview="light"
+      ></div>
+      <div
+        class="hero-fallback"
+        data-backdrop-source="dark"
+        data-theme-preview="tide"
+        data-appearance-preview="dark"
+      ></div>
+      <canvas class="hero-canvas" data-hero-canvas></canvas>
+    </div>
+    <div class="hero-sheen"></div>
+    <div class="hero-dome"></div>
+  </div>
+
+  <div class="hero-copy">
+    <h1 id="hero-title" class="hero-title">
+      {t.hero.titleLines.map((line, index) => (
+        <>
+          {index > 0 && ' '}
+          <span class="hero-line">{line}</span>
+        </>
+      ))}
+    </h1>
+    <p class="hero-lead">{t.hero.lead}</p>
+  </div>
+
+  <div class="hero-cta" data-hero-cta>
+    <div class="hero-cta-inner">
+      <a
+        class="brand-button hero-download"
+        href={DOWNLOAD_URL}
+        aria-describedby="download-requirements"
+      >
+        <svg
+          class="brand-button-glyph"
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <path d="M8 2.5v7.25M4.75 6.75 8 10l3.25-3.25M3 13h10"></path>
+        </svg>
+        {t.download.label}
+      </a>
+      <p class="hero-requirements" id="download-requirements">
+        {t.download.requirements}
+      </p>
+      <InstallNote />
+    </div>
+  </div>
+
+  <div class="hero-stage">
+    <div class="hero-rig">
+      <div class="hero-window">
+        <div class="hero-frame">
+          <Clip name="hero" class="hero-clip" priority />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { startHero } from '../../scripts/hero.ts'
+
+  startHero()
+</script>

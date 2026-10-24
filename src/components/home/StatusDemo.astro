@@ -1,0 +1,76 @@
+---
+import '../../styles/home/demo.css'
+import { messages } from '../../i18n/index.ts'
+import { STATUSES, statusCounts } from '../../scripts/demo.ts'
+import StatusIcon from './StatusIcon.astro'
+
+const t = messages()
+const copy = t.demo
+const counts = statusCounts(copy.notes.map(({ status }) => status))
+const total = copy.notes.length
+
+const filters = (['all', ...STATUSES] as const).map((filter) => {
+  const name = filter === 'all' ? copy.all : copy.statuses[filter]
+  return {
+    filter,
+    name,
+    count: counts[filter],
+    summary: copy.summary(name, counts[filter], total),
+  }
+})
+---
+
+<div class="status-demo" data-status-demo>
+  <div class="status-demo-intro">
+    <p class="status-demo-label">{copy.label}</p>
+    <h4 class="status-demo-heading">{copy.title}</h4>
+    <p class="status-demo-hint">{copy.hint}</p>
+  </div>
+
+  <div class="status-demo-pane">
+    <div class="status-demo-filters" role="group" aria-label={copy.filtersLabel}>
+      {filters.map(({ filter, name, count, summary }) => (
+        <button
+          type="button"
+          class={`status-demo-filter status-${filter}`}
+          data-filter={filter}
+          data-name={name}
+          data-summary={summary}
+          aria-pressed={filter === 'all' ? 'true' : 'false'}
+        >
+          {filter !== 'all' && <StatusIcon status={filter} />}
+          <span class="status-demo-name">{name}</span>{' '}
+          <span class="status-demo-count">{count}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="status-demo-notes">
+      <div class="status-demo-head">
+        <p class="status-demo-title" data-demo-title>
+          {copy.all}
+        </p>
+        <p class="status-demo-search" data-demo-search hidden>
+          {copy.searchLabel} <code data-demo-query />
+        </p>
+      </div>
+      <ul class="status-demo-list" aria-label={copy.listLabel}>
+        {copy.notes.map((note) => (
+          <li class={`status-demo-note status-${note.status}`} data-status={note.status}>
+            <StatusIcon status={note.status} />
+            <span class="status-demo-note-title">{note.title}</span>{' '}
+            <span class="visually-hidden">{copy.statuses[note.status]}</span>{' '}
+            <span class="status-demo-book">{note.book}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <p class="visually-hidden" aria-live="polite" data-demo-live></p>
+  </div>
+</div>
+
+<script>
+  import { initStatusDemo } from '../../scripts/demo.ts'
+
+  initStatusDemo()
+</script>

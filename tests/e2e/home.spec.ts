@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
 import { themeColors } from '../../src/lib/theme-color.ts'
 import { DOWNLOAD_URL } from '../../src/site.ts'
+import { animationsDone } from '../support/settle.ts'
 import { readRepoFile } from '../support/source-files.ts'
 import { expect, test } from './fixtures.ts'
 
@@ -22,10 +23,31 @@ test('shows the heading, the landmarks and the download link', async ({ page }) 
   await expect(page.getByRole('banner')).toBeVisible()
   await expect(page.getByRole('main')).toBeVisible()
   await expect(page.getByRole('contentinfo')).toBeVisible()
-  const download = page.getByRole('link', { name: en.download.label })
+  const download = page.getByRole('link', { name: en.download.label }).first()
   await expect(download).toHaveAttribute('href', DOWNLOAD_URL)
   await expect(download).toHaveAccessibleDescription(en.download.requirements)
-  await expect(page.getByText(en.download.requirements)).toBeVisible()
+  await expect(page.getByText(en.download.requirements).first()).toBeVisible()
+})
+
+test('lays out the sections in order, each one a named region', async ({ page }) => {
+  await page.goto('/')
+
+  const ids = await page
+    .locator('main > section')
+    .evaluateAll((sections) => sections.map((s) => s.id))
+  expect(ids).toEqual(['hero', 'write', 'cards', 'local-first', 'download'])
+  for (const [id, name] of [
+    ['hero', en.hero.title],
+    ['write', en.features.label],
+    ['cards', en.cards.label],
+    ['local-first', en.privacy.label],
+    ['download', en.closing.label],
+  ]) {
+    await expect(page.getByRole('region', { name, exact: true })).toHaveAttribute(
+      'id',
+      id as string,
+    )
+  }
 })
 
 test('reports a CSP violation, so a clean run means the page obeys the policy', async ({
@@ -58,6 +80,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test("uses devot's page surface and passes an accessibility scan", async ({ page }) => {
       await page.goto('/')
+      await animationsDone(page)
 
       await expect(page.locator('body')).toHaveCSS('background-color', rgb(surface[colorScheme]))
       expect(await violations(page)).toEqual([])
@@ -65,7 +88,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test('draws the focus ring from the focus tokens', async ({ page }) => {
       await page.goto('/')
-      const download = page.getByRole('link', { name: en.download.label })
+      const download = page.getByRole('link', { name: en.download.label }).first()
 
       await download.focus()
 
@@ -103,6 +126,7 @@ test.describe('motion', () => {
   const transitionSeconds = (page: Page) =>
     page
       .getByRole('link', { name: en.download.label })
+      .first()
       .evaluate((link) => parseFloat(getComputedStyle(link).transitionDuration))
 
   test("animates hover colour by default, on devot's hover curve", async ({ page }) => {
@@ -110,7 +134,7 @@ test.describe('motion', () => {
     await page.goto('/')
 
     expect(await transitionSeconds(page)).toBeGreaterThanOrEqual(0.1)
-    await expect(page.getByRole('link', { name: en.download.label })).toHaveCSS(
+    await expect(page.getByRole('link', { name: en.download.label }).first()).toHaveCSS(
       'transition-timing-function',
       token('motion-easing-out') ?? 'missing',
     )

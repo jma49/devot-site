@@ -2,11 +2,12 @@
 import '../theme/tokens.css'
 import '../styles/site-tokens.css'
 import '../styles/global.css'
+import '../styles/motion.css'
 import SiteFooter from '../components/SiteFooter.astro'
 import SiteHeader from '../components/SiteHeader.astro'
 import { messages, type Locale } from '../i18n/index.ts'
 import { themeColors } from '../lib/theme-color.ts'
-import { SITE_URL } from '../site.ts'
+import { OG_IMAGE, SITE_URL } from '../site.ts'
 import tokensCss from '../theme/tokens.css?raw'
 
 interface Props {
@@ -21,6 +22,7 @@ const t = messages(locale)
 const { title = t.meta.title, description = t.meta.description, noindex = false } = Astro.props
 const canonical = noindex ? undefined : new URL(Astro.url.pathname, SITE_URL).href
 const themeColor = themeColors(tokensCss)
+const image = new URL(OG_IMAGE.path, SITE_URL).href
 ---
 
 <!doctype html>
@@ -45,15 +47,59 @@ const themeColor = themeColors(tokensCss)
     <meta property="og:description" content={description} />
     {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:locale" content={t.meta.ogLocale} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+    <meta property="og:image:height" content={String(OG_IMAGE.height)} />
+    <meta property="og:image:alt" content={t.meta.imageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+    <meta name="twitter:image:alt" content={t.meta.imageAlt} />
   </head>
   <body>
+    <a class="skip-link" href="#main" data-skip-link>
+      {t.chrome.skipLink}
+    </a>
     <SiteHeader />
-    <main id="main">
+    <main id="main" tabindex="-1">
       <slot />
     </main>
     <SiteFooter />
+    <script>
+      import { startSite } from '../scripts/site.ts'
+
+      startSite()
+    </script>
   </body>
 </html>
+
+<style>
+  .skip-link {
+    position: fixed;
+    inset-block-start: var(--space-7);
+    inset-inline-start: var(--space-7);
+    z-index: 100;
+    padding: var(--space-5) var(--space-8);
+    border-radius: var(--radius-capsule);
+    background: var(--color-surface-popover);
+    box-shadow:
+      0 var(--shadow-popover-y) var(--shadow-popover-key-blur) var(--color-shadow-popover-key),
+      0 var(--shadow-popover-y) var(--shadow-popover-ambient-blur)
+        var(--color-shadow-popover-ambient);
+    color: var(--site-color-text);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+    translate: 0 calc(-100% - var(--space-10));
+    transition: translate var(--site-dur-quick) var(--site-ease-out);
+  }
+
+  .skip-link:focus-visible {
+    translate: 0 0;
+  }
+
+  main:focus {
+    outline: none;
+  }
+</style>

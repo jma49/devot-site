@@ -1,0 +1,72 @@
+---
+import '../../styles/home/privacy.css'
+import { messages } from '../../i18n/index.ts'
+import { STORAGE_DOC_URL } from '../../lib/links.ts'
+
+const t = messages()
+const copy = t.privacy
+---
+
+<section id="local-first" class="local" aria-label={copy.label}>
+  <div class="local__frame">
+    <span class="local__mark" aria-hidden="true"></span>
+    <h2 class="local__title" data-reveal data-reveal-index="0">
+      {copy.title}
+    </h2>
+    <div
+      class="local__strip"
+      role="group"
+      aria-label={copy.facts.label}
+      data-reveal
+      data-reveal-index="1"
+    >
+      {copy.facts.rows.map((row) => (
+        <ul class="local__row" role="list">
+          {row.map((fact) => (
+            <li class="local__chip">{fact}</li>
+          ))}
+        </ul>
+      ))}
+    </div>
+    <p class="local__lede" data-reveal data-reveal-index="2">
+      {copy.lede}
+    </p>
+    <p class="local__body" data-reveal data-reveal-index="3">
+      {copy.body}
+    </p>
+    <div class="local__actions" data-reveal data-reveal-index="4">
+      <a class="local__link" href={STORAGE_DOC_URL}>
+        {copy.link}
+        <svg
+          class="local__arrow"
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M3 8h9.5M8.5 4l4 4-4 4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+      </a>
+      <details class="local__network">
+        <summary>{copy.network.summary}</summary>
+        <dl>
+          {copy.network.items.map((item) => (
+            <div>
+              <dt>{item.term}</dt>
+              <dd>{item.text}</dd>
+            </div>
+          ))}
+        </dl>
+        <p>{copy.network.footnote}</p>
+      </details>
+    </div>
+  </div>
+</section>

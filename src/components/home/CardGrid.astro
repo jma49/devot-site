@@ -1,0 +1,125 @@
+---
+import '../../styles/home/cards.css'
+import '../../styles/clip-controls.css'
+import { messages } from '../../i18n/index.ts'
+import { media } from '../../media.ts'
+import Clip from '../Clip.astro'
+import { keyGlyphs, keySymbolsMarkup } from './card-keys.ts'
+
+const t = messages()
+
+type CardSlot = keyof typeof t.cards.items
+
+interface Layout {
+  slot: CardSlot
+  shape: 'wide' | 'narrow'
+  swatches?: boolean
+  /** The clip's subject fills its cut from side to side, so the side fades stay at its edges. */
+  fade?: 'edge'
+}
+
+// Rows alternate wide, narrow / narrow, wide.
+const layout: Layout[] = [
+  { slot: 'card-1', shape: 'wide', swatches: true },
+  { slot: 'card-2', shape: 'narrow' },
+  { slot: 'card-3', shape: 'narrow' },
+  { slot: 'card-4', shape: 'wide', fade: 'edge' },
+  { slot: 'card-5', shape: 'wide' },
+  { slot: 'card-6', shape: 'narrow' },
+]
+
+/** The window corner a clip's crop keeps, which the frame rounds; a top-only crop keeps none. */
+const cornerOf = (slot: CardSlot) => {
+  const { edges } = media[slot]
+  if (edges.includes('left')) return 'left'
+  if (edges.includes('right')) return 'right'
+  return 'top'
+}
+
+const themes = ['dawn', 'tide', 'sage', 'ember']
+
+const cards = layout.map(({ slot, shape, swatches = false, fade }) => {
+  const copy = t.cards.items[slot]
+  const keys =
+    'keys' in copy ? { spoken: copy.keys.spoken, symbols: keyGlyphs(copy.keys.glyphs) } : undefined
+  return { slot, shape, fade, corner: cornerOf(slot), swatches, copy, keys, heading: copy.title }
+})
+---
+
+<section id="cards" class="cards" aria-labelledby="cards-title">
+  <svg class="cards-sprite" aria-hidden="true" focusable="false">
+    <Fragment set:html={keySymbolsMarkup} />
+  </svg>
+  <div class="cards-inner">
+    <header class="cards-head">
+      <h2 id="cards-title" data-reveal>
+        {t.cards.label}
+      </h2>
+      <p class="cards-lead" data-reveal>
+        {t.cards.lead}
+      </p>
+    </header>
+
+    <ul class="cards-grid" role="list">
+      {cards.map(({ slot, shape, fade, corner, swatches, copy, keys, heading }) => (
+        <li
+          class="card"
+          data-slot={slot}
+          data-shape={shape}
+          data-corner={corner}
+          data-fade={fade}
+          data-reveal
+        >
+          <div class="card-text">
+            <h3 class="card-heading">{heading}</h3>
+            <div class="card-meta">
+              <p class="card-label">{copy.label}</p>
+              {keys && (
+                <p class="card-keys">
+                  <kbd aria-hidden="true">
+                    {keys.symbols.map(({ id, viewBox }) => (
+                      <svg class="card-key" viewBox={viewBox} focusable="false">
+                        <use href={`#${id}`} />
+                      </svg>
+                    ))}
+                  </kbd>
+                  <span class="cards-sr">{keys.spoken}</span>
+                </p>
+              )}
+              {swatches && (
+                <span class="card-swatches" aria-hidden="true">
+                  {themes.map((theme) => (
+                    <span data-theme-preview={theme} data-appearance-preview="light" />
+                  ))}
+                </span>
+              )}
+            </div>
+            <p class="card-body">
+              {copy.body.map((run) => (typeof run === 'string' ? run : <code>{run.code}</code>))}
+            </p>
+          </div>
+
+          <div class="card-media" data-clip-dock>
+            <div
+              class="card-well"
+              data-theme-preview="tide"
+              data-appearance-preview="light"
+              aria-hidden="true"
+            />
+            <div
+              class="card-well"
+              data-theme-preview="tide"
+              data-appearance-preview="dark"
+              aria-hidden="true"
+            />
+            <div class="card-crop">
+              <div class="card-window">
+                <Clip name={slot} />
+              </div>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
