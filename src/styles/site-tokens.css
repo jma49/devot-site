@@ -114,7 +114,6 @@
   /* Frosted glass: a translucent fill, a rim that catches the light at the top left and a
      shade along the bottom. */
   --site-glass-fill: color-mix(in oklab, var(--color-surface-window) 30%, transparent);
-  --site-glass-fill-strong: color-mix(in oklab, var(--color-surface-window) 66%, transparent);
   --site-glass-rim: color-mix(in oklab, var(--color-surface-window) 96%, transparent);
   --site-glass-rim-faint: color-mix(in oklab, var(--color-surface-window) 28%, transparent);
   --site-glass-shade: color-mix(in oklab, var(--color-text-primary) 9%, transparent);
@@ -141,7 +140,6 @@
     --site-brand-glow: color-mix(in oklab, var(--site-brand) 22%, transparent);
 
     --site-glass-fill: color-mix(in oklab, var(--color-text-primary) 8%, transparent);
-    --site-glass-fill-strong: color-mix(in oklab, var(--color-surface-float-bar) 70%, transparent);
     --site-glass-rim: color-mix(in oklab, var(--color-text-primary) 48%, transparent);
     --site-glass-rim-faint: color-mix(in oklab, var(--color-text-primary) 12%, transparent);
     --site-glass-shade: color-mix(in oklab, var(--color-surface-window) 40%, transparent);
