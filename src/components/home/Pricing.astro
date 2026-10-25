@@ -34,12 +34,12 @@ const links = [
     </p>
 
     <ul class="pricing__plans" role="list">
-      <li class="pricing__plan pricing__plan--free" data-reveal data-reveal-index="3">
-        <h3 class="pricing__name">{copy.free.name}</h3>
-        <p class="pricing__price">{copy.free.price}</p>
-        <p class="pricing__terms">{copy.free.terms}</p>
+      <li class="pricing__plan pricing__plan--trial" data-reveal data-reveal-index="3">
+        <h3 class="pricing__name">{copy.trial.name}</h3>
+        <p class="pricing__price">{copy.trial.price}</p>
+        <p class="pricing__terms">{copy.trial.terms}</p>
         <ul class="pricing__items" role="list">
-          {copy.free.items.map((item) => (
+          {copy.trial.items.map((item) => (
             <li>{item}</li>
           ))}
         </ul>
@@ -64,7 +64,6 @@ const links = [
         <h3 class="pricing__name">{copy.licence.name}</h3>
         <p class="pricing__price">{copy.licence.price}</p>
         <p class="pricing__terms">{copy.licence.terms}</p>
-        <p class="pricing__includes">{copy.licence.includes}</p>
         <ul class="pricing__items" role="list">
           {copy.licence.items.map((item) => (
             <li>{item}</li>
@@ -88,7 +87,12 @@ const links = [
       </li>
     </ul>
 
-    <p class="pricing__delivery" data-reveal data-reveal-index="5">
+    <div class="pricing__after" data-reveal data-reveal-index="5">
+      <h3 class="pricing__after-title">{copy.after.title}</h3>
+      <p class="pricing__after-body">{copy.after.body}</p>
+    </div>
+
+    <p class="pricing__delivery" data-reveal data-reveal-index="6">
       {copy.delivery}
     </p>
     <ul
@@ -96,7 +100,7 @@ const links = [
       role="list"
       aria-label={copy.links.label}
       data-reveal
-      data-reveal-index="6"
+      data-reveal-index="7"
     >
       {links.map((link) => (
         <li>

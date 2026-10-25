@@ -31,13 +31,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
     test.describe(`pricing, ${colorScheme}, ${size}`, () => {
       test.use({ colorScheme, viewport })
 
-      test('shows the plans, the price and a Buy button for the licence service', async ({
-        page,
-      }) => {
+      test('shows the trial, what its end does, the price and a Buy button', async ({ page }) => {
         await openPricing(page)
         const section = page.getByRole('region', { name: en.pricing.label, exact: true })
 
         await expect(section.getByRole('heading', { level: 2 })).toBeVisible()
+        await expect(section.getByText(en.pricing.trial.price, { exact: true })).toBeVisible()
+        await expect(section.getByRole('heading', { name: en.pricing.after.title })).toBeVisible()
+        await expect(section.getByText(en.pricing.after.body)).toBeVisible()
         await expect(section.getByText(LICENCE_PRICE, { exact: true })).toBeVisible()
         const buy = section.getByRole('link', { name: en.pricing.licence.buy })
         await expect(buy).toHaveAttribute('href', BUY_URL)
@@ -62,13 +63,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
         page,
       }) => {
         await openPricing(page)
-        const [free, licence] = await Promise.all(
-          ['.pricing__plan--free', '.pricing__plan--licence'].map((selector) =>
+        const [trial, licence] = await Promise.all(
+          ['.pricing__plan--trial', '.pricing__plan--licence'].map((selector) =>
             page.locator(selector).boundingBox(),
           ),
         )
-        if (size === 'desktop') expect(licence?.y).toBe(free?.y)
-        else expect(licence?.y).toBeGreaterThan((free?.y ?? 0) + (free?.height ?? 0) - 1)
+        if (size === 'desktop') expect(licence?.y).toBe(trial?.y)
+        else expect(licence?.y).toBeGreaterThan((trial?.y ?? 0) + (trial?.height ?? 0) - 1)
       })
 
       for (const [path, copy] of [

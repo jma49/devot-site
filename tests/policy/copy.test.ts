@@ -17,6 +17,10 @@ const RETIRED_CLAIMS: { wording: RegExp; why: string }[] = [
   { wording: /^devot-mcp$/, why: 'devot-mcp runs from a checkout of the source' },
   { wording: /\bany (version|revision)/i, why: 'versions older than a day are thinned' },
   { wording: /\brestore (any|every)\b/i, why: 'versions older than a day are thinned' },
+  { wording: /\bfree\b(?! trial)/i, why: 'Devot is free only during its trial' },
+  { wording: /US\$0\b/, why: 'there is no free tier, only the trial' },
+  { wording: /\bunlocks? sync and AI\b/i, why: 'a licence unlocks everything, editing included' },
+  { wording: /\bpay once for sync\b/i, why: 'a licence unlocks everything, editing included' },
 ]
 
 it('retires wording that claimed more than Devot does', () => {

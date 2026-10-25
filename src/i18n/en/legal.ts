@@ -1,8 +1,12 @@
 import type { LegalLinkId } from '../../lib/links.ts'
-import { LICENCE_PRICE, REFUND_DAYS } from '../../site.ts'
+import { numberWord } from '../../lib/words.ts'
+import { LICENCE_PRICE, REFUND_DAYS, TRIAL_DAYS } from '../../site.ts'
 
 /** Text, or a link to one of `LEGAL_LINKS`. */
 export type LegalRun = string | { text: string; link: LegalLinkId }
+
+const READ_ONLY =
+  'you can read, search, copy and export your notes, but not create or edit them, and sync and AI stop'
 
 export interface LegalPage {
   title: string
@@ -15,15 +19,26 @@ export interface LegalPage {
 const terms: LegalPage = {
   title: 'Devot: terms of sale',
   description:
-    'What a Devot licence unlocks, what it costs, how refunds work and where to get help.',
+    'The Devot trial, what a licence unlocks, what it costs, how refunds work and where to get help.',
   heading: 'Terms of sale',
-  intro: 'Devot is free. These terms cover the licence that unlocks sync and AI in it.',
+  intro: 'These terms cover the Devot trial and the licence that unlocks Devot after it.',
   sections: [
     {
-      title: 'What you get',
+      title: 'The trial',
       paragraphs: [
         [
-          'A licence unlocks sync and AI in Devot, in every future version, on all your devices. Sync is end-to-end encrypted and runs through a relay you deploy; AI uses keys from your own provider. Everything else in Devot stays free, with or without a licence.',
+          `Devot starts a ${numberWord(TRIAL_DAYS)}-day free trial the first time you open it, with everything included: editing, sync and AI.`,
+        ],
+        [
+          `When the trial ends without a licence, Devot is read-only: ${READ_ONLY}. Nothing is deleted.`,
+        ],
+      ],
+    },
+    {
+      title: 'What a licence unlocks',
+      paragraphs: [
+        [
+          'A licence unlocks everything in Devot, in every future version, on all your devices. Sync is end-to-end encrypted and runs through a relay you deploy; AI uses keys from your own provider.',
         ],
       ],
     },
@@ -53,7 +68,7 @@ const terms: LegalPage = {
       title: 'Refunds',
       paragraphs: [
         [
-          `Within ${REFUND_DAYS} days of purchase you can have a full refund, no questions asked. A refund, or a chargeback decided in your favour, revokes the licence. The `,
+          `Within ${REFUND_DAYS} days of purchase you can have a full refund, no questions asked. A refund, or a chargeback decided in your favour, revokes the licence, and Devot goes back to read-only. The `,
           { text: 'refund policy', link: 'refunds' },
           ' has the details.',
         ],
@@ -63,7 +78,7 @@ const terms: LegalPage = {
       title: 'Source code',
       paragraphs: [
         [
-          "Devot's source code is public under FSL-1.1-MIT. That licence covers the code; the licence you buy is separate, and unlocks sync and AI in the app.",
+          "Devot's source code is public under FSL-1.1-MIT. That licence covers the code; the licence you buy is separate, and unlocks the app.",
         ],
       ],
     },
@@ -116,9 +131,11 @@ const refunds: LegalPage = {
       title: 'What a refund does',
       paragraphs: [
         [
-          'A refund revokes the licence: Devot stops unlocking sync and AI with it. A chargeback decided in your favour does the same.',
+          `A refund revokes the licence, and Devot goes back to read-only: ${READ_ONLY}. A chargeback decided in your favour does the same.`,
         ],
-        ['Your notes stay where they are, and everything else in Devot stays free.'],
+        [
+          'Nothing is deleted: your notes stay where they are, and a new licence unlocks everything again.',
+        ],
       ],
     },
     {
@@ -136,7 +153,7 @@ const refunds: LegalPage = {
 
 export const legalCopy = {
   legal: {
-    updated: 'Updated 24 October 2026',
+    updated: 'Updated 25 October 2026',
     backToPricing: 'See pricing',
   },
   terms,

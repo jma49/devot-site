@@ -22,7 +22,9 @@ describe('the pricing section', () => {
     expect(tags(pricing, 'h2')).toHaveLength(1)
   })
 
-  it('shows the price and a Buy button that opens the licence service', () => {
+  it('shows the trial, what its end does, the price and a Buy button for the licence service', () => {
+    expect(text(pricing)).toContain(en.pricing.trial.price)
+    expect(text(pricing)).toContain(en.pricing.after.body)
     expect(text(pricing)).toContain(LICENCE_PRICE)
     expect(hrefs(pricing)).toContain(BUY_URL)
   })

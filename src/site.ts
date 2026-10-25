@@ -12,3 +12,5 @@ export const BUY_URL = `${LICENCE_SERVICE_URL}/buy`
 export const RESEND_URL = `${LICENCE_SERVICE_URL}/resend`
 export const LICENCE_PRICE = 'US$29.90'
 export const REFUND_DAYS = 30
+/** Starts the first time Devot opens; Devot is read-only once it ends without a licence. */
+export const TRIAL_DAYS = 3

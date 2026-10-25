@@ -1,3 +1,6 @@
+import { numberWord } from '../../lib/words.ts'
+import { TRIAL_DAYS } from '../../site.ts'
+
 export const privacyCopy = {
   privacy: {
     label: 'Local-first',
@@ -55,7 +58,7 @@ export const privacyCopy = {
   closing: {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
-    lead: 'Source available under FSL-1.1-MIT. Get the latest release from GitHub.',
+    lead: `A ${numberWord(TRIAL_DAYS)}-day free trial, everything included. Source available under FSL-1.1-MIT.`,
     installNote: 'Signed ad hoc, not notarised, so macOS asks once.',
     links: {
       label: 'More ways in',

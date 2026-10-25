@@ -1,8 +1,12 @@
+import { capitalised, numberWord } from '../../lib/words.ts'
+import { TRIAL_DAYS } from '../../site.ts'
+
+const trial = `${numberWord(TRIAL_DAYS)}-day free trial`
+
 export const chromeCopy = {
   meta: {
     title: 'Devot: local-first Markdown notes for macOS',
-    description:
-      'Free, source-available Markdown notes for macOS: a live preview, nested notebooks, tags and full-text search. Your notes stay on your Mac, offline and without an account.',
+    description: `Source-available Markdown notes for macOS: a live preview, nested notebooks, tags and full-text search. Your notes stay on your Mac, offline and without an account. A ${trial}, then pay once.`,
     ogLocale: 'en_US',
     imageAlt:
       'The Devot window on a soft blue gradient: notebooks, statuses and tags in the sidebar, a list of notes, and an open note.',
@@ -28,6 +32,6 @@ export const chromeCopy = {
       download: 'Download',
       source: 'GitHub',
     },
-    downloadNote: 'Free and source available',
+    downloadNote: capitalised(trial),
   },
 }

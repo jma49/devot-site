@@ -92,6 +92,22 @@ const CHECK_EVERY: Duration = Duration::from_secs(24 * 60 * 60);
 /// Betas ship several times a day.
 const CHECK_EVERY_BETA: Duration = Duration::from_secs(60 * 60);
 `,
+  'src-tauri/src/licence/trial.rs': `const MINUTE_MS: i64 = 60_000;
+const HOUR_MS: i64 = 60 * MINUTE_MS;
+pub(crate) const LENGTH_MS: i64 = 72 * HOUR_MS;
+`,
+  'src/core/entitlements.ts': `export const FEATURES = [
+  'localNotes',
+  'editing',
+  'sync',
+  'aiProviders',
+] as const
+export const PLAN_GATED_FEATURES: readonly Feature[] = [
+  'editing',
+  'sync',
+  'aiProviders',
+]
+`,
   LICENSE:
     '# Functional Source License, Version 1.1, MIT Future License\n\n## Abbreviation\n\nFSL-1.1-MIT\n\n## Notice\n\nCopyright 2026 devot.online\n',
   'src-tauri/tauri.conf.json': JSON.stringify({
@@ -229,6 +245,15 @@ describe('checkFacts', () => {
       'src/core/revisions.ts',
       replace('local to this device', 'synced to every device'),
     ],
+    ['E_FACT_TRIAL', 'src-tauri/src/licence/trial.rs', replace('72 * HOUR_MS', '7 * 24 * HOUR_MS')],
+    ['E_FACT_TRIAL', 'src-tauri/src/licence/trial.rs', replace('LENGTH_MS', 'TRIAL_MS')],
+    ['E_FACT_TRIAL', 'src/core/entitlements.ts', replace("[\n  'editing',", '[\n')],
+    ['E_FACT_TRIAL', 'src/core/entitlements.ts', replace("  'aiProviders',\n]\n", ']\n')],
+    [
+      'E_FACT_TRIAL',
+      'src/core/entitlements.ts',
+      replace('Feature[] = [\n', "Feature[] = [\n  'localNotes',\n"),
+    ],
     ['E_FACT_MIRROR', 'README.md', replace('never read back', 'read back')],
     ['E_FACT_MCP', 'README.md', replace('runs from a checkout', 'ships inside the app')],
     ['E_FACT_SOURCE', 'src/core/search.ts', () => undefined],
@@ -293,6 +318,11 @@ describe('checkFacts', () => {
       (c) => (c.cards.items['card-5'].body = ['Devot keeps notes.']),
       ['E_FACT_STALE', 'E_FACT_REVISIONS'],
     ],
+    [
+      'the note on what the trial ending does',
+      (c) => (c.pricing.after.body = 'After the trial, buy a licence.'),
+      ['E_FACT_STALE'],
+    ],
   ])('E_FACT_STALE when %s stops saying what a check expects', (_, change, expected) => {
     expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(expected)
   })
@@ -319,6 +349,24 @@ describe('checkFacts', () => {
     ],
   ])('E_FACT_LICENCE when %s names another licence than LICENSE', (_, change) => {
     expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(['E_FACT_LICENCE'])
+  })
+
+  it.each<[string, (copy: Messages) => void]>([
+    [
+      'the pricing title',
+      (c) => (c.pricing.title = ['Seven days with everything.', 'Then pay once.']),
+    ],
+    [
+      'the terms of sale',
+      (c) =>
+        (c.terms.sections = c.terms.sections.map((section) =>
+          section.title === 'The trial'
+            ? { ...section, paragraphs: [['A seven-day free trial, then Devot is read-only.']] }
+            : section,
+        )),
+    ],
+  ])('E_FACT_TRIAL when %s names another trial length than Devot has', (_, change) => {
+    expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(['E_FACT_TRIAL'])
   })
 
   it('E_FACT_REVISIONS when the card promises more than compaction keeps', () => {
