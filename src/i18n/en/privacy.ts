@@ -49,9 +49,17 @@ export const privacyCopy = {
           term: 'Crash reports',
           text: 'Sent only by builds made with a crash-reporting key. They carry error codes and IDs, never note text.',
         },
+        {
+          term: 'Sync',
+          text: 'Notes travel end-to-end encrypted, through a relay you deploy.',
+        },
+        {
+          term: 'AI',
+          text: 'Note text goes to the provider whose key you added, and only when you use AI.',
+        },
       ],
       footnote:
-        'Your note text goes nowhere unless you export it, mirror it or let an MCP client read it.',
+        'Your note text goes nowhere unless you export it, mirror it, sync it through your relay, send it to your AI provider or let an MCP client read it.',
     },
     link: 'Read how Devot stores your notes',
   },

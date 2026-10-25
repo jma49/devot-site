@@ -13,7 +13,13 @@ const hrefs = (html: string) => tags(html, 'a').map(({ attrs }) => attrs.get('hr
 const pricing = /<section\b[^>]*\bid="pricing"[\s\S]*?<\/section>/.exec(home)?.[0] ?? ''
 const header = /<header\b[\s\S]*?<\/header>/.exec(home)?.[0] ?? ''
 const footer = (html: string) => /<footer\b[\s\S]*?<\/footer>/.exec(html)?.[0] ?? ''
-const text = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
+const text = (html: string) =>
+  html
+    .replace(/<\/?span\b[^>]*>/g, '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+const loose = (html: string, word: string) =>
+  html.replace(/<span class="site-nowrap"[^>]*>[^<]*<\/span>/g, '').split(word).length - 1
 
 describe('the pricing section', () => {
   it('sits at #pricing with a named region and one heading', () => {
@@ -27,6 +33,10 @@ describe('the pricing section', () => {
     expect(text(pricing)).toContain(en.pricing.after.body)
     expect(text(pricing)).toContain(LICENCE_PRICE)
     expect(hrefs(pricing)).toContain(BUY_URL)
+  })
+
+  it('never breaks read-only across two lines', () => {
+    expect(loose(pricing, 'read-only')).toBe(0)
   })
 
   it('links the terms, the refund policy and the resend form', () => {
@@ -46,6 +56,11 @@ describe.each([
     expect(html).toContain(`<title>${copy.title}</title>`)
     const heading = /<h1\b[^>]*>([\s\S]*?)<\/h1>/.exec(html)?.[1] ?? ''
     expect(text(heading).trim()).toBe(copy.heading)
+  })
+
+  it('never breaks read-only across two lines', () => {
+    expect(text(html)).toContain('read-only')
+    expect(loose(html, 'read-only')).toBe(0)
   })
 
   it('links back to Pricing and to the other page', () => {

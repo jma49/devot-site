@@ -3,6 +3,7 @@ import '../../styles/home/pricing.css'
 import { messages } from '../../i18n/index.ts'
 import { REFUNDS_PATH, TERMS_PATH } from '../../lib/links.ts'
 import { BUY_URL, DOWNLOAD_URL, RESEND_URL } from '../../site.ts'
+import Unbroken from '../Unbroken.astro'
 
 const t = messages()
 const copy = t.pricing
@@ -89,7 +90,9 @@ const links = [
 
     <div class="pricing__after" data-reveal data-reveal-index="5">
       <h3 class="pricing__after-title">{copy.after.title}</h3>
-      <p class="pricing__after-body">{copy.after.body}</p>
+      <p class="pricing__after-body">
+        <Unbroken text={copy.after.body} />
+      </p>
     </div>
 
     <p class="pricing__delivery" data-reveal data-reveal-index="6">

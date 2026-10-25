@@ -29,8 +29,23 @@ it('names every outbound connection, each with a term and a sentence', () => {
     'Link titles',
     'Embeds and web images',
     'Crash reports',
+    'Sync',
+    'AI',
   ])
   for (const item of items) expect(words(item.text), item.term).toBeLessThanOrEqual(30)
+})
+
+it('says sync goes end-to-end encrypted through your relay and AI to your own provider', () => {
+  const text = (term: string) => en.privacy.network.items.find((item) => item.term === term)?.text
+  expect(text('Sync')).toMatch(/end-to-end encrypted/)
+  expect(text('Sync')).toMatch(/relay you deploy/)
+  expect(text('AI')).toMatch(/provider whose key you added/)
+  expect(text('AI')).toMatch(/only when you use/)
+})
+
+it('names every way note text leaves the Mac in the footnote, sync and AI included', () => {
+  for (const way of [/export/, /mirror/, /sync/, /AI provider/, /MCP client/])
+    expect(en.privacy.network.footnote).toMatch(way)
 })
 
 it('promises plain files only with the Markdown mirror, which Devot writes but never reads', () => {

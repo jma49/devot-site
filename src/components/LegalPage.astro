@@ -4,6 +4,7 @@ import type { LegalPage } from '../i18n/en/legal.ts'
 import { messages } from '../i18n/index.ts'
 import { LEGAL_LINKS, PRICING_PATH } from '../lib/links.ts'
 import Base from '../layouts/Base.astro'
+import Unbroken from './Unbroken.astro'
 
 interface Props {
   page: LegalPage
@@ -26,7 +27,11 @@ const { page } = Astro.props
         {section.paragraphs.map((runs) => (
           <p>
             {runs.map((run) =>
-              typeof run === 'string' ? run : <a href={LEGAL_LINKS[run.link]}>{run.text}</a>,
+              typeof run === 'string' ? (
+                <Unbroken text={run} />
+              ) : (
+                <a href={LEGAL_LINKS[run.link]}>{run.text}</a>
+              ),
             )}
           </p>
         ))}

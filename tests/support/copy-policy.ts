@@ -39,7 +39,10 @@ export function inlineCopy(astro: string): string[] {
 
 /** Every piece of text a built page shows or hands to search results and link previews. */
 export function pageCopy(html: string): string[] {
-  const page = html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '')
+  const page = html
+    .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<span class="site-nowrap"[^>]*>([^<]*)<\/span>/g, '$1')
   const attributes = tags(page).flatMap(({ name, attrs }) => [
     ...LABEL_ATTRIBUTES.map((attr) => attrs.get(attr)),
     name === 'meta' && isCopyMeta(attrs) ? attrs.get('content') : undefined,

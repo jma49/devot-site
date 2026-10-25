@@ -1,0 +1,11 @@
+---
+import { hyphenRuns } from '../lib/words.ts'
+
+interface Props {
+  text: string
+}
+
+const runs = hyphenRuns(Astro.props.text)
+---
+
+{runs.map((run) => (run.whole ? <span class="site-nowrap">{run.text}</span> : run.text))}
