@@ -14,8 +14,9 @@ import { filesUnder, readRepoFile, REPO } from '../support/source-files.ts'
 
 const csp = directives(siteCsp(readRepoFile('dist/_headers')))
 const pages = filesUnder('dist').filter((file) => file.endsWith('.html'))
+// Pages build to `<name>.html`, which Cloudflare Pages serves at `/<name>`.
 const pageUrl = (page: string) =>
-  new URL(page.replace(/^dist\//, '').replace(/index\.html$/, ''), SITE_URL).href
+  new URL(page.replace(/^dist\//, '').replace(/(index)?\.html$/, ''), SITE_URL).href
 // Cloudflare serves it, with status 404, for any path that matches no file.
 const NOT_FOUND = 'dist/404.html'
 const indexed = pages.filter((page) => page !== NOT_FOUND)
@@ -28,8 +29,10 @@ const canonicalOf = (html: string) =>
     .find(({ attrs }) => attrs.get('rel') === 'canonical')
     ?.attrs.get('href')
 
-it('builds the home page and a 404 page', () => {
+it('builds the home page, the terms of sale, the refund policy and a 404 page', () => {
   expect(pages).toContain('dist/index.html')
+  expect(pages).toContain('dist/terms.html')
+  expect(pages).toContain('dist/refunds.html')
   expect(pages).toContain(NOT_FOUND)
 })
 

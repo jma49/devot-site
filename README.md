@@ -71,7 +71,11 @@ It reads the checkout `DEVOT_CHECKOUT` names; without it, the pinned commit in `
 
 ## The page
 
-`src/pages/index.astro` composes five sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `demo.ts`, `privacy.ts` and `media.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when a file is left out or two files define the same top-level key.
+`src/pages/index.astro` composes six sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`), `Pricing` (`#pricing`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `demo.ts`, `privacy.ts`, `pricing.ts`, `legal.ts` and `media.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when a file is left out or two files define the same top-level key.
+
+### Pricing and the pages a sale needs
+
+Devot is free; a licence, bought once, unlocks sync and AI. The facts of the sale live once in `src/site.ts`: the price (`LICENCE_PRICE`), the refund window (`REFUND_DAYS`), and the licence service's `/buy` (Stripe Checkout) and `/resend` (the form that mails a lost key) URLs. The copy builds on them, and a unit test fails when the price or the window is written anywhere else in `src/`. The Pricing section links the terms of sale (`/terms`) and the refund policy (`/refunds`), both rendered by `src/components/LegalPage.astro` from `src/i18n/en/legal.ts`; the footer links them on every page. The site gives no email address: `pnpm test:dist` fails on one in any page.
 
 ### Fonts
 
@@ -98,7 +102,7 @@ With reduced motion, everything that moves with the scroll or could make a reade
 
 `src/scripts/site.ts`, loaded by `Base.astro`, starts `revealOnScroll`, `initPosters`, `initClips` and `initClipControls` for the whole page. `startSite` builds one "still" query from the pause (`pausedQuery`), which matches while the reader has paused animations, and passes it to `initClips` and `initClipControls`. `initClipControls` gives every clip a play button, named for its clip, while the pause holds: a press plays that clip once through. Otherwise only a clip the browser refused to start gets one (`play()` rejected with `NotAllowedError`, as in Low Power Mode): `initClips` hands it over, and a press starts the clip looping like the rest, after which the button goes.
 
-The header's "Pause animations" toggle (`aria-pressed`; one button per layout, kept in step) stops every clip on its frame and the hero backdrop, WebGL or CSS. `src/scripts/pause.ts` keeps the choice in `localStorage` (`devot-site:pause-animations`) and sets `data-animations-paused` on the root element while it holds; each script's copy of the state hears the others' changes through a document event. The toggle shows with reduced motion too, since the clips and the backdrop still move. The download pill (`src/scripts/header.ts`) shows between the hero's download button and the closing section; at 800 px and wider it rests in the bottom-right corner and steps aside while it would cover 5 % or more of the visible part of any clip, and phones keep it as a bar along the bottom.
+The header's "Pause animations" toggle (`aria-pressed`; one button per layout, kept in step) stops every clip on its frame and the hero backdrop, WebGL or CSS. `src/scripts/pause.ts` keeps the choice in `localStorage` (`devot-site:pause-animations`) and sets `data-animations-paused` on the root element while it holds; each script's copy of the state hears the others' changes through a document event. The toggle shows with reduced motion too, since the clips and the backdrop still move. The download pill (`src/scripts/header.ts`) shows between the hero's download button and the first section with buttons of its own (`data-pill-stop`: Pricing, then the closing section); at 800 px and wider it rests in the bottom-right corner and steps aside while it would cover 5 % or more of the visible part of any clip, and phones keep it as a bar along the bottom.
 
 Playwright specs wait for a settled state, never for a fixed time: `tests/support/settle.ts` has `frames` (a number of animation frames), `steady` (a value unchanged over several frames, for eased and scrubbed effects), `animationsDone` (no finite animation or transition running), `scrollToY` and `placeEdge` (scroll, then wait for the scroll to land).
 
@@ -155,7 +159,7 @@ If the first build log does not show pnpm 12.10.1 being installed (or shows a co
 
 The build image reads the Node version from `.node-version`; no `NODE_VERSION` variable is needed.
 
-The build writes a top-level `404.html`, so Pages answers unknown paths with status 404 instead of serving the home page as a single-page app.
+The build writes each page as `<name>.html` (`build.format: 'file'`), which Pages serves at `/<name>`, such as `/terms`, without a redirect; `Base.astro` names that path as the canonical URL. It also writes a top-level `404.html`, so Pages answers unknown paths with status 404 instead of serving the home page as a single-page app.
 
 After the first preview deployment, check the headers with `curl -I`: the page should carry the Content-Security-Policy, files under `/_astro/` should have `Cache-Control: public, max-age=31536000, immutable`, and files under `/fonts/` and `/media/` should have `Cache-Control: public, max-age=604800`.
 

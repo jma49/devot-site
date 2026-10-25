@@ -35,12 +35,13 @@ test('lays out the sections in order, each one a named region', async ({ page })
   const ids = await page
     .locator('main > section')
     .evaluateAll((sections) => sections.map((s) => s.id))
-  expect(ids).toEqual(['hero', 'write', 'cards', 'local-first', 'download'])
+  expect(ids).toEqual(['hero', 'write', 'cards', 'local-first', 'pricing', 'download'])
   for (const [id, name] of [
     ['hero', en.hero.title],
     ['write', en.features.label],
     ['cards', en.cards.label],
     ['local-first', en.privacy.label],
+    ['pricing', en.pricing.label],
     ['download', en.closing.label],
   ]) {
     await expect(page.getByRole('region', { name, exact: true })).toHaveAttribute(

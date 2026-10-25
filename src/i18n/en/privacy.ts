@@ -76,6 +76,7 @@ export const privacyCopy = {
           features: 'Features',
           cards: 'More features',
           localFirst: 'Local-first',
+          pricing: 'Pricing',
           download: 'Download',
         },
       },
@@ -103,6 +104,8 @@ export const privacyCopy = {
         title: 'Legal',
         links: {
           licence: 'MIT licence',
+          terms: 'Terms of sale',
+          refunds: 'Refund policy',
           security: 'Security policy',
           report: 'Report a vulnerability',
         },

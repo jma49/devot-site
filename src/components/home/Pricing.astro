@@ -1,0 +1,108 @@
+---
+import '../../styles/home/pricing.css'
+import { messages } from '../../i18n/index.ts'
+import { REFUNDS_PATH, TERMS_PATH } from '../../lib/links.ts'
+import { BUY_URL, DOWNLOAD_URL, RESEND_URL } from '../../site.ts'
+
+const t = messages()
+const copy = t.pricing
+const links = [
+  { href: TERMS_PATH, label: copy.links.terms },
+  { href: REFUNDS_PATH, label: copy.links.refunds },
+  { href: RESEND_URL, label: copy.links.lostKey },
+]
+---
+
+<section id="pricing" class="pricing" aria-label={copy.label} data-pill-stop>
+  <div class="pricing__inner">
+    <h2 class="pricing__title">
+      {copy.title.map((line, index) => (
+        <Fragment>
+          {index > 0 && ' '}
+          <span
+            class:list={['pricing__line', { 'site-accent': index === copy.title.length - 1 }]}
+            data-reveal
+            data-reveal-index={index}
+          >
+            {line}
+          </span>
+        </Fragment>
+      ))}
+    </h2>
+    <p class="pricing__lead" data-reveal data-reveal-index="2">
+      {copy.lead}
+    </p>
+
+    <ul class="pricing__plans" role="list">
+      <li class="pricing__plan pricing__plan--free" data-reveal data-reveal-index="3">
+        <h3 class="pricing__name">{copy.free.name}</h3>
+        <p class="pricing__price">{copy.free.price}</p>
+        <p class="pricing__terms">{copy.free.terms}</p>
+        <ul class="pricing__items" role="list">
+          {copy.free.items.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+        <a class="pricing__secondary" href={DOWNLOAD_URL} aria-describedby="pricing-requirements">
+          <svg
+            class="brand-button-glyph"
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          >
+            <path d="M8 2.5v7.25M4.75 6.75 8 10l3.25-3.25M3 13h10"></path>
+          </svg>
+          {t.download.label}
+        </a>
+        <p class="pricing__note" id="pricing-requirements">
+          {t.download.requirements}
+        </p>
+      </li>
+
+      <li class="pricing__plan pricing__plan--licence" data-reveal data-reveal-index="4">
+        <h3 class="pricing__name">{copy.licence.name}</h3>
+        <p class="pricing__price">{copy.licence.price}</p>
+        <p class="pricing__terms">{copy.licence.terms}</p>
+        <p class="pricing__includes">{copy.licence.includes}</p>
+        <ul class="pricing__items" role="list">
+          {copy.licence.items.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+        <a class="brand-button pricing__buy" href={BUY_URL} aria-describedby="pricing-refund">
+          {copy.licence.buy}
+          <svg
+            class="brand-button-glyph pricing__buy-glyph"
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          >
+            <path d="M3 8h9.5M8.5 4l4 4-4 4"></path>
+          </svg>
+        </a>
+        <p class="pricing__note" id="pricing-refund">
+          {copy.licence.refund}
+        </p>
+      </li>
+    </ul>
+
+    <p class="pricing__delivery" data-reveal data-reveal-index="5">
+      {copy.delivery}
+    </p>
+    <ul
+      class="pricing__links"
+      role="list"
+      aria-label={copy.links.label}
+      data-reveal
+      data-reveal-index="6"
+    >
+      {links.map((link) => (
+        <li>
+          <a href={link.href}>{link.label}</a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

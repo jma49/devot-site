@@ -19,9 +19,9 @@ it('offers four footer groups: product, resources, community and legal', () => {
   for (const group of FOOTER_GROUPS) expect(group.links.length).toBeGreaterThanOrEqual(3)
 })
 
-it('links only to sections of this page or to the Devot repository over https', () => {
+it('links only to this site or to the Devot repository over https', () => {
   for (const { href } of footerLinks()) {
-    if (href.startsWith('/#')) continue
+    if (href.startsWith('/')) continue
     expect(new RegExp(`^${REPO_URL}([/#]|$)`).test(href), href).toBe(true)
     expect(new URL(href).protocol).toBe('https:')
   }
@@ -31,7 +31,13 @@ it('anchors to the sections the page has', () => {
   const anchors = footerLinks()
     .map(({ href }) => href)
     .filter((href) => href.startsWith('/#'))
-  expect(anchors.toSorted()).toEqual(['/#cards', '/#download', '/#local-first', '/#write'])
+  expect(anchors.toSorted()).toEqual([
+    '/#cards',
+    '/#download',
+    '/#local-first',
+    '/#pricing',
+    '/#write',
+  ])
 })
 
 it('lists no destination twice', () => {
@@ -59,8 +65,10 @@ it('derives the named destinations from the repository', () => {
   expect(DOWNLOAD_URL.startsWith(RELEASES_URL)).toBe(true)
 })
 
-it('points the legal group at the licence and the security policy', () => {
+it('points the legal group at the licence, the terms of sale, the refunds and security', () => {
   const legal = FOOTER_GROUPS.find((group) => group.id === 'legal')?.links.map((l) => l.href)
   expect(legal).toContain(`${REPO_URL}/blob/main/LICENSE`)
+  expect(legal).toContain('/terms')
+  expect(legal).toContain('/refunds')
   expect(legal).toContain(`${REPO_URL}/security/policy`)
 })

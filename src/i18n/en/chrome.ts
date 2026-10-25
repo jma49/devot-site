@@ -24,6 +24,7 @@ export const chromeCopy = {
       write: 'Features',
       cards: 'More features',
       localFirst: 'Local-first',
+      pricing: 'Pricing',
       download: 'Download',
       source: 'GitHub',
     },
