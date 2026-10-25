@@ -39,8 +39,9 @@ describe('the pricing section', () => {
   const copy = en.pricing
 
   it('says what is free and what a licence unlocks, with the price', () => {
+    expect(copy.title.join(' ')).toMatch(/sync and AI/)
     expect(copy.lead).toMatch(/free/i)
-    expect(copy.lead).toMatch(/sync and AI/)
+    expect(copy.lead).not.toMatch(/sync and AI/)
     expect(copy.licence.price).toBe(LICENCE_PRICE)
     expect(copy.licence.terms).toMatch(/one payment, tax included/i)
   })
@@ -52,6 +53,11 @@ describe('the pricing section', () => {
     expect(items).toMatch(/your own provider/i)
     expect(items).toMatch(/every future version/i)
     expect(items).toMatch(/all your devices/i)
+  })
+
+  it('names Stripe Managed Payments, a merchant of record service, as the processor', () => {
+    expect(copy.delivery).toMatch(/processed by Stripe through Stripe Managed Payments/)
+    expect(copy.delivery).toMatch(/merchant of record/)
   })
 
   it('names the refund window beside the Buy button', () => {
@@ -106,6 +112,29 @@ it('sets out the sale in the terms: payments, the key, coverage, source, support
   expect(text).toMatch(/FSL-1\.1-MIT/)
   expect(text).toMatch(/reply to your licence email/i)
   expect(text).toMatch(/warranty/i)
+})
+
+it('describes the checkout as Stripe does: Link as the merchant of record, LINK.COM* on the statement', () => {
+  const text = legalText(en.terms)
+  expect(text).toMatch(/Link as the merchant of record/)
+  expect(text).toMatch(/“Sold through Link”/)
+  expect(text).toContain('LINK.COM*')
+  expect(text).toMatch(/Receipts and refund notices come from Link/)
+})
+
+it('says each thing in the terms once and adds no terms beyond the facts of the sale', () => {
+  const text = legalText(en.terms)
+  expect(text.match(/every future version/gi)).toHaveLength(1)
+  expect(text.match(/subscription/gi)).toHaveLength(1)
+  expect(text).toMatch(/relay you deploy/)
+  expect(text).not.toMatch(/person who buys|hosted relay|who it is for/i)
+})
+
+it('names one source licence everywhere, FSL-1.1-MIT, and never calls Devot open source', () => {
+  const strings = [...catalogStrings(en, [2026])]
+  expect(strings.filter((text) => /\bMIT\b/.test(text.replaceAll('FSL-1.1-MIT', '')))).toEqual([])
+  expect(strings.filter((text) => /open[ -]source/i.test(text))).toEqual([])
+  expect(en.footer.licence).toContain('FSL-1.1-MIT')
 })
 
 it('links each legal destination to its page or service', () => {

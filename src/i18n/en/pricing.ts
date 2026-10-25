@@ -4,7 +4,7 @@ export const pricingCopy = {
   pricing: {
     label: 'Pricing',
     title: ['Free to write.', 'Pay once for sync and AI.'],
-    lead: 'Devot is free. A licence, bought once, unlocks sync and AI. Everything else stays free.',
+    lead: 'Everything else stays free, with or without a licence.',
     free: {
       name: 'Free',
       price: 'US$0',
@@ -31,7 +31,7 @@ export const pricingCopy = {
       refund: `${REFUND_DAYS}-day refund, no questions asked.`,
     },
     delivery:
-      'After paying, your key shows on the page and arrives by email, with a link that opens it in Devot. Payments are processed by Stripe.',
+      'After paying, your key shows on the page and arrives by email, with a link that opens it in Devot. Payments are processed by Stripe through Stripe Managed Payments, a merchant of record service.',
     links: {
       label: 'About buying',
       terms: 'Terms of sale',

@@ -417,12 +417,33 @@ const FACTS: Fact[] = [
     needs: [LICENSE],
     check: (devot, copy) => {
       const licence = devot(LICENSE)
-      const [, year, holder] = /Copyright \(c\) (\d{4}) (.+)/.exec(licence) ?? []
+      const name = /^## Abbreviation\s+(\S+)/m.exec(licence)?.[1]
+      const [, year, holder] = /^Copyright (?:\(c\) )?(\d{4}) (.+)$/m.exec(licence) ?? []
+      if (name === undefined)
+        return [problem('E_FACT_LICENCE', `${LICENSE} names no licence under "## Abbreviation"`)]
+      const source = copy.terms.sections.find(({ title }) => title === 'Source code')
+      const naming: [string, string][] = [
+        ['The footer', copy.footer.licence],
+        ['The footer link', copy.footer.groups.legal.links.licence],
+        ['The Local-first facts', copy.privacy.facts.rows.flat().join(' ')],
+        ['The Download lead', copy.closing.lead],
+        [
+          'The terms of sale',
+          (source?.paragraphs.flat() ?? [])
+            .map((run) => (typeof run === 'string' ? run : run.text))
+            .join(''),
+        ],
+      ]
+      const stale = naming.filter(([, text]) => !text.includes(name)).map(([where]) => where)
       return [
-        ...says(copy.footer.licence, 'MIT', 'The footer'),
-        ...(licence.startsWith('MIT License')
+        ...(stale.length === 0
           ? []
-          : [problem('E_FACT_LICENCE', `${LICENSE} is not the MIT licence`)]),
+          : [
+              problem(
+                'E_FACT_LICENCE',
+                `${LICENSE} is ${name}, which ${stale.join(', ')} do not name`,
+              ),
+            ]),
         ...(year !== undefined && copy.footer.copyright(Number(year)) === `© ${year} ${holder}`
           ? []
           : [

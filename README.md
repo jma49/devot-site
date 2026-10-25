@@ -62,7 +62,7 @@ Every claim the page makes about Devot that Devot's own files can settle is chec
 - each shortcut a card shows is its command's default in `src/renderer/src/commands/registry.ts`, drawn and spoken the same way;
 - each search operator the Find feature names is a qualifier in `src/core/search.ts`, and a minus still excludes;
 - the statuses, the gradient themes (names, count, light and dark), the app names on the cards and the "Linked to this note" label match Devot's catalog and tokens;
-- the template placeholders, the update timing (`src-tauri/src/updates.rs`), the MIT licence and its holder, macOS 26+ (`tauri.conf.json`) and Apple Silicon only (the release workflow's `Devot_<version>_aarch64.dmg`);
+- the template placeholders, the update timing (`src-tauri/src/updates.rs`), the source licence (`LICENSE`, FSL-1.1-MIT) that the footer, the Local-first facts, the Download lead and the terms of sale name, and its holder, macOS 26+ (`tauri.conf.json`) and Apple Silicon only (the release workflow's `Devot_<version>_aarch64.dmg`);
 - the Revision History card's pause and retention (every version for a day, then hourly for a week, then daily) are those of `src/core/revisions.ts`, which keeps versions on this Mac;
 - the README still says builds are ad hoc signed and not notarised, so macOS asks once, and to right-click Devot and choose Open the first time (the note under both download buttons); the mirror folder is never read back; devot-mcp runs from a checkout;
 - every link to a section of Devot's README (the install steps, devot-mcp, contributing) names a heading the README has.

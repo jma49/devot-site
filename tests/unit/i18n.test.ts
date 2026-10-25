@@ -58,7 +58,7 @@ it('promises an earlier version, not every version', () => {
 })
 
 it('names the copyright holder the licence names', () => {
-  expect(en.footer.copyright(2026)).toBe('© 2026 jma49')
+  expect(en.footer.copyright(2026)).toBe('© 2026 devot.online')
 })
 
 it('labels the navigation the way the footer does', () => {

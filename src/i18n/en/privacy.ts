@@ -11,7 +11,7 @@ export const privacyCopy = {
           'No account needed',
           'Works offline',
           'Plain Markdown export',
-          'Open source, MIT licensed',
+          'Source available, FSL-1.1-MIT',
         ],
         [
           'A Markdown mirror folder',
@@ -55,7 +55,7 @@ export const privacyCopy = {
   closing: {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
-    lead: 'Open source under the MIT licence. Get the latest release from GitHub.',
+    lead: 'Source available under FSL-1.1-MIT. Get the latest release from GitHub.',
     installNote: 'Signed ad hoc, not notarised, so macOS asks once.',
     links: {
       label: 'More ways in',
@@ -66,8 +66,8 @@ export const privacyCopy = {
   footer: {
     label: 'Footer',
     tagline: 'Local-first Markdown notes for macOS.',
-    copyright: (year: number) => `© ${year} jma49`,
-    licence: 'Released under the MIT licence.',
+    copyright: (year: number) => `© ${year} devot.online`,
+    licence: 'Source available under FSL-1.1-MIT.',
     backToTop: 'Back to top',
     groups: {
       product: {
@@ -103,7 +103,7 @@ export const privacyCopy = {
       legal: {
         title: 'Legal',
         links: {
-          licence: 'MIT licence',
+          licence: 'FSL-1.1-MIT licence',
           terms: 'Terms of sale',
           refunds: 'Refund policy',
           security: 'Security policy',

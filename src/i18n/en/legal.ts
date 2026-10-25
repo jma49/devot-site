@@ -20,31 +20,19 @@ const terms: LegalPage = {
   intro: 'Devot is free. These terms cover the licence that unlocks sync and AI in it.',
   sections: [
     {
-      title: 'What you buy',
+      title: 'What you get',
       paragraphs: [
         [
-          'A licence that unlocks sync and AI in Devot, in every future version, on all your devices. Everything else in Devot is free and stays free, with or without a licence.',
+          'A licence unlocks sync and AI in Devot, in every future version, on all your devices. Sync is end-to-end encrypted and runs through a relay you deploy; AI uses keys from your own provider. Everything else in Devot stays free, with or without a licence.',
         ],
-        [
-          'A licence is for the person who buys it, and carries the email address given at checkout. Settings > Licence in Devot shows who it is for.',
-        ],
-      ],
-    },
-    {
-      title: 'What it covers',
-      paragraphs: [
-        [
-          'Sync is end-to-end encrypted and runs through a relay you deploy yourself; Devot runs no hosted relay. AI uses keys from your own provider.',
-        ],
-        ['There is no subscription and no renewal: one payment covers every future version.'],
       ],
     },
     {
       title: 'Price and payment',
       paragraphs: [
-        [`${LICENCE_PRICE}, one payment, tax included.`],
+        [`${LICENCE_PRICE}, one payment, tax included. There is no subscription and no renewal.`],
         [
-          'Payments are processed by Stripe through Stripe Managed Payments, which makes Stripe the merchant of record for the sale. At checkout and on your receipt the purchase shows as sold through Link, and your statement shows LINK.COM.',
+          'Payments are processed by Stripe through Stripe Managed Payments, a merchant of record service. At checkout and on your receipt you see Link as the merchant of record, and the purchase as “Sold through Link”. Your statement shows LINK.COM* followed by a descriptor. Receipts and refund notices come from Link.',
         ],
       ],
     },
@@ -52,7 +40,7 @@ const terms: LegalPage = {
       title: 'Your licence key',
       paragraphs: [
         [
-          'After paying, you see your licence key on the page, and it arrives by email with a link that opens it in Devot, in Settings > Licence.',
+          'After paying, you see your licence key on the page, and it arrives by email with a link that opens it in Devot, in Settings > Licence. The licence carries the email address given at checkout.',
         ],
         [
           'Lost it? ',

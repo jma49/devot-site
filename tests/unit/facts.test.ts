@@ -93,7 +93,7 @@ const CHECK_EVERY: Duration = Duration::from_secs(24 * 60 * 60);
 const CHECK_EVERY_BETA: Duration = Duration::from_secs(60 * 60);
 `,
   LICENSE:
-    'MIT License\n\nCopyright (c) 2026 jma49\n\nPermission is hereby granted, free of charge.\n',
+    '# Functional Source License, Version 1.1, MIT Future License\n\n## Abbreviation\n\nFSL-1.1-MIT\n\n## Notice\n\nCopyright 2026 devot.online\n',
   'src-tauri/tauri.conf.json': JSON.stringify({
     productName: 'Devot',
     bundle: { macOS: { minimumSystemVersion: '26.0' } },
@@ -184,8 +184,9 @@ describe('checkFacts', () => {
       'src-tauri/src/updates.rs',
       replace('https://github.com/', 'https://updates.example/'),
     ],
-    ['E_FACT_LICENCE', 'LICENSE', replace('MIT License', 'Apache License')],
-    ['E_FACT_LICENCE', 'LICENSE', replace('2026 jma49', '2026 Someone Else')],
+    ['E_FACT_LICENCE', 'LICENSE', replace('FSL-1.1-MIT\n', 'Apache-2.0\n')],
+    ['E_FACT_LICENCE', 'LICENSE', replace('## Abbreviation', '## Name')],
+    ['E_FACT_LICENCE', 'LICENSE', replace('2026 devot.online', '2026 Someone Else')],
     ['E_FACT_PLATFORM', 'src-tauri/tauri.conf.json', replace('"26.0"', '"27.0"')],
     ['E_FACT_RELEASE', '.github/workflows/release.yml', replace('_aarch64.dmg', '_universal.dmg')],
     [
@@ -296,6 +297,30 @@ describe('checkFacts', () => {
     expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(expected)
   })
 
+  it.each<[string, (copy: Messages) => void]>([
+    ['the footer line', (c) => (c.footer.licence = 'Released under the MIT licence.')],
+    ['the footer link', (c) => (c.footer.groups.legal.links.licence = 'MIT licence')],
+    [
+      'the Local-first facts',
+      (c) =>
+        (c.privacy.facts.rows = c.privacy.facts.rows.map((row) =>
+          row.map((fact) => (fact.includes('FSL') ? 'Open source, MIT licensed' : fact)),
+        )),
+    ],
+    ['the Download lead', (c) => (c.closing.lead = 'Open source under the MIT licence.')],
+    [
+      'the terms of sale',
+      (c) =>
+        (c.terms.sections = c.terms.sections.map((section) =>
+          section.title === 'Source code'
+            ? { ...section, paragraphs: [['The source is MIT licensed.']] }
+            : section,
+        )),
+    ],
+  ])('E_FACT_LICENCE when %s names another licence than LICENSE', (_, change) => {
+    expect(codes(checkFacts(devot(), withCopy(change)))).toEqual(['E_FACT_LICENCE'])
+  })
+
   it('E_FACT_REVISIONS when the card promises more than compaction keeps', () => {
     const copy = withCopy((c) => {
       c.cards.items['card-5'].body = [
@@ -327,7 +352,7 @@ describe('factsReport', () => {
 
   it('still fails on a real mismatch in the files it could read', () => {
     const files = devot({
-      LICENSE: (text) => text.replace('MIT License', 'Apache License'),
+      LICENSE: (text) => text.replace('FSL-1.1-MIT\n', 'Apache-2.0\n'),
       'src/core/search.ts': () => undefined,
     })
     const report = factsReport({ files, unreachable: ['src/core/search.ts'] }, en)

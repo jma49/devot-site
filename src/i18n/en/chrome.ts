@@ -2,7 +2,7 @@ export const chromeCopy = {
   meta: {
     title: 'Devot: local-first Markdown notes for macOS',
     description:
-      'Free, open-source Markdown notes for macOS: a live preview, nested notebooks, tags and full-text search. Your notes stay on your Mac, offline and without an account.',
+      'Free, source-available Markdown notes for macOS: a live preview, nested notebooks, tags and full-text search. Your notes stay on your Mac, offline and without an account.',
     ogLocale: 'en_US',
     imageAlt:
       'The Devot window on a soft blue gradient: notebooks, statuses and tags in the sidebar, a list of notes, and an open note.',
@@ -28,6 +28,6 @@ export const chromeCopy = {
       download: 'Download',
       source: 'GitHub',
     },
-    downloadNote: 'Free and open source',
+    downloadNote: 'Free and source available',
   },
 }
