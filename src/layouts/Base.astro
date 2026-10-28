@@ -7,6 +7,7 @@ import '../styles/motion.css'
 import SiteFooter from '../components/SiteFooter.astro'
 import SiteHeader from '../components/SiteHeader.astro'
 import { messages, type Locale } from '../i18n/index.ts'
+import { pagePath } from '../lib/page-path.ts'
 import { themeColors } from '../lib/theme-color.ts'
 import { OG_IMAGE, SITE_URL } from '../site.ts'
 import tokensCss from '../theme/tokens.css?raw'
@@ -21,7 +22,7 @@ interface Props {
 const locale: Locale = 'en'
 const t = messages(locale)
 const { title = t.meta.title, description = t.meta.description, noindex = false } = Astro.props
-const canonical = noindex ? undefined : new URL(Astro.url.pathname, SITE_URL).href
+const canonical = noindex ? undefined : new URL(pagePath(Astro.url.pathname), SITE_URL).href
 const themeColor = themeColors(tokensCss)
 const image = new URL(OG_IMAGE.path, SITE_URL).href
 ---

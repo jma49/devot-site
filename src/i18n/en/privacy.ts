@@ -1,3 +1,6 @@
+import { numberWord } from '../../lib/words.ts'
+import { TRIAL_DAYS } from '../../site.ts'
+
 export const privacyCopy = {
   privacy: {
     label: 'Local-first',
@@ -11,7 +14,7 @@ export const privacyCopy = {
           'No account needed',
           'Works offline',
           'Plain Markdown export',
-          'Open source, MIT licensed',
+          'Source available, FSL-1.1-MIT',
         ],
         [
           'A Markdown mirror folder',
@@ -46,16 +49,24 @@ export const privacyCopy = {
           term: 'Crash reports',
           text: 'Sent only by builds made with a crash-reporting key. They carry error codes and IDs, never note text.',
         },
+        {
+          term: 'Sync',
+          text: 'Notes travel end-to-end encrypted, through a relay you deploy.',
+        },
+        {
+          term: 'AI',
+          text: 'Note text goes to the provider whose key you added, and only when you use AI.',
+        },
       ],
       footnote:
-        'Your note text goes nowhere unless you export it, mirror it or let an MCP client read it.',
+        'Your note text goes nowhere unless you export it, mirror it, sync it through your relay, send it to your AI provider or let an MCP client read it.',
     },
     link: 'Read how Devot stores your notes',
   },
   closing: {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
-    lead: 'Open source under the MIT licence. Get the latest release from GitHub.',
+    lead: `A ${numberWord(TRIAL_DAYS)}-day free trial, everything included. Source available under FSL-1.1-MIT.`,
     installNote: 'Signed ad hoc, not notarised, so macOS asks once.',
     links: {
       label: 'More ways in',
@@ -66,8 +77,8 @@ export const privacyCopy = {
   footer: {
     label: 'Footer',
     tagline: 'Local-first Markdown notes for macOS.',
-    copyright: (year: number) => `© ${year} jma49`,
-    licence: 'Released under the MIT licence.',
+    copyright: (year: number) => `© ${year} devot.online`,
+    licence: 'Source available under FSL-1.1-MIT.',
     backToTop: 'Back to top',
     groups: {
       product: {
@@ -76,6 +87,7 @@ export const privacyCopy = {
           features: 'Features',
           cards: 'More features',
           localFirst: 'Local-first',
+          pricing: 'Pricing',
           download: 'Download',
         },
       },
@@ -102,7 +114,9 @@ export const privacyCopy = {
       legal: {
         title: 'Legal',
         links: {
-          licence: 'MIT licence',
+          licence: 'FSL-1.1-MIT licence',
+          terms: 'Terms of sale',
+          refunds: 'Refund policy',
           security: 'Security policy',
           report: 'Report a vulnerability',
         },

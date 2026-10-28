@@ -1,0 +1,44 @@
+---
+import '../styles/legal.css'
+import type { LegalPage } from '../i18n/en/legal.ts'
+import { messages } from '../i18n/index.ts'
+import { LEGAL_LINKS, PRICING_PATH } from '../lib/links.ts'
+import Base from '../layouts/Base.astro'
+import Unbroken from './Unbroken.astro'
+
+interface Props {
+  page: LegalPage
+}
+
+const t = messages()
+const { page } = Astro.props
+---
+
+<Base title={page.title} description={page.description}>
+  <article class="legal">
+    <header class="legal__head">
+      <h1 class="legal__title">{page.heading}</h1>
+      <p class="legal__intro">{page.intro}</p>
+      <p class="legal__updated">{t.legal.updated}</p>
+    </header>
+    {page.sections.map((section) => (
+      <section class="legal__section">
+        <h2>{section.title}</h2>
+        {section.paragraphs.map((runs) => (
+          <p>
+            {runs.map((run) =>
+              typeof run === 'string' ? (
+                <Unbroken text={run} />
+              ) : (
+                <a href={LEGAL_LINKS[run.link]}>{run.text}</a>
+              ),
+            )}
+          </p>
+        ))}
+      </section>
+    ))}
+    <a class="legal__back" href={PRICING_PATH}>
+      {t.legal.backToPricing}
+    </a>
+  </article>
+</Base>

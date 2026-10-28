@@ -23,6 +23,7 @@ export type FactCode =
   | 'E_FACT_MCP'
   | 'E_FACT_REVISIONS'
   | 'E_FACT_ANCHOR'
+  | 'E_FACT_TRIAL'
 
 export interface FactProblem {
   code: FactCode
@@ -44,6 +45,8 @@ const LICENSE = 'LICENSE'
 const TAURI = 'src-tauri/tauri.conf.json'
 const RELEASE = '.github/workflows/release.yml'
 const README = 'README.md'
+const TRIAL = 'src-tauri/src/licence/trial.rs'
+const ENTITLEMENTS = 'src/core/entitlements.ts'
 
 export const DEVOT_FILES = [
   REGISTRY,
@@ -58,6 +61,8 @@ export const DEVOT_FILES = [
   TAURI,
   RELEASE,
   README,
+  TRIAL,
+  ENTITLEMENTS,
 ] as const
 
 type CardSlot = keyof Messages['cards']['items']
@@ -167,18 +172,28 @@ function rustSeconds(source: string, name: string): number | undefined {
 
 const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
 
-/** A TypeScript constant in milliseconds: a product of numbers and constants defined before it. */
-function tsMillis(source: string, name: string, depth = 0): number | undefined {
-  const value = new RegExp(`const ${name}\\s*=\\s*([\\w\\s*]+?)\\s*$`, 'm').exec(source)?.[1]
+const TS_CONST = (name: string) => new RegExp(`const ${name}\\s*=\\s*([\\w\\s*]+?)\\s*$`, 'm')
+const RUST_CONST = (name: string) => new RegExp(`const ${name}: i64 = ([\\w\\s*]+?);`)
+
+/** A constant in milliseconds: a product of numbers and constants defined before it. */
+function constMillis(
+  source: string,
+  name: string,
+  pattern: (name: string) => RegExp,
+  depth = 0,
+): number | undefined {
+  const value = pattern(name).exec(source)?.[1]
   if (value === undefined || depth > 4) return undefined
   return value.split('*').reduce<number | undefined>((product, factor) => {
     const term = factor.trim()
     const number = /^[\d_]+$/.test(term)
       ? Number(term.replaceAll('_', ''))
-      : tsMillis(source, term, depth + 1)
+      : constMillis(source, term, pattern, depth + 1)
     return product === undefined || number === undefined ? undefined : product * number
   }, 1)
 }
+
+const tsMillis = (source: string, name: string) => constMillis(source, name, TS_CONST)
 
 const HOUR_MS = 3_600_000
 const UNITS: [string, number][] = [
@@ -417,12 +432,33 @@ const FACTS: Fact[] = [
     needs: [LICENSE],
     check: (devot, copy) => {
       const licence = devot(LICENSE)
-      const [, year, holder] = /Copyright \(c\) (\d{4}) (.+)/.exec(licence) ?? []
+      const name = /^## Abbreviation\s+(\S+)/m.exec(licence)?.[1]
+      const [, year, holder] = /^Copyright (?:\(c\) )?(\d{4}) (.+)$/m.exec(licence) ?? []
+      if (name === undefined)
+        return [problem('E_FACT_LICENCE', `${LICENSE} names no licence under "## Abbreviation"`)]
+      const source = copy.terms.sections.find(({ title }) => title === 'Source code')
+      const naming: [string, string][] = [
+        ['The footer', copy.footer.licence],
+        ['The footer link', copy.footer.groups.legal.links.licence],
+        ['The Local-first facts', copy.privacy.facts.rows.flat().join(' ')],
+        ['The Download lead', copy.closing.lead],
+        [
+          'The terms of sale',
+          (source?.paragraphs.flat() ?? [])
+            .map((run) => (typeof run === 'string' ? run : run.text))
+            .join(''),
+        ],
+      ]
+      const stale = naming.filter(([, text]) => !text.includes(name)).map(([where]) => where)
       return [
-        ...says(copy.footer.licence, 'MIT', 'The footer'),
-        ...(licence.startsWith('MIT License')
+        ...(stale.length === 0
           ? []
-          : [problem('E_FACT_LICENCE', `${LICENSE} is not the MIT licence`)]),
+          : [
+              problem(
+                'E_FACT_LICENCE',
+                `${LICENSE} is ${name}, which ${stale.join(', ')} do not name`,
+              ),
+            ]),
         ...(year !== undefined && copy.footer.copyright(Number(year)) === `© ${year} ${holder}`
           ? []
           : [
@@ -596,6 +632,55 @@ const FACTS: Fact[] = [
         ...(source.includes('Versions are local to this device')
           ? []
           : [problem('E_FACT_REVISIONS', `${REVISIONS} no longer keeps versions on this device`)]),
+      ]
+    },
+  },
+  {
+    code: 'E_FACT_TRIAL',
+    needs: [TRIAL, ENTITLEMENTS],
+    check: (devot, copy) => {
+      const length = constMillis(devot(TRIAL), 'LENGTH_MS', RUST_CONST)
+      const gatedList = /PLAN_GATED_FEATURES[^=]*=\s*\[([^\]]*)\]/.exec(devot(ENTITLEMENTS))?.[1]
+      const gated = [...(gatedList ?? '').matchAll(/'(\w+)'/g)].map((match) => match[1])
+      const terms = copy.terms.sections.find(({ title }) => title === 'The trial')
+      const termsText = (terms?.paragraphs.flat() ?? [])
+        .map((run) => (typeof run === 'string' ? run : run.text))
+        .join(' ')
+      const problems = [
+        ...says(copy.pricing.after.body, 'read-only', 'The note on the trial ending'),
+        ...says(termsText, 'read-only', 'The terms of sale'),
+      ]
+      if (length === undefined)
+        return [...problems, problem('E_FACT_TRIAL', `${TRIAL}: cannot find LENGTH_MS`)]
+      const spaced = duration(length)
+      const hyphenated = spaced.replace(/s$/, '').replace(' ', '-')
+      const lengths: [string, string, string][] = [
+        ['The pricing title', copy.pricing.title.join(' ').toLowerCase(), spaced],
+        ['The terms of sale', termsText, hyphenated],
+      ]
+      return [
+        ...problems,
+        ...lengths
+          .filter(([, text, phrase]) => !text.includes(phrase))
+          .map(([where, , phrase]) =>
+            problem('E_FACT_TRIAL', `${TRIAL} means ${where} should say "${phrase}"`),
+          ),
+        ...['editing', 'sync', 'aiProviders']
+          .filter((name) => !gated.includes(name))
+          .map((name) =>
+            problem(
+              'E_FACT_TRIAL',
+              `${ENTITLEMENTS} no longer gates ${name}, which the page says the trial and the licence unlock`,
+            ),
+          ),
+        ...(gated.includes('localNotes')
+          ? [
+              problem(
+                'E_FACT_TRIAL',
+                `${ENTITLEMENTS} gates localNotes, which the page says stay readable after the trial`,
+              ),
+            ]
+          : []),
       ]
     },
   },

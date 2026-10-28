@@ -69,8 +69,8 @@ test('sets every section heading in one tier and every card heading in another',
         return `${style.fontSize} ${style.fontWeight}`
       }),
     )
-  const sections = await type('#write h2, #cards h2, #local-first h2')
-  expect(sections.length).toBeGreaterThanOrEqual(3)
+  const sections = await type('#write h2, #cards h2, #local-first h2, #pricing h2')
+  expect(sections.length).toBeGreaterThanOrEqual(4)
   expect(new Set(sections).size).toBe(1)
   const cards = await type('#cards h3, .features-list .feature-title, .status-demo-heading')
   expect(new Set(cards).size).toBe(1)

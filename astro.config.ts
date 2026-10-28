@@ -7,7 +7,8 @@ export default defineConfig({
   integrations: [sitemap()],
   // public/_headers allows no inline script or style, so every stylesheet, script and image
   // must be a file under /_astro/, never inlined into the page or turned into a data: URL.
-  build: { inlineStylesheets: 'never' },
+  // `file` builds /terms as terms.html, which Cloudflare Pages serves at /terms without a redirect.
+  build: { inlineStylesheets: 'never', format: 'file' },
   vite: {
     build: { assetsInlineLimit: 0 },
     plugins: [

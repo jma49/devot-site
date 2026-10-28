@@ -9,7 +9,7 @@ export interface SectionBox {
 
 /** Share of the viewport height at which the section being read is decided. */
 export const READING_LINE = 0.4
-/** The pill gives way once the closing section's top rises above this share of the viewport. */
+/** The pill gives way once a `data-pill-stop` section's top rises above this share of the viewport. */
 export const CLOSING_LINE = 1
 /** The corner pill steps aside while it would cover this share of a clip's visible part. */
 export const PILL_COVER_LIMIT = 0.05
@@ -26,8 +26,8 @@ export function activeSection(sections: SectionBox[], viewport: number): string 
 
 /**
  * Whether the floating download pill shows: once the hero's call to action has scrolled out
- * above the viewport, and until any of the closing section comes into view, so it never sits over
- * the closing call to action or the footer.
+ * above the viewport, and until the first section with buttons of its own (`data-pill-stop`: the
+ * pricing and closing sections) comes into view, so it never sits over those buttons or the footer.
  */
 export function pillShown({
   ctaBottom,
@@ -104,7 +104,7 @@ export function startHeader(root: Document = document): void {
     .map((link) => root.getElementById(link.hash.slice(1)))
     .filter((target): target is HTMLElement => target !== null)
   const heroCta = root.querySelector<HTMLElement>('[data-hero-cta]')
-  const closing = root.getElementById('download')
+  const closing = root.querySelector<HTMLElement>('[data-pill-stop]')
   const outside = [
     root.querySelector<HTMLElement>('main'),
     root.querySelector<HTMLElement>('body > footer'),

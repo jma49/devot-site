@@ -243,6 +243,7 @@ test.describe('hero at 1440 x 900', () => {
       [en.chrome.nav.write, 'write'],
       [en.chrome.nav.cards, 'cards'],
       [en.chrome.nav.localFirst, 'local-first'],
+      [en.chrome.nav.pricing, 'pricing'],
       [en.chrome.nav.download, 'download'],
     ] as const) {
       await expect(nav.getByRole('link', { name: label, exact: true })).toHaveAttribute(
@@ -468,15 +469,15 @@ for (const viewport of [phone, tablet]) {
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width)
     })
 
-    test('hides while the closing section is on screen and never covers its links or the footer', async ({
+    test('hides while the pricing or closing section is on screen, never covering their links or the footer', async ({
       page,
     }) => {
       await page.emulateMedia({ reducedMotion: 'no-preference' })
       await page.goto('/')
       const { start, end } = await page.evaluate(() => {
-        const closing = document.getElementById('download')?.getBoundingClientRect()
+        const stop = document.querySelector('[data-pill-stop]')?.getBoundingClientRect()
         return {
-          start: window.scrollY + (closing?.top ?? 0) - innerHeight - 240,
+          start: window.scrollY + (stop?.top ?? 0) - innerHeight - 240,
           end: document.documentElement.scrollHeight - innerHeight,
         }
       })
@@ -486,16 +487,18 @@ for (const viewport of [phone, tablet]) {
       const step = Math.round(viewport.height / 3)
       for (let y = start + step; y < end + step; y += step) {
         await scrollToY(page, y)
-        const closingOnScreen = await page.evaluate(() => {
-          const box = document.getElementById('download')?.getBoundingClientRect()
-          return box !== undefined && box.top < innerHeight && box.bottom > 0
-        })
-        if (closingOnScreen) await expect(pill(page)).toBeHidden()
+        const stopOnScreen = await page.evaluate(() =>
+          [...document.querySelectorAll('[data-pill-stop]')].some((section) => {
+            const box = section.getBoundingClientRect()
+            return box.top < innerHeight && box.bottom > 0
+          }),
+        )
+        if (stopOnScreen) await expect(pill(page)).toBeHidden()
         const covered = await page.evaluate(() => {
           const bar = document.querySelector('[data-download-pill]')
           if (!bar || getComputedStyle(bar).visibility === 'hidden') return []
           const a = bar.getBoundingClientRect()
-          return [...document.querySelectorAll('#download a, body > footer a')]
+          return [...document.querySelectorAll('[data-pill-stop] a, body > footer a')]
             .filter((link) => {
               const b = link.getBoundingClientRect()
               return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
