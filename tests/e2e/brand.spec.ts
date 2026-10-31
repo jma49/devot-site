@@ -1,11 +1,11 @@
 import { expect, test } from './fixtures.ts'
 
 const MARKS = [
-  ['.site-header .brand-mark', null],
-  ['.download-pill .pill-mark', null],
-  ['.local__mark', '::after'],
-  ['.closing__mark', null],
-  ['.site-footer__mark', null],
+  ['.site-header .brand-mark', null, 'small'],
+  ['.download-pill .pill-mark', null, 'small'],
+  ['.local__mark', '::after', 'small'],
+  ['.closing__mark', null, 'full'],
+  ['.site-footer__mark', null, 'small'],
 ] as const
 
 for (const scheme of ['light', 'dark'] as const) {
@@ -15,9 +15,11 @@ for (const scheme of ['light', 'dark'] as const) {
   }) => {
     await page.emulateMedia({ colorScheme: scheme })
     await page.goto('/')
-    const file = scheme === 'dark' ? /\/dove-dark\.[\w-]+\.svg"?\)$/ : /\/dove\.[\w-]+\.svg"?\)$/
 
-    for (const [selector, pseudo] of MARKS) {
+    for (const [selector, pseudo, cut] of MARKS) {
+      const file = new RegExp(
+        `/dove${cut === 'small' ? '-small' : ''}${scheme === 'dark' ? '-dark' : ''}\\.[\\w-]+\\.svg"?\\)$`,
+      )
       const look = await page.locator(selector).evaluate((element, part) => {
         const style = getComputedStyle(element, part)
         return { image: style.backgroundImage, mask: style.maskImage }

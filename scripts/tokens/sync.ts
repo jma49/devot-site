@@ -20,6 +20,12 @@ export const OUTPUTS: readonly Output[] = [
     ink: 'design/app-icon/lockup-dark.svg',
     to: 'src/assets/dove-dark.svg',
   },
+  { from: 'design/app-icon/dove-small.svg', to: 'src/assets/dove-small.svg' },
+  {
+    from: 'design/app-icon/dove-small.svg',
+    ink: 'design/app-icon/lockup-dark.svg',
+    to: 'src/assets/dove-small-dark.svg',
+  },
   { from: 'design/app-icon/source.svg', to: 'src/assets/app-icon.svg' },
   { from: 'design/app-icon/source-small.svg', to: 'src/assets/app-icon-small.svg' },
   { from: 'design/app-icon/source-ios.svg', to: 'src/assets/app-icon-ios.svg' },
