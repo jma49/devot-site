@@ -40,18 +40,20 @@ Local runs are capped so they leave the machine usable: Vitest uses 3 workers (`
 
 The site uses Devot's design tokens, its dove and its app icon. `devot.pin.json` holds the Devot commit they come from; `scripts/tokens/` downloads these files from `raw.githubusercontent.com` at that commit:
 
-| Devot file                                                                  | Generated copy                  |
-| --------------------------------------------------------------------------- | ------------------------------- |
-| `src/renderer/src/theme/tokens.css`                                         | `src/theme/tokens.css`          |
-| `design/app-icon/dove.svg`                                                  | `src/assets/dove.svg`           |
-| `design/app-icon/dove.svg`, in the ink of `design/app-icon/lockup-dark.svg` | `src/assets/dove-dark.svg`      |
-| `design/app-icon/source.svg`                                                | `src/assets/app-icon.svg`       |
-| `design/app-icon/source-small.svg`                                          | `src/assets/app-icon-small.svg` |
-| `design/app-icon/source-ios.svg`                                            | `src/assets/app-icon-ios.svg`   |
+| Devot file                                                                        | Generated copy                   |
+| --------------------------------------------------------------------------------- | -------------------------------- |
+| `src/renderer/src/theme/tokens.css`                                               | `src/theme/tokens.css`           |
+| `design/app-icon/dove.svg`                                                        | `src/assets/dove.svg`            |
+| `design/app-icon/dove.svg`, in the ink of `design/app-icon/lockup-dark.svg`       | `src/assets/dove-dark.svg`       |
+| `design/app-icon/dove-small.svg`                                                  | `src/assets/dove-small.svg`      |
+| `design/app-icon/dove-small.svg`, in the ink of `design/app-icon/lockup-dark.svg` | `src/assets/dove-small-dark.svg` |
+| `design/app-icon/source.svg`                                                      | `src/assets/app-icon.svg`        |
+| `design/app-icon/source-small.svg`                                                | `src/assets/app-icon-small.svg`  |
+| `design/app-icon/source-ios.svg`                                                  | `src/assets/app-icon-ios.svg`    |
 
 Each copy starts with a `Generated from jma49/devot@<sha>. Do not edit.` header. Devot has no dark dove of its own, so the dark copy takes the dove's shape and the gradient of the lockup for dark grounds. To take newer tokens, run `pnpm tokens:update` and commit the pin with the regenerated files. Errors carry a code: `E_TOKENS_STALE`, `E_TOKENS_FETCH` (download failed), `E_TOKENS_PIN` (malformed pin file), `E_TOKENS_SHAPE` (a Devot file lacks the `devot-ink` gradient the dark dove needs) or `E_TOKENS_ARGS` (unknown flag).
 
-The header, the download pill and the footer draw the dove in its own colours: `dove.svg` on light, `dove-dark.svg` on dark. The build makes the icons from the app icon, at stable unhashed paths (`src/pages/*.ts`): `/favicon.svg` is the small cut, the one Devot uses at 16 and 32 px, cropped to its tile; `/favicon-192.png` is the full icon cropped to its tile; `/apple-touch-icon.png` is the full-bleed square, opaque, since iOS rounds the corners itself. It also renders the link-preview image, `/og.png` (1200x630, `src/lib/og-image.ts`): the hero poster's app window on the Tide gradient with the dove above it, every colour from the tokens and the dove. `Base.astro` announces it with its size and description to Open Graph and as a large Twitter card; `pnpm test:dist` fails when a tag or the file is missing.
+The header, the download pill, the privacy section and the footer draw the simplified optical dove at 26, 26, 30 and 28 px respectively: `dove-small.svg` on light, `dove-small-dark.svg` on dark. The larger closing mark and social preview keep the full detail from `dove.svg` (or `dove-dark.svg` on dark). The build makes the icons from the optical app icon, preserving its palette and surface effects, at stable unhashed paths (`src/pages/*.ts`): `/favicon.svg` is the simplified small cut, the one Devot uses at 16 and 32 px, cropped to its tile; `/favicon-192.png` is the full icon cropped to its tile; `/apple-touch-icon.png` is the full-bleed square, opaque, since iOS rounds the corners itself. It also renders the link-preview image, `/og.png` (1200x630, `src/lib/og-image.ts`): the hero poster's app window on the Tide gradient with the optical dove above it, every colour from the tokens and the dove. `Base.astro` announces it with its size and description to Open Graph and as a large Twitter card; `pnpm test:dist` fails when a tag or the file is missing.
 
 Components use Devot's semantic tokens (`--color-text-*`, `--color-surface-*`, `--color-accent-*` and so on) or the site variables built on them in `src/styles/site-tokens.css`. A policy test refuses colour literals anywhere else in `src/`.
 

@@ -73,12 +73,12 @@
   content: '';
   width: 54%;
   aspect-ratio: 1;
-  background: url('../../assets/dove.svg') center / contain no-repeat;
+  background: url('../../assets/dove-small.svg') center / contain no-repeat;
 }
 
 @media (prefers-color-scheme: dark) {
   .local__mark::after {
-    background-image: url('../../assets/dove-dark.svg');
+    background-image: url('../../assets/dove-small-dark.svg');
   }
 }
 
