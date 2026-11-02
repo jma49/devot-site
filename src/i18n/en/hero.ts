@@ -11,11 +11,10 @@ export const heroCopy = {
   },
   /** The first-launch note under the hero's and the closing section's download buttons. */
   install: {
-    // Broken after its hyphen, "right-click" reads as two words.
     note: [
-      'Not notarised yet: the first time, ',
-      { unbroken: 'right-click' },
-      ' Devot and choose Open.',
+      'Signed and ',
+      { unbroken: 'notarised by Apple' },
+      ': open the dmg and drag Devot to Applications.',
     ] satisfies NoteText[],
     link: 'Install steps',
   },
