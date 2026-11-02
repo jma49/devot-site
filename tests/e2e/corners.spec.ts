@@ -5,8 +5,12 @@ const box = (page: import('@playwright/test').Page, selector: string) =>
     .locator(selector)
     .first()
     .evaluate((element) => {
-      const { left, top, width } = element.getBoundingClientRect()
-      return { left, top, width, radius: parseFloat(getComputedStyle(element).borderTopLeftRadius) }
+      const { offsetLeft, offsetWidth } = element as HTMLElement
+      return {
+        left: offsetLeft,
+        width: offsetWidth,
+        radius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      }
     })
 
 // The clips hold the real window, whose 26 pt corner has the wallpaper outside it.
@@ -26,6 +30,6 @@ test('a feature window sits concentric in its well', async ({ page }) => {
   await page.goto('/')
   const well = await box(page, '.feature-well')
   const window = await box(page, '.feature-window')
-  const inset = window.left - well.left
+  const inset = window.left
   expect(well.radius).toBeCloseTo(window.radius + inset, 0)
 })

@@ -483,14 +483,19 @@ const sections = [
     translate: var(--chrome-pill-aside) 0;
   }
 
-  /* The pill is the download button alone, in the corner, so on a phone it covers little; on wide
-     screens header.ts also moves it aside while it would cover a clip. Its note stays as the
+  /* The pill is the download button alone, so on a phone it covers little; on wide screens it sits
+     in the corner and header.ts moves it aside while it would cover a clip. Its note stays as the
      button's description. */
+  @media (min-width: 800px) {
+    .download-pill {
+      right: max(var(--space-9), env(safe-area-inset-right));
+      bottom: max(var(--space-9), env(safe-area-inset-bottom));
+      left: auto;
+      margin: 0;
+    }
+  }
+
   .download-pill {
-    right: max(var(--space-9), env(safe-area-inset-right));
-    bottom: max(var(--space-9), env(safe-area-inset-bottom));
-    left: auto;
-    margin: 0;
     padding: 0;
     border: 0;
     background: none;
