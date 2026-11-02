@@ -185,6 +185,13 @@ export async function openApp(browser: Browser, options: AppOptions): Promise<Ap
     const w = globalThis as unknown as MediaWindow
     w.devotEditorSettings = initial
     const internals = w['__TAURI_INTERNALS__']
+    // Devot gives its IPC to the main frame only. The Settings window a scene shows in a frame
+    // borrows it, as the real window has its own; a sandboxed frame in the preview gets none.
+    if (!internals) {
+      if (location.pathname === '/settings.html' && w.top && w.top !== w)
+        Object.defineProperty(w, '__TAURI_INTERNALS__', { value: w.top['__TAURI_INTERNALS__'] })
+      return
+    }
     const original = internals.invoke
     internals.invoke = async (cmd, args, o) => {
       if (cmd === 'symbol_png') {
