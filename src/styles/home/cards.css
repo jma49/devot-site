@@ -2,8 +2,7 @@
   --cards-brand: var(--site-brand);
   --cards-gap: 1.25rem;
   --cards-pad: 2rem;
-  --cards-radius: 1.25rem;
-  --cards-window-radius: 0.875rem;
+  --cards-radius: var(--site-radius-card);
   /* One height per row on wide screens, so the window tops line up across a row. */
   --cards-media-height: clamp(13rem, 27vw, 22rem);
   /* Container units: the card is the container, so this is the media width less the inset. */
@@ -74,6 +73,12 @@
 }
 
 .card {
+  /* Window points across a clip (src/media.json); phones get a wide card's closer cut. */
+  --cards-window-points: 400;
+  --cards-window-radius: calc(
+    var(--site-window-radius-pt) * var(--cards-window-width) / var(--cards-window-points)
+  );
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -277,6 +282,12 @@
     linear-gradient(to left, var(--cards-mask) var(--cards-fade-out), transparent);
 }
 
+@media (min-width: 640px) {
+  .card[data-shape='wide'] {
+    --cards-window-points: 656;
+  }
+}
+
 .card-window {
   position: relative;
   overflow: hidden;
@@ -336,8 +347,6 @@
 @media (max-width: 799.98px) {
   .cards {
     --cards-pad: 1.25rem;
-    --cards-radius: 1rem;
-    --cards-window-radius: 0.625rem;
     --cards-shadow-room: 1.5rem;
     --cards-rise: 1.5rem;
   }

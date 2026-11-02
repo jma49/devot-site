@@ -9,24 +9,9 @@ export const privacyCopy = {
     facts: {
       label: 'Where your notes live and what they need',
       rows: [
-        [
-          'Stored on your Mac',
-          'No account needed',
-          'Works offline',
-          'Plain Markdown export',
-          'Source available, FSL-1.1-MIT',
-        ],
-        [
-          'A Markdown mirror folder',
-          'Daily local backups',
-          'Version history on your Mac',
-          'Imports Markdown and HTML',
-        ],
-        [
-          'Usage data stays on your Mac',
-          'Logs carry codes, never notes',
-          'AI clients see only notebooks you allow',
-        ],
+        ['Stored on your Mac', 'No account needed', 'Works offline'],
+        ['Plain Markdown export', 'Version history on your Mac'],
+        ['Source available, FSL-1.1-MIT', 'Daily local backups'],
       ],
     },
     body: 'Devot keeps your notes in a SQLite database in your Library folder, and needs no account or connection to write, search, back up or export. Choose a mirror folder and Devot also writes every note there as a Markdown file for Git, Spotlight and other editors to read, and never reads them back.',

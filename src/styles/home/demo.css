@@ -3,7 +3,7 @@
  * list. Two panes once the demo is 34rem wide; below that the filters wrap above the list.
  */
 .status-demo {
-  --demo-radius: 1rem;
+  --demo-radius: var(--site-radius-card);
   --demo-row: 2.5rem;
   --demo-surface: var(--color-surface-window);
   --demo-quick: var(--site-dur-quick) var(--site-ease-out);

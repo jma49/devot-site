@@ -255,7 +255,7 @@
    measured from the window alone. */
 .hero-window {
   --hero-glass-pad: max(0.375rem, 11 * var(--hero-pt));
-  --hero-frame-radius: max(0.5rem, 20 * var(--hero-pt));
+  --hero-frame-radius: max(0.5rem, var(--site-window-radius-pt) * var(--hero-pt));
 
   position: relative;
   isolation: isolate;

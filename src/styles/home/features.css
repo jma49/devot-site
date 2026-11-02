@@ -7,8 +7,17 @@
   --features-brand: var(--site-brand);
   --features-rail: 2px;
   --features-rail-inset: 1.75rem;
-  --features-window-radius: 12px;
-  --features-well-radius: 20px;
+  /* Share of the well's width the window takes, its inset on each side, and the window points it
+     shows. Container units: .feature is the container, as wide as its well. */
+  --features-window-share: 94;
+  --features-window-inset: 3;
+  --features-window-points: 396;
+  --features-window-radius: calc(
+    var(--site-window-radius-pt) * var(--features-window-share) * 1cqw /
+      var(--features-window-points)
+  );
+  /* Concentric with the window, which sits the same distance from the well's top and left. */
+  --features-well-radius: calc(var(--features-window-radius) + var(--features-window-inset) * 1cqw);
   --features-ease-state: var(--site-ease-text);
   --features-dur-state: 300ms;
   --features-marker-ease: var(--site-ease-media);
@@ -112,6 +121,16 @@
   white-space: nowrap;
 }
 
+@media (min-width: 640px) {
+  .features {
+    --features-window-points: 672;
+  }
+}
+
+.feature {
+  container-type: inline-size;
+}
+
 /* The product window, cropped by its well and dissolving towards the bottom edge. */
 .feature-well {
   position: relative;
@@ -164,9 +183,9 @@
 /* Phones show their closer cut of the window whole, with room below for the scroll drift's 6 %. */
 .feature-window {
   position: absolute;
-  top: 9%;
-  left: 3%;
-  width: 94%;
+  top: calc(var(--features-window-inset) * 1cqw);
+  left: calc(var(--features-window-inset) * 1cqw);
+  width: calc(var(--features-window-share) * 1cqw);
   overflow: hidden;
   border-radius: var(--features-window-radius);
   background: var(--color-surface-window);
@@ -201,17 +220,17 @@
 }
 
 @media (min-width: 600px) {
+  .features {
+    --features-window-share: 92;
+    --features-window-inset: 4;
+  }
+
   .feature-well {
     aspect-ratio: 3 / 2;
   }
 
   .feature-stage {
     mask-image: linear-gradient(to bottom, currentColor 64%, transparent 98%);
-  }
-
-  .feature-window {
-    left: 4%;
-    width: 92%;
   }
 }
 
@@ -263,10 +282,6 @@
 
   .feature-copy {
     display: none;
-  }
-
-  .feature-well {
-    --features-well-radius: 28px;
   }
 
   .features-media {

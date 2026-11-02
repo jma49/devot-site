@@ -1,5 +1,5 @@
 .pricing {
-  --pricing-radius: 1.5rem;
+  --pricing-radius: var(--site-radius-card);
   --pricing-pad: clamp(1.5rem, 3.5vw, 2.5rem);
   --pricing-tick: 0.4375rem;
 

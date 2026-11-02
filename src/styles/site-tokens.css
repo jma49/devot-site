@@ -3,6 +3,12 @@
  * these or devot's semantic tokens; this is the one stylesheet that may hold raw values.
  */
 :root {
+  /* The clips hold Devot's real window, whose macOS corner is 26 pt and has the wallpaper outside it;
+     a frame rounds one point more so none of that shows. Multiply by a clip's points per CSS px. */
+  --site-window-radius-pt: 27;
+  /* The one radius of every card that sits on the page. */
+  --site-radius-card: 1.25rem;
+
   --site-color-page: var(--color-surface-editor);
   --site-color-text: var(--color-text-primary);
   /* Three text tiers. Devot's secondary and tertiary greys sit close together, so each is moved

@@ -27,6 +27,7 @@ export const pricingCopy = {
         'Everything in the trial, for good',
         'Every future version of Devot',
         'Up to three devices at a time',
+        'No account needed',
       ],
       buy: 'Buy a licence',
       refund: `${REFUND_DAYS}-day refund, no questions asked.`,

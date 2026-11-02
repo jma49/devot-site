@@ -8,7 +8,7 @@ const PHONE = { width: 390, height: 844 }
 const GPU = 'Test GPU'
 const SOFTWARE = 'Google SwiftShader'
 /** The Sage band's sway, the shorter of the two, in milliseconds (aurora.css). */
-const SWAY = 36_000
+const SWAY = 12_000
 
 interface Draw {
   /** `performance.now()` at the draw. */
