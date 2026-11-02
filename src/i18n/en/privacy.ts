@@ -67,7 +67,7 @@ export const privacyCopy = {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
     lead: `A ${numberWord(TRIAL_DAYS)}-day free trial, everything included. Source available under FSL-1.1-MIT.`,
-    installNote: 'Signed and notarised by Apple, so it opens without a warning.',
+    installNote: 'Updates arrive in the app, so you install it once.',
     links: {
       label: 'More ways in',
       source: 'Source on GitHub',

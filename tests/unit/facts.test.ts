@@ -119,6 +119,7 @@ export const PLAN_GATED_FEATURES: readonly Feature[] = [
 `,
   'README.md': `## Download
 2. Open the dmg and drag Devot to Applications. Releases are signed with Devot's Developer ID and notarised by Apple, so they open without a warning.
+Updates arrive in the app: Devot checks shortly after launch.
 - \`[[\` note links with a link index; each note lists the notes that link to it.
 The folder is written by Devot and never read back: edit notes in Devot.
 ## Claude and other MCP clients (devot-mcp)
@@ -212,6 +213,7 @@ describe('checkFacts', () => {
     ],
     ['E_FACT_SIGNING', 'README.md', replace('notarised by Apple', 'ad-hoc signed')],
     ['E_FACT_SIGNING', 'README.md', replace('open without a warning', 'ask once')],
+    ['E_FACT_SIGNING', 'README.md', replace('Updates arrive in the app', 'Updates come by email')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Download', '## Get Devot')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Contributing', '## Helping out')],
     [

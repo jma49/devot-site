@@ -515,11 +515,11 @@ const FACTS: Fact[] = [
       const missing = (said: boolean, what: string) =>
         said ? [] : [problem('E_FACT_SIGNING', `${README} no longer says ${what}`)]
       return [
-        ...says(copy.closing.installNote, 'notarised by Apple', 'The closing install note'),
-        ...says(copy.closing.installNote, 'opens without a warning', 'The closing install note'),
+        ...says(copy.closing.installNote, 'Updates arrive in the app', 'The closing install note'),
         ...says(noteText(copy.install.note), 'notarised by Apple', 'The install note'),
         ...missing(readme.includes('notarised by Apple'), 'releases are notarised by Apple'),
         ...missing(readme.includes('open without a warning'), 'releases open without a warning'),
+        ...missing(readme.includes('Updates arrive in the app'), 'updates arrive in the app'),
       ]
     },
   },

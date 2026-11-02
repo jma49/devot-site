@@ -113,3 +113,19 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+@media (pointer: coarse) {
+  .site-footer ul {
+    gap: 0;
+  }
+
+  .site-footer__nav a,
+  .site-footer__logo,
+  .site-footer__top-link {
+    display: inline-flex;
+    align-items: center;
+    min-width: var(--site-size-touch);
+    min-height: var(--site-size-touch);
+    padding-block: 0;
+  }
+}

@@ -101,6 +101,8 @@
   --site-space-section: clamp(3.5rem, 11vh, 8rem);
   --site-size-mark: 1.75rem;
   --site-size-action: 3rem;
+  /* The smallest control a finger can hit on a touch screen; px, so a smaller root size keeps it. */
+  --site-size-touch: 44px;
 
   /* Devot's teal, the one call to action and the small marks around the page. In dark the fill is
      deepened toward the window colour so white text keeps AA. */
