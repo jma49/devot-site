@@ -203,6 +203,12 @@ export async function openApp(browser: Browser, options: AppOptions): Promise<Ap
         if (!png) throw 'E_SYMBOL_UNAVAILABLE'
         return png
       }
+      // The sidebar footer reports backups; a library people use has a recent one.
+      if (cmd === 'backups_list')
+        return {
+          backups: [{ id: 'media', createdAt: Date.now() - 3_600_000, size: 1 }],
+          lastError: null,
+        }
       const result = await original(cmd, args, o)
       // A window shown in a frame (scenes.ts, the Settings window) reaches the main window as
       // Rust's settings event does in the app.
