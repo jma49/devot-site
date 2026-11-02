@@ -14,7 +14,7 @@ export const heroCopy = {
     note: [
       'Signed and ',
       { unbroken: 'notarised by Apple' },
-      ': open the dmg and drag Devot to Applications.',
+      ', so it opens like any Mac app.',
     ] satisfies NoteText[],
     link: 'Install steps',
   },
