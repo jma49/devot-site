@@ -500,13 +500,14 @@ const themes: Scene = {
     await openNote(page, 'Spring launch plan')
     await setMode(page, 'Preview')
     await openSettingsWindow(page)
-    // Scrolled as a person would, so the gradient themes sit at the top of the window.
+    // Scrolled as a person would, the themes a little below the top, so the other scheme's row
+    // stays out of the clip and its foot fades over this scheme's colours.
     const dawn = (await themeRow(page)).locator('.theme-choice', { hasText: 'Dawn' })
     await dawn.evaluate((card) => {
       let pane = card.parentElement
       while (pane && pane.scrollHeight <= pane.clientHeight) pane = pane.parentElement
       if (pane)
-        pane.scrollTop += card.getBoundingClientRect().top - pane.getBoundingClientRect().top - 24
+        pane.scrollTop += card.getBoundingClientRect().top - pane.getBoundingClientRect().top - 124
     })
     await settle(page)
   },

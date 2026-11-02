@@ -163,24 +163,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 77783,
-        "webm": 50763,
-        "poster": 46964
+        "mp4": 67432,
+        "webm": 47093,
+        "poster": 38722
       },
       "light-phone": {
-        "mp4": 47670,
-        "webm": 36524,
-        "poster": 32704
+        "mp4": 51496,
+        "webm": 40291,
+        "poster": 36700
       },
       "dark": {
-        "mp4": 65355,
-        "webm": 48189,
-        "poster": 39300
+        "mp4": 61293,
+        "webm": 44008,
+        "poster": 33608
       },
       "dark-phone": {
-        "mp4": 46508,
-        "webm": 37352,
-        "poster": 32842
+        "mp4": 46247,
+        "webm": 35963,
+        "poster": 31986
       }
     }
   },
