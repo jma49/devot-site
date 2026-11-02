@@ -29,6 +29,7 @@ A static [Astro](https://astro.build) site: plain CSS on Devot's design tokens, 
 | `pnpm tokens:update` | Moves the pin to Devot's current `main` and regenerates                    |
 | `pnpm media:capture` | Records the product clips from Devot's UI-test build and encodes them      |
 | `pnpm media:encode`  | Encodes the clips again from the frames already recorded                   |
+| `pnpm media:device`  | Records the product clips from the real app on this Mac (see below)        |
 | `pnpm facts`         | Checks the page's claims about Devot against Devot's own files             |
 | `pnpm check`         | Everything CI runs, in order                                               |
 
@@ -129,6 +130,16 @@ The clips are the real app, recorded from Devot's UI-test build: its renderer in
 4. Encodes the frames (`.cache/media/frames/<slot>/<scheme>/`) with ffmpeg: AV1 WebM and H.264 MP4 for the clip and for its phone cut, raising the CRF until each file fits its budget, the last half second cross-fading into the first frame when a clip does not end where it starts; then writes the frame at the scene's poster time as each WebP poster, and the measurements and file sizes to `src/media.json`.
 
 From an empty cache (2026-10-23, Devot at 8923fee): cloning and installing Devot took under a minute here, recording all ten slots in both schemes about 13 minutes and encoding about 6, and `.cache/media` grew to about 3.5 GB, 2.8 GB of it frames. The run reproduced the committed media: the same measurements in `src/media.json`, posters within half a level of 255 on average, and clips with the same frames apart from an app transition a frame earlier or later.
+
+### Recording on a real Mac
+
+The committed clips come from the real app instead: `pnpm media:device [slot ...]` records each scene from a debug build of Devot running on this Mac, so Glass, its blur and the pointer are the system's own (WebKit's screenshots leave `backdrop-filter` out; the capture above lays a near-opaque coat over Glass's floating surfaces instead). It takes over the screen, pointer and keyboard while it runs, about 25 minutes for every slot in both schemes, and needs the terminal allowed under Privacy & Security > Accessibility and Screen Recording.
+
+1. Build the demo app once, from a Devot checkout with its dependencies installed: `pnpm tauri dev --config <file>` with a config that sets `identifier` to `io.github.jma49.devot.demo` (its own data folder, `~/Library/Application Support/io.github.jma49.devot.demo.dev`), `build.beforeDevCommand` to Devot's Vite with `scripts/media/device/devot/vite.config.ts` (`DEVOT_DIR` set to the checkout) and `'unsafe-eval'` added to `devCsp`'s `script-src`. Quit it once it opens.
+2. `DEVOT_CHECKOUT=<checkout> DEVOT_BINARY=<target>/debug/devot pnpm media:device`. For each slot and scheme it empties the demo data folder, writes the demo library through Devot's own services into a real database (`scripts/media/device/devot/seed.ts`, run with Vitest in the checkout), starts the app over a still wallpaper (`scripts/media/device/input.swift`), places the window, plays the scene in real time through the media bridge (`scripts/media/device/devot/bridge.ts`, which answers the scenes' Playwright calls inside the app) and records the screen around the window with ffmpeg. The frames land where `pnpm media:capture` puts its own.
+3. `pnpm media:encode`.
+
+An app that is not bundled keeps its web storage in `~/Library/WebKit/devot`, shared with `pnpm dev`; the run keeps that folder aside and puts it back when it ends. On a failure it saves a screenshot to `.cache/media/device/<slot>-<scheme>-error.png`; logs go to `.cache/media/logs/device.log`.
 
 `pnpm media:encode [slot ...]` repeats step 4 from the frames already recorded. It needs ffmpeg with libx264 and libsvtav1 (`FFMPEG` names another binary). Other settings: `MEDIA_SCHEMES` (`light`, `dark` or both, the default), `MEDIA_SAMPLE` (write every n-th frame to a folder of its own and encode nothing, to look at a scene while working on it), `MEDIA_CACHE` (the cache folder), `MEDIA_FPS` (30) and `MEDIA_TZ` (the page's time zone; by default one where it is late morning, so the times in the notes look like a working day). Logs go to `.cache/media/logs/media.log`. After the app's UI changes, move the pin (`pnpm tokens:update`), record again and look at the clips before committing them.
 

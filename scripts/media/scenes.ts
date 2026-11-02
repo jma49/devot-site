@@ -308,6 +308,8 @@ const organise: Scene = {
   phone: { rect: cut(276, 0, CUTS.feature.phone), output: twice(CUTS.feature.phone) },
   motion: true,
   fade: 0.5,
+  // A narrower list keeps Glass's status menu, shortcuts and all, inside the cut.
+  view: { 'devot.list.width': '260' },
   async prepare(page) {
     await openNote(page, 'Newsletter ideas')
     await setMode(page, 'Edit')
@@ -426,6 +428,14 @@ const THEMES_PHONE_CUT = 262
  * dark when the system is.
  */
 async function openSettingsWindow(page: Page) {
+  // On a real Mac (device/record.ts) Devot opens its own Settings window.
+  const real = (page as unknown as { openSettingsWindow?: () => Promise<Page> }).openSettingsWindow
+  if (real) {
+    const settings = await real()
+    await settings.getByRole('tab', { name: 'Appearance', exact: true }).click()
+    await (await themeRow(page)).waitFor()
+    return settings
+  }
   await page.evaluate(
     ({ x, y, bar }) => {
       const dark = matchMedia('(prefers-color-scheme: dark)').matches
