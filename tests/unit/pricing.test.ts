@@ -3,6 +3,7 @@ import { en } from '../../src/i18n/en.ts'
 import type { LegalPage } from '../../src/i18n/en/legal.ts'
 import { LEGAL_LINKS, REFUNDS_PATH, TERMS_PATH, footerLinks } from '../../src/lib/links.ts'
 import {
+  BUILD_URL,
   BUY_URL,
   ISSUES_URL,
   LICENCE_PRICE,
@@ -31,7 +32,7 @@ it('sells through the licence service: Buy opens /buy and a lost key goes to the
 it('states the price, the refund window and the trial length in one place each', () => {
   expect(LICENCE_PRICE).toBe('US$29.90')
   expect(REFUND_DAYS).toBe(30)
-  expect(TRIAL_DAYS).toBe(3)
+  expect(TRIAL_DAYS).toBe(30)
   const elsewhere = filesUnder('src')
     .filter((file) => file !== 'src/site.ts' && /\.(ts|astro|css)$/.test(file))
     .filter((file) =>
@@ -70,6 +71,14 @@ describe('the pricing section', () => {
     expect(copy.after.body).toMatch(/Nothing is deleted, and export always works/)
   })
 
+  it('says that building Devot from source is free and fully unlocked, and links the guide', () => {
+    expect(copy.selfBuild.body).toMatch(/source is public/i)
+    expect(copy.selfBuild.body).toMatch(/every feature works without a licence/i)
+    expect(copy.selfBuild.body).toMatch(/FSL-1\.1-MIT/)
+    expect(copy.selfBuild.body).toMatch(/do not sell it/i)
+    expect(BUILD_URL).toBe('https://github.com/jma49/devot/blob/main/docs/development.md')
+  })
+
   it('prices the licence once, for everything, on every device and version', () => {
     expect(copy.licence.price).toBe(LICENCE_PRICE)
     expect(copy.licence.terms).toMatch(/one payment, tax included/i)
@@ -77,7 +86,7 @@ describe('the pricing section', () => {
     const items = copy.licence.items.join(' ')
     expect(items).toMatch(/everything in the trial, for good/i)
     expect(items).toMatch(/every future version/i)
-    expect(items).toMatch(/all your devices/i)
+    expect(items).toMatch(/up to three devices at a time/i)
   })
 
   it('names Stripe Managed Payments, a merchant of record service, as the processor', () => {
@@ -144,7 +153,7 @@ it('sets out the sale in the terms: trial, payments, the key, coverage, source, 
   expect(text).toMatch(/merchant of record/)
   expect(text).toMatch(/Settings > Licence/)
   expect(text).toMatch(/every future version/i)
-  expect(text).toMatch(/all your devices/i)
+  expect(text).toMatch(/up to three devices at a time/i)
   expect(text).toMatch(/FSL-1\.1-MIT/)
   expect(text).toMatch(/reply to your licence email/i)
   expect(text).toMatch(/warranty/i)

@@ -515,27 +515,11 @@ const FACTS: Fact[] = [
       const missing = (said: boolean, what: string) =>
         said ? [] : [problem('E_FACT_SIGNING', `${README} no longer says ${what}`)]
       return [
-        ...says(
-          copy.closing.installNote,
-          'Signed ad hoc, not notarised',
-          'The closing install note',
-        ),
-        ...says(copy.closing.installNote, 'so macOS asks once', 'The closing install note'),
-        ...says(noteText(copy.install.note), 'Not notarised yet', 'The install note'),
-        ...says(
-          noteText(copy.install.note),
-          'right-click Devot and choose Open',
-          'The install note',
-        ),
-        ...missing(
-          readme.includes('ad-hoc signed and not notarised'),
-          'builds are ad-hoc signed and not notarised',
-        ),
-        ...missing(readme.includes('so macOS asks once'), 'macOS asks once'),
-        ...missing(
-          /right-click Devot\b[^.\n]*\bchoose Open\b/.test(readme),
-          'to right-click Devot and choose Open the first time',
-        ),
+        ...says(copy.closing.installNote, 'notarised by Apple', 'The closing install note'),
+        ...says(copy.closing.installNote, 'opens without a warning', 'The closing install note'),
+        ...says(noteText(copy.install.note), 'notarised by Apple', 'The install note'),
+        ...missing(readme.includes('notarised by Apple'), 'releases are notarised by Apple'),
+        ...missing(readme.includes('open without a warning'), 'releases open without a warning'),
       ]
     },
   },

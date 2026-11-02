@@ -47,7 +47,7 @@ export const privacyCopy = {
         },
         {
           term: 'Crash reports',
-          text: 'Sent only by builds made with a crash-reporting key. They carry error codes and IDs, never note text.',
+          text: 'Off until you turn them on in Settings > General. They carry error codes and code locations, never note text.',
         },
         {
           term: 'Sync',
@@ -67,7 +67,7 @@ export const privacyCopy = {
     label: 'Download Devot',
     title: ['Write on your Mac.', 'Keep what you write.'],
     lead: `A ${numberWord(TRIAL_DAYS)}-day free trial, everything included. Source available under FSL-1.1-MIT.`,
-    installNote: 'Signed ad hoc, not notarised, so macOS asks once.',
+    installNote: 'Signed and notarised by Apple, so it opens without a warning.',
     links: {
       label: 'More ways in',
       source: 'Source on GitHub',

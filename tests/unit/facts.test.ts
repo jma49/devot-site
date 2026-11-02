@@ -68,7 +68,7 @@ const WEEK = 7 * DAY
   'status.dropped': 'Dropped',
   'noteMenu.history': 'Revision History\\u2026',
   'mode.focus': 'Focus Mode',
-  'noteInfo.backlinks': 'Linked to this note',
+  'noteInfo.backlinks': 'Linked to This Note',
   'sidebar.templates': 'Templates',
   'command.palette':
     'Command Palette',
@@ -94,7 +94,7 @@ const CHECK_EVERY_BETA: Duration = Duration::from_secs(60 * 60);
 `,
   'src-tauri/src/licence/trial.rs': `const MINUTE_MS: i64 = 60_000;
 const HOUR_MS: i64 = 60 * MINUTE_MS;
-pub(crate) const LENGTH_MS: i64 = 72 * HOUR_MS;
+pub(crate) const LENGTH_MS: i64 = 30 * 24 * HOUR_MS;
 `,
   'src/core/entitlements.ts': `export const FEATURES = [
   'localNotes',
@@ -118,7 +118,7 @@ export const PLAN_GATED_FEATURES: readonly Feature[] = [
           cp "$bundle/macos/Devot.app.tar.gz" "out/Devot_\${VERSION}_aarch64.app.tar.gz"
 `,
   'README.md': `## Download
-3. The first time, right-click Devot in Applications and choose Open, then Open again. Builds are ad-hoc signed and not notarised, so macOS asks once.
+2. Open the dmg and drag Devot to Applications. Releases are signed with Devot's Developer ID and notarised by Apple, so they open without a warning.
 - \`[[\` note links with a link index; each note lists the notes that link to it.
 The folder is written by Devot and never read back: edit notes in Devot.
 ## Claude and other MCP clients (devot-mcp)
@@ -183,7 +183,7 @@ describe('checkFacts', () => {
     [
       'E_FACT_LABEL',
       'src/renderer/src/i18n/en.ts',
-      replace("'Linked to this note'", "'Backlinks'"),
+      replace("'Linked to This Note'", "'Backlinks'"),
     ],
     ['E_FACT_LABEL', 'src/renderer/src/i18n/en.ts', replace("'Focus Mode'", "'Zen Mode'")],
     ['E_FACT_LINKS', 'README.md', replace('`[[` note links', 'Note links')],
@@ -210,13 +210,8 @@ describe('checkFacts', () => {
       '.github/workflows/release.yml',
       (text) => `${text}          cp "$x64" "out/Devot_\${VERSION}_x86_64.dmg"\n`,
     ],
-    ['E_FACT_SIGNING', 'README.md', replace('ad-hoc signed and not notarised', 'notarised')],
-    ['E_FACT_SIGNING', 'README.md', replace('so macOS asks once', 'so macOS warns you')],
-    [
-      'E_FACT_SIGNING',
-      'README.md',
-      replace('right-click Devot in Applications and choose Open', 'open Devot'),
-    ],
+    ['E_FACT_SIGNING', 'README.md', replace('notarised by Apple', 'ad-hoc signed')],
+    ['E_FACT_SIGNING', 'README.md', replace('open without a warning', 'ask once')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Download', '## Get Devot')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Contributing', '## Helping out')],
     [
@@ -245,7 +240,11 @@ describe('checkFacts', () => {
       'src/core/revisions.ts',
       replace('local to this device', 'synced to every device'),
     ],
-    ['E_FACT_TRIAL', 'src-tauri/src/licence/trial.rs', replace('72 * HOUR_MS', '7 * 24 * HOUR_MS')],
+    [
+      'E_FACT_TRIAL',
+      'src-tauri/src/licence/trial.rs',
+      replace('30 * 24 * HOUR_MS', '7 * 24 * HOUR_MS'),
+    ],
     ['E_FACT_TRIAL', 'src-tauri/src/licence/trial.rs', replace('LENGTH_MS', 'TRIAL_MS')],
     ['E_FACT_TRIAL', 'src/core/entitlements.ts', replace("[\n  'editing',", '[\n')],
     ['E_FACT_TRIAL', 'src/core/entitlements.ts', replace("  'aiProviders',\n]\n", ']\n')],

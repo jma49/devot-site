@@ -38,7 +38,7 @@ const terms: LegalPage = {
       title: 'What a licence unlocks',
       paragraphs: [
         [
-          'A licence unlocks everything in Devot, in every future version, on all your devices. Sync is end-to-end encrypted and runs through a relay you deploy; AI uses keys from your own provider.',
+          'A licence unlocks everything in Devot, in every future version, on up to three devices at a time. Sync is end-to-end encrypted and runs through a relay you deploy; AI uses keys from your own provider.',
         ],
       ],
     },

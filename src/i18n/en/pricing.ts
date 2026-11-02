@@ -26,7 +26,7 @@ export const pricingCopy = {
       items: [
         'Everything in the trial, for good',
         'Every future version of Devot',
-        'All your devices',
+        'Up to three devices at a time',
       ],
       buy: 'Buy a licence',
       refund: `${REFUND_DAYS}-day refund, no questions asked.`,
@@ -34,6 +34,11 @@ export const pricingCopy = {
     after: {
       title: 'When the trial ends',
       body: 'Without a licence, Devot turns read-only: you can still read, search, copy and export every note, but not create or edit one, and sync and AI stop. Nothing is deleted, and export always works. Add a licence and everything unlocks again.',
+    },
+    selfBuild: {
+      title: 'Rather not pay?',
+      body: 'The source is public. Build Devot from it yourself and every feature works without a licence, under FSL-1.1-MIT, as long as you do not sell it or offer it as a competing product. The licence pays for the signed app, automatic updates and the work on Devot.',
+      link: 'How to build Devot',
     },
     delivery:
       'After paying, your key shows on the page and arrives by email, with a link that opens it in Devot. Payments are processed by Stripe through Stripe Managed Payments, a merchant of record service.',

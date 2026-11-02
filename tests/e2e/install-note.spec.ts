@@ -36,7 +36,7 @@ for (const [name, section] of Object.entries(SECTIONS)) {
         const text = note(page, section)
         const words = en.install.note.map((run) => (typeof run === 'string' ? run : run.unbroken))
         await expect(text).toHaveText(`${words.join('')} ${en.install.link}`)
-        await expect(text.locator('.install-note__unbroken')).toHaveText('right-click')
+        await expect(text.locator('.install-note__unbroken')).toHaveText('notarised by Apple')
         await expect(text.locator('.install-note__unbroken')).toHaveCSS('white-space', 'nowrap')
         const link = text.getByRole('link', { name: en.install.link })
         await expect(link).toHaveAttribute('href', INSTALL_URL)

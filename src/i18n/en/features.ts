@@ -48,7 +48,7 @@ export const featuresCopy = {
           { code: 'status:' },
           ', or rule things out with a minus. Type ',
           { code: '[[' },
-          ' to link one note to another, and the other note lists it under “Linked to this note”.',
+          ' to link one note to another, and the other note lists it under “Linked to This Note”.',
         ],
       },
     ] satisfies FeatureItem[],

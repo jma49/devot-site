@@ -45,11 +45,11 @@ const noteText = (runs: readonly NoteText[]) =>
 
 it('says in plain words, beside each download button, how to open Devot the first time', () => {
   expect(noteText(en.install.note)).toBe(
-    'Not notarised yet: the first time, right-click Devot and choose Open.',
+    'Signed and notarised by Apple, so it opens like any Mac app.',
   )
-  expect(en.install.note).toContainEqual({ unbroken: 'right-click' })
+  expect(en.install.note).toContainEqual({ unbroken: 'notarised by Apple' })
   expect(en.install.link).toBe('Install steps')
-  expect(en.closing.installNote).toMatch(/^Signed ad hoc, not notarised\b/)
+  expect(en.closing.installNote).toMatch(/^Signed and notarised by Apple\b/)
   expect(en.closing.installNote).not.toMatch(/right-click/i)
 })
 

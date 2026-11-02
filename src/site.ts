@@ -2,6 +2,7 @@ export const SITE_URL = 'https://devot.online/'
 export const REPO_URL = 'https://github.com/jma49/devot'
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
 export const ISSUES_URL = `${REPO_URL}/issues`
+export const BUILD_URL = `${REPO_URL}/blob/main/docs/development.md`
 /** The link-preview image `src/pages/og.png.ts` renders at build time. */
 export const OG_IMAGE = { path: '/og.png', width: 1200, height: 630 } as const
 
@@ -13,4 +14,4 @@ export const RESEND_URL = `${LICENCE_SERVICE_URL}/resend`
 export const LICENCE_PRICE = 'US$29.90'
 export const REFUND_DAYS = 30
 /** Starts the first time Devot opens; Devot is read-only once it ends without a licence. */
-export const TRIAL_DAYS = 3
+export const TRIAL_DAYS = 30
