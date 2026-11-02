@@ -76,9 +76,14 @@ describe('public/_headers', () => {
     expect(immutable.map(({ pattern }) => pattern)).toEqual(['/_astro/*'])
   })
 
-  // Fonts and clips keep fixed names, so a re-cut file must reach a returning visitor within a week.
-  it.each(['/fonts/*', '/media/*'])('caches %s for a week without pinning it', (pattern) => {
-    expect(headersFor(pattern).get('cache-control')).toBe('public, max-age=604800')
+  // Fonts and clips keep fixed names. A re-cut font may reach a returning visitor within a week;
+  // a re-recorded clip must show on the next visit, so clips are checked against their ETag each time.
+  it('caches /fonts/* for a week without pinning it', () => {
+    expect(headersFor('/fonts/*').get('cache-control')).toBe('public, max-age=604800')
+  })
+
+  it('revalidates /media/* on every visit', () => {
+    expect(headersFor('/media/*').get('cache-control')).toBe('public, max-age=0, must-revalidate')
   })
 })
 
