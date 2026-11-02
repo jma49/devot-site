@@ -185,6 +185,13 @@ export async function openApp(browser: Browser, options: AppOptions): Promise<Ap
     const w = globalThis as unknown as MediaWindow
     w.devotEditorSettings = initial
     const internals = w['__TAURI_INTERNALS__']
+    // Devot gives its IPC to the main frame only. The Settings window a scene shows in a frame
+    // borrows it, as the real window has its own; a sandboxed frame in the preview gets none.
+    if (!internals) {
+      if (location.pathname === '/settings.html' && w.top && w.top !== w)
+        Object.defineProperty(w, '__TAURI_INTERNALS__', { value: w.top['__TAURI_INTERNALS__'] })
+      return
+    }
     const original = internals.invoke
     internals.invoke = async (cmd, args, o) => {
       if (cmd === 'symbol_png') {
@@ -196,6 +203,12 @@ export async function openApp(browser: Browser, options: AppOptions): Promise<Ap
         if (!png) throw 'E_SYMBOL_UNAVAILABLE'
         return png
       }
+      // The sidebar footer reports backups; a library people use has a recent one.
+      if (cmd === 'backups_list')
+        return {
+          backups: [{ id: 'media', createdAt: Date.now() - 3_600_000, size: 1 }],
+          lastError: null,
+        }
       const result = await original(cmd, args, o)
       // A window shown in a frame (scenes.ts, the Settings window) reaches the main window as
       // Rust's settings event does in the app.

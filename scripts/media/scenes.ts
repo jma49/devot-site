@@ -95,7 +95,19 @@ const searchField = (page: Page) => page.getByRole('searchbox', { name: 'Search 
 const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Sidebar' })
 const focusButton = (page: Page) => page.getByRole('button', { name: 'Focus Mode' })
 const preview = (page: Page) => page.getByRole('article', { name: 'Preview' })
-const statusButton = (page: Page) => page.getByRole('button', { name: 'Status', exact: true })
+/** The row of themes for the scheme the page is recorded in; Settings shows one per scheme. */
+async function themeRow(page: Page) {
+  const dark = await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)
+  return page
+    .frameLocator('#media-settings iframe')
+    .getByRole('radiogroup', { name: dark ? 'Dark Mode Theme' : 'Light Mode Theme' })
+}
+// Named "Status" while a note has none, "Status: <status>" once it has one.
+const statusButton = (page: Page) =>
+  page
+    .getByRole('button', { name: /^Status(: .+)?$/ })
+    .and(page.locator('[aria-haspopup="listbox"]'))
+    .first()
 const statusOption = (page: Page, name: string) =>
   page.getByRole('listbox', { name: 'Status' }).getByRole('option', { name, exact: true })
 
@@ -304,7 +316,7 @@ const organise: Scene = {
     await settle(page)
   },
   async script(page, actions) {
-    const notebook = page.getByRole('button', { name: 'Notebook', exact: true })
+    const notebook = page.getByRole('button', { name: /^Notebook: / }).first()
     const launch = page.getByRole('option', { name: 'Spring launch', exact: true })
     const tags = page.getByRole('combobox', { name: 'Add Tag' })
     const planning = page
@@ -404,9 +416,9 @@ const find: Scene = {
 
 const SETTINGS_AT = { x: 40, y: 40 }
 const TITLE_BAR = 28
-// The four gradient themes span x 219 to 767 in the window; phones see the first three.
-const THEMES_CUT = 150
-const THEMES_PHONE_CUT = 215
+// From the Appearance pane's left edge, past the Settings sidebar; phones see Default to Dawn.
+const THEMES_CUT = 262
+const THEMES_PHONE_CUT = 262
 
 /**
  * The Settings window over the main window, as on a Mac: its page in a frame with the title bar
@@ -471,7 +483,7 @@ async function openSettingsWindow(page: Page) {
   )
   const settings = page.frameLocator('#media-settings iframe')
   await settings.getByRole('tab', { name: 'Appearance', exact: true }).click()
-  await settings.getByRole('radiogroup', { name: 'Theme' }).waitFor()
+  await (await themeRow(page)).waitFor()
   return settings
 }
 
@@ -487,24 +499,21 @@ const themes: Scene = {
   async prepare(page) {
     await openNote(page, 'Spring launch plan')
     await setMode(page, 'Preview')
-    const settings = await openSettingsWindow(page)
-    // Scrolled as a person would, so the gradient themes sit at the top of the window.
-    const dawn = settings
-      .getByRole('radiogroup', { name: 'Theme' })
-      .locator('.theme-card', { hasText: 'Dawn' })
+    await openSettingsWindow(page)
+    // Scrolled as a person would, the themes a little below the top, so the other scheme's row
+    // stays out of the clip and its foot fades over this scheme's colours.
+    const dawn = (await themeRow(page)).locator('.theme-choice', { hasText: 'Dawn' })
     await dawn.evaluate((card) => {
       let pane = card.parentElement
       while (pane && pane.scrollHeight <= pane.clientHeight) pane = pane.parentElement
       if (pane)
-        pane.scrollTop += card.getBoundingClientRect().top - pane.getBoundingClientRect().top - 24
+        pane.scrollTop += card.getBoundingClientRect().top - pane.getBoundingClientRect().top - 124
     })
     await settle(page)
   },
   async script(page, actions) {
-    const cards = page
-      .frameLocator('#media-settings iframe')
-      .getByRole('radiogroup', { name: 'Theme' })
-    const card = (name: string) => at(cards.locator('.theme-card', { hasText: name }), 0.5, 0.4)
+    const row = await themeRow(page)
+    const card = (name: string) => at(row.locator('.theme-choice', { hasText: name }), 0.5, 0.4)
     const tide = await card('Tide')()
     const script = new CursorScript(tide, actions).wait(0.6)
     // Ember is past the phone cut; the other three show the change on every screen.
