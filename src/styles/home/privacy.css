@@ -1,7 +1,7 @@
 .local {
   --local-mark-size: 3.5rem;
   --local-notch: var(--space-7);
-  --local-radius: 1.5rem;
+  --local-radius: var(--site-radius-card);
   --local-pad: clamp(1.25rem, 5vw, 4rem);
   --local-drift: 5vw;
 

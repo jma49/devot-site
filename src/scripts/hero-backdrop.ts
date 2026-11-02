@@ -135,8 +135,11 @@ const FPS = 30
  */
 const RENDER_SCALE = 0.5
 const MAX_RENDER_WIDTH = 1100
+/** How fast the flow field moves, and how far its warp and bands reach, against their base values. */
+const FLOW_PACE = 8
+const FLOW_REACH = 2
 /** Seconds into the flow field at which the page opens: a calm arrangement of the bands. */
-const FLOW_ORIGIN = 14
+const FLOW_ORIGIN = 21 / FLOW_PACE
 /** With reduced motion the aurora still drifts, at this share of its pace. */
 export const REDUCED_FLOW = 1 / 3
 /** The first frames that decide whether the GPU keeps up, and the median interval it must keep. */
@@ -317,19 +320,20 @@ void main() {
   vec2 uv = px / uRes;
   vec2 p = px / uRes.y;
   float aspect = uRes.x / uRes.y;
-  float t = uTime * 1.5;
+  float t = uTime * ${FLOW_PACE.toFixed(2)};
+  float reach = ${FLOW_REACH.toFixed(2)};
 
   vec2 q = vec2(fbm(p * 1.2 + vec2(0.0, 0.02 * t)), fbm(p * 1.2 + vec2(5.2, 1.3) - vec2(0.017 * t, 0.0)));
   float len = abs(uRes.x * uDir.x) + abs(uRes.y * uDir.y);
-  float g = dot(px - 0.5 * uRes, uDir) / len + 0.5 + (q.x - 0.5) * 1.4;
+  float g = dot(px - 0.5 * uRes, uDir) / len + 0.5 + (q.x - 0.5) * 1.4 * reach;
   vec3 lab = ramp(g);
   lab.x += (q.y - 0.5) * 2.0 * uGlow;
 
   float x = p.x - 0.5 * aspect;
   float flow = fbm(vec2(p.x * 0.8 - t * 0.012, t * 0.02)) - 0.5;
-  float lineA = 0.14 - 0.14 * x + 0.05 * sin(p.x * 2.6 + t * 0.05) + 0.025 * sin(p.x * 5.3 - t * 0.07 + 1.0) + flow * 0.26;
-  float lineB = 0.34 - 0.07 * x + 0.07 * sin(p.x * 1.9 + 2.0 - t * 0.04) - flow * 0.16;
-  float lineC = 0.05 - 0.06 * x + 0.035 * sin(p.x * 3.1 + 1.0 + t * 0.03) + flow * 0.1;
+  float lineA = 0.14 - 0.14 * x + reach * (0.05 * sin(p.x * 2.6 + t * 0.05) + 0.025 * sin(p.x * 5.3 - t * 0.07 + 1.0) + flow * 0.26);
+  float lineB = 0.34 - 0.07 * x + reach * (0.07 * sin(p.x * 1.9 + 2.0 - t * 0.04) - flow * 0.16);
+  float lineC = 0.05 - 0.06 * x + reach * (0.035 * sin(p.x * 3.1 + 1.0 + t * 0.03) + flow * 0.1);
   float presA = 0.7 + 0.3 * smoothstep(0.25, 0.65, fbm(vec2(p.x * 1.4 + t * 0.016, 3.0)));
   float presB = 0.75 + 0.25 * smoothstep(0.2, 0.6, fbm(vec2(p.x * 1.1 - t * 0.013, 7.0)));
   float rays = noise(vec2(p.x * 22.0 + q.y * 6.0 + t * 0.04, t * 0.03));
@@ -348,8 +352,8 @@ void main() {
   lab = mix(lab, uTide, b * uStrength.x);
   lab = mix(lab, sageTide, a * uStrength.x);
 
-  vec2 left = (p - vec2(-0.08, 0.42 + flow * 0.1)) / vec2(0.34, 0.26);
-  vec2 right = (p - vec2(aspect + 0.06, 0.1 - flow * 0.1)) / vec2(0.3, 0.24);
+  vec2 left = (p - vec2(-0.08, 0.42 + reach * flow * 0.1)) / vec2(0.34, 0.26);
+  vec2 right = (p - vec2(aspect + 0.06, 0.1 - reach * flow * 0.1)) / vec2(0.3, 0.24);
   float warmth = (exp(-dot(left, left)) + exp(-dot(right, right)) * 0.85) * (0.6 + 0.4 * q.x);
   lab = mix(lab, uWarm, min(warmth, 1.0) * uStrength.z);
 
