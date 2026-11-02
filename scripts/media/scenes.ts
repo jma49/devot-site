@@ -308,6 +308,8 @@ const organise: Scene = {
   phone: { rect: cut(276, 0, CUTS.feature.phone), output: twice(CUTS.feature.phone) },
   motion: true,
   fade: 0.5,
+  // A narrower list keeps Glass's status menu, shortcuts and all, inside the cut.
+  view: { 'devot.list.width': '260' },
   async prepare(page) {
     await openNote(page, 'Newsletter ideas')
     await setMode(page, 'Edit')

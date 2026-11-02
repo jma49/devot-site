@@ -104,11 +104,20 @@ export interface AppOptions {
   motion: boolean
 }
 
-// The app always draws its scroll bar thumbs (app.css); a still frame reads cleaner without them,
-// the editor's too, inside its shadow root.
-const HIDE_SCROLLBARS = `{
+// Glass's floating surfaces blur what lies under them (app.css, "Floating surfaces"), but WebKit's
+// screenshots leave backdrop-filter out, so text under a menu would show sharp through it. A
+// near-opaque layer of the surface's own colour stands in for the blur.
+const FROSTED = `:root[data-sidebar-material='on'] :is(.tool-tip, .palette, .tag-suggestions, .picker-popover,
+  .more-menu-list, .search-help, .confirm, .link-dialog, .sheet, .plugin-panel) {
+  box-shadow: inset 0 0 0 100vmax color(from var(--color-surface-glass-popover) srgb r g b / 0.88),
+    var(--glass-rim), var(--popover-shadow) !important;
+}`
+
+// Adds FROSTED, and hides the scroll bar thumbs the app always draws (app.css): a still frame reads
+// cleaner without them, the editor's too, inside its shadow root.
+const CAPTURE_STYLES = `{
   const sheet = new CSSStyleSheet()
-  sheet.replaceSync('::-webkit-scrollbar-thumb { background: transparent !important; }')
+  sheet.replaceSync(${JSON.stringify(`::-webkit-scrollbar-thumb { background: transparent !important; }\n${FROSTED}`)})
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]
   const attach = Element.prototype.attachShadow
   Element.prototype.attachShadow = function (init) {
@@ -227,7 +236,7 @@ export async function openApp(browser: Browser, options: AppOptions): Promise<Ap
       }
     }
   }, settings)
-  await page.addInitScript(HIDE_SCROLLBARS)
+  await page.addInitScript(CAPTURE_STYLES)
   if (options.motion) await page.addInitScript(ANIMATION_CLOCK)
   return { context, page, problems }
 }

@@ -15,24 +15,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 862706,
-        "webm": 676081,
-        "poster": 118134
+        "mp4": 909742,
+        "webm": 715376,
+        "poster": 119842
       },
       "light-phone": {
-        "mp4": 387160,
-        "webm": 342536,
-        "poster": 48288
+        "mp4": 402624,
+        "webm": 355570,
+        "poster": 48870
       },
       "dark": {
-        "mp4": 816973,
-        "webm": 651359,
-        "poster": 119940
+        "mp4": 840888,
+        "webm": 669197,
+        "poster": 118414
       },
       "dark-phone": {
-        "mp4": 375448,
-        "webm": 333721,
-        "poster": 48126
+        "mp4": 377451,
+        "webm": 332370,
+        "poster": 47934
       }
     }
   },
@@ -40,7 +40,7 @@
     "width": 1344,
     "height": 896,
     "points": 672,
-    "minText": 10.5,
+    "minText": 9.8,
     "duration": 7.8,
     "posterTime": 6.42,
     "edges": ["top", "left"],
@@ -52,24 +52,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 180129,
-        "webm": 125885,
-        "poster": 67828
+        "mp4": 170090,
+        "webm": 119118,
+        "poster": 67182
       },
       "light-phone": {
-        "mp4": 58703,
-        "webm": 48779,
-        "poster": 26164
+        "mp4": 49463,
+        "webm": 44544,
+        "poster": 22250
       },
       "dark": {
-        "mp4": 177195,
-        "webm": 122672,
-        "poster": 65010
+        "mp4": 152092,
+        "webm": 114768,
+        "poster": 65780
       },
       "dark-phone": {
-        "mp4": 55161,
-        "webm": 47255,
-        "poster": 24798
+        "mp4": 46651,
+        "webm": 43230,
+        "poster": 21648
       }
     }
   },
@@ -89,24 +89,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 175057,
-        "webm": 105749,
-        "poster": 51852
+        "mp4": 200230,
+        "webm": 112389,
+        "poster": 55444
       },
       "light-phone": {
-        "mp4": 90282,
-        "webm": 59806,
-        "poster": 19752
+        "mp4": 100235,
+        "webm": 61245,
+        "poster": 20610
       },
       "dark": {
-        "mp4": 186551,
-        "webm": 107623,
-        "poster": 50986
+        "mp4": 188460,
+        "webm": 109604,
+        "poster": 53574
       },
       "dark-phone": {
-        "mp4": 93890,
-        "webm": 62757,
-        "poster": 19212
+        "mp4": 89945,
+        "webm": 60899,
+        "poster": 19844
       }
     }
   },
@@ -126,24 +126,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 347176,
-        "webm": 219251,
-        "poster": 76172
+        "mp4": 426901,
+        "webm": 248705,
+        "poster": 74068
       },
       "light-phone": {
-        "mp4": 114494,
-        "webm": 80970,
-        "poster": 28564
+        "mp4": 127622,
+        "webm": 89437,
+        "poster": 32714
       },
       "dark": {
-        "mp4": 351490,
-        "webm": 212316,
-        "poster": 74118
+        "mp4": 414778,
+        "webm": 236875,
+        "poster": 79548
       },
       "dark-phone": {
-        "mp4": 111459,
-        "webm": 78101,
-        "poster": 27478
+        "mp4": 122669,
+        "webm": 85800,
+        "poster": 31248
       }
     }
   },
@@ -163,24 +163,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 67432,
-        "webm": 47093,
-        "poster": 38722
+        "mp4": 78234,
+        "webm": 60131,
+        "poster": 43020
       },
       "light-phone": {
-        "mp4": 51496,
-        "webm": 40291,
-        "poster": 36700
+        "mp4": 61048,
+        "webm": 50957,
+        "poster": 40368
       },
       "dark": {
-        "mp4": 61293,
-        "webm": 44008,
-        "poster": 33608
+        "mp4": 71171,
+        "webm": 51949,
+        "poster": 36644
       },
       "dark-phone": {
-        "mp4": 46247,
-        "webm": 35963,
-        "poster": 31986
+        "mp4": 50278,
+        "webm": 42989,
+        "poster": 33690
       }
     }
   },
@@ -194,14 +194,14 @@
     "edges": ["top", "left"],
     "bytes": {
       "light": {
-        "mp4": 193807,
-        "webm": 134026,
-        "poster": 49120
+        "mp4": 243806,
+        "webm": 138974,
+        "poster": 48620
       },
       "dark": {
-        "mp4": 221940,
-        "webm": 126784,
-        "poster": 46350
+        "mp4": 227676,
+        "webm": 126102,
+        "poster": 46918
       }
     }
   },
@@ -215,14 +215,14 @@
     "edges": ["top", "left"],
     "bytes": {
       "light": {
-        "mp4": 74859,
-        "webm": 44724,
-        "poster": 41200
+        "mp4": 69953,
+        "webm": 45895,
+        "poster": 40012
       },
       "dark": {
-        "mp4": 69380,
-        "webm": 44021,
-        "poster": 38950
+        "mp4": 67014,
+        "webm": 45462,
+        "poster": 38868
       }
     }
   },
@@ -242,24 +242,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 210262,
-        "webm": 122320,
-        "poster": 44396
+        "mp4": 220067,
+        "webm": 126987,
+        "poster": 33280
       },
       "light-phone": {
-        "mp4": 201454,
-        "webm": 116219,
-        "poster": 45562
+        "mp4": 217216,
+        "webm": 120118,
+        "poster": 38212
       },
       "dark": {
-        "mp4": 205424,
-        "webm": 114859,
-        "poster": 41952
+        "mp4": 195356,
+        "webm": 117369,
+        "poster": 30768
       },
       "dark-phone": {
-        "mp4": 192281,
-        "webm": 110169,
-        "poster": 48426
+        "mp4": 195202,
+        "webm": 115994,
+        "poster": 35462
       }
     }
   },
@@ -279,24 +279,24 @@
     },
     "bytes": {
       "light": {
-        "mp4": 233130,
-        "webm": 155017,
-        "poster": 62642
+        "mp4": 237184,
+        "webm": 178223,
+        "poster": 68274
       },
       "light-phone": {
-        "mp4": 200632,
-        "webm": 129741,
-        "poster": 44442
+        "mp4": 203382,
+        "webm": 143265,
+        "poster": 45888
       },
       "dark": {
-        "mp4": 210648,
-        "webm": 142850,
-        "poster": 62142
+        "mp4": 209726,
+        "webm": 154975,
+        "poster": 66414
       },
       "dark-phone": {
-        "mp4": 175866,
-        "webm": 118331,
-        "poster": 43478
+        "mp4": 175821,
+        "webm": 125241,
+        "poster": 44314
       }
     }
   },
@@ -310,14 +310,14 @@
     "edges": ["top", "left"],
     "bytes": {
       "light": {
-        "mp4": 173308,
-        "webm": 123614,
-        "poster": 24164
+        "mp4": 178532,
+        "webm": 126649,
+        "poster": 24234
       },
       "dark": {
-        "mp4": 155817,
-        "webm": 107963,
-        "poster": 24094
+        "mp4": 149872,
+        "webm": 110665,
+        "poster": 23560
       }
     }
   }

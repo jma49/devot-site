@@ -80,7 +80,7 @@ async function captureScene(
     symbols,
     scheme,
     viewport: scene.viewport,
-    settings: { sidebarMaterial: false, theme: 'tide', ...scene.settings },
+    settings: { sidebarMaterial: true, theme: 'tide', ...scene.settings },
     motion: scene.motion,
   })
   const label = `${scene.slot} ${scheme}`
