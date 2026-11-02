@@ -306,3 +306,9 @@
     padding-block-start: var(--space-8);
   }
 }
+
+@media (pointer: coarse) {
+  .status-demo-filter {
+    min-height: var(--site-size-touch);
+  }
+}

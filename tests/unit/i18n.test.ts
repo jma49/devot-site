@@ -49,7 +49,7 @@ it('says in plain words, beside each download button, how to open Devot the firs
   )
   expect(en.install.note).toContainEqual({ unbroken: 'notarised by Apple' })
   expect(en.install.link).toBe('Install steps')
-  expect(en.closing.installNote).toMatch(/^Signed and notarised by Apple\b/)
+  expect(en.closing.installNote).toBe('Updates arrive in the app, so you install it once.')
   expect(en.closing.installNote).not.toMatch(/right-click/i)
 })
 
