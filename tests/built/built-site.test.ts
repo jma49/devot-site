@@ -29,10 +29,11 @@ const canonicalOf = (html: string) =>
     .find(({ attrs }) => attrs.get('rel') === 'canonical')
     ?.attrs.get('href')
 
-it('builds the home page, the terms of sale, the refund policy and a 404 page', () => {
+it('builds the home page, the terms of sale, the refund policy, the AI tools privacy policy and a 404 page', () => {
   expect(pages).toContain('dist/index.html')
   expect(pages).toContain('dist/terms.html')
   expect(pages).toContain('dist/refunds.html')
+  expect(pages).toContain('dist/mcp-privacy.html')
   expect(pages).toContain(NOT_FOUND)
 })
 

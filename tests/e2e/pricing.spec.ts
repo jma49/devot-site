@@ -75,6 +75,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       for (const [path, copy] of [
         ['/terms', en.terms],
         ['/refunds', en.refunds],
+        ['/mcp-privacy', en.mcpPrivacy],
       ] as const) {
         test(`serves ${path} with its heading, sections and a scan without findings`, async ({
           page,

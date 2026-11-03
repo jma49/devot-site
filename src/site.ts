@@ -15,3 +15,5 @@ export const LICENCE_PRICE = 'US$29.90'
 export const REFUND_DAYS = 30
 /** Starts the first time Devot opens; Devot is read-only once it ends without a licence. */
 export const TRIAL_DAYS = 30
+/** Where questions about the privacy of the AI tools connector go. */
+export const PRIVACY_EMAIL = 'privacy@devot.online'

@@ -7,7 +7,7 @@ const MIN = 44
 test.describe('on a touch screen', () => {
   test.use({ viewport: PHONE, hasTouch: true, isMobile: true })
 
-  for (const path of ['/', '/terms/', '/refunds/']) {
+  for (const path of ['/', '/terms/', '/refunds/', '/mcp-privacy/']) {
     test(`every control on ${path} outside running text is at least 44 by 44`, async ({
       page,
       browserName,
