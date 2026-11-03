@@ -1,4 +1,4 @@
-import { ISSUES_URL, REPO_URL, RESEND_URL } from '../site.ts'
+import { ISSUES_URL, PRIVACY_EMAIL, REPO_URL, RESEND_URL } from '../site.ts'
 
 const blob = (path: string) => `${REPO_URL}/blob/main/${path}`
 
@@ -8,6 +8,7 @@ export const STORAGE_DOC_URL = `${blob('docs/architecture.md')}#app-data-folder`
 export const PRICING_PATH = '/#pricing'
 export const TERMS_PATH = '/terms'
 export const REFUNDS_PATH = '/refunds'
+export const MCP_PRIVACY_PATH = '/mcp-privacy'
 
 /** Where the links inside the terms and the refund policy go, by the id the copy names. */
 export const LEGAL_LINKS = {
@@ -15,6 +16,8 @@ export const LEGAL_LINKS = {
   refunds: REFUNDS_PATH,
   resend: RESEND_URL,
   issues: ISSUES_URL,
+  anthropicPrivacy: 'https://www.anthropic.com/legal/privacy',
+  privacyEmail: `mailto:${PRIVACY_EMAIL}`,
 } as const
 
 export type LegalLinkId = keyof typeof LEGAL_LINKS
@@ -68,6 +71,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
       { id: 'licence', href: blob('LICENSE') },
       { id: 'terms', href: TERMS_PATH },
       { id: 'refunds', href: REFUNDS_PATH },
+      { id: 'mcpPrivacy', href: MCP_PRIVACY_PATH },
       { id: 'security', href: `${REPO_URL}/security/policy` },
       { id: 'report', href: `${REPO_URL}/security/advisories/new` },
     ],

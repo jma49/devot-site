@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
-import { BUY_URL, ISSUES_URL, LICENCE_PRICE, RESEND_URL } from '../../src/site.ts'
+import { BUY_URL, ISSUES_URL, LICENCE_PRICE, PRIVACY_EMAIL, RESEND_URL } from '../../src/site.ts'
 import { tags } from '../support/html.ts'
 import { filesUnder, readRepoFile } from '../support/source-files.ts'
 
@@ -79,8 +79,21 @@ it.each(pages)('%s links the terms and the refund policy from its footer', (page
   expect(hrefs(footer(readRepoFile(page)))).toEqual(expect.arrayContaining(['/terms', '/refunds']))
 })
 
-it.each(pages)('%s gives no email address', (page) => {
+const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g
+const privacyPage = 'dist/mcp-privacy.html'
+
+it.each(pages.filter((page) => page !== privacyPage))('%s gives no email address', (page) => {
   const html = readRepoFile(page)
   expect(html).not.toMatch(/mailto:/i)
-  expect(text(html)).not.toMatch(/[\w.+-]+@[\w-]+(\.[\w-]+)+/)
+  expect(text(html)).not.toMatch(EMAIL)
+})
+
+it('gives only the privacy address, on the privacy policy', () => {
+  const html = readRepoFile(privacyPage)
+  expect(hrefs(html).filter((href) => href?.startsWith('mailto:'))).toEqual([
+    `mailto:${PRIVACY_EMAIL}`,
+  ])
+  expect([...new Set(text(html).match(EMAIL))]).toEqual([PRIVACY_EMAIL])
+  expect(text(html)).toContain(en.mcpPrivacy.updated)
+  expect(text(html)).not.toContain(en.legal.updated)
 })

@@ -9,6 +9,7 @@ import {
   LICENCE_PRICE,
   REFUND_DAYS,
   REPO_URL,
+  PRIVACY_EMAIL,
   RESEND_URL,
   TRIAL_DAYS,
 } from '../../src/site.ts'
@@ -196,6 +197,8 @@ it('links each legal destination to its page or service', () => {
     refunds: REFUNDS_PATH,
     resend: RESEND_URL,
     issues: ISSUES_URL,
+    anthropicPrivacy: 'https://www.anthropic.com/legal/privacy',
+    privacyEmail: `mailto:${PRIVACY_EMAIL}`,
   })
   expect(TERMS_PATH).toBe('/terms')
   expect(REFUNDS_PATH).toBe('/refunds')
@@ -208,9 +211,9 @@ it('links the footer to Pricing, the terms and the refund policy', () => {
   expect(hrefs).toContain(REFUNDS_PATH)
 })
 
-it('gives no email address anywhere in the copy', () => {
+it('gives no email address in the copy but the privacy contact, which links to a mailto', () => {
   const addresses = [...catalogStrings(en, [2026])].filter((text) => EMAIL.test(text))
-  expect(addresses).toEqual([])
+  expect(addresses).toEqual([PRIVACY_EMAIL])
 })
 
 it('promises nothing Devot has not shipped', () => {

@@ -102,6 +102,7 @@ export const privacyCopy = {
           licence: 'FSL-1.1-MIT licence',
           terms: 'Terms of sale',
           refunds: 'Refund policy',
+          mcpPrivacy: 'AI tools privacy',
           security: 'Security policy',
           report: 'Report a vulnerability',
         },
