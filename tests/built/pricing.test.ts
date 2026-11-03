@@ -90,6 +90,8 @@ it.each(pages.filter((page) => page !== privacyPage))('%s gives no email address
 
 it('gives only the privacy address, on the privacy policy', () => {
   const html = readRepoFile(privacyPage)
-  expect(hrefs(html).filter((href) => /^mailto:/i.test(href))).toEqual([`mailto:${PRIVACY_EMAIL}`])
+  expect(hrefs(html).filter((href) => href?.startsWith('mailto:'))).toEqual([
+    `mailto:${PRIVACY_EMAIL}`,
+  ])
   expect([...new Set(text(html).match(EMAIL))]).toEqual([PRIVACY_EMAIL])
 })
