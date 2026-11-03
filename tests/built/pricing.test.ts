@@ -94,4 +94,6 @@ it('gives only the privacy address, on the privacy policy', () => {
     `mailto:${PRIVACY_EMAIL}`,
   ])
   expect([...new Set(text(html).match(EMAIL))]).toEqual([PRIVACY_EMAIL])
+  expect(text(html)).toContain(en.mcpPrivacy.updated)
+  expect(text(html)).not.toContain(en.legal.updated)
 })

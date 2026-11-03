@@ -13,6 +13,8 @@ export interface LegalPage {
   description: string
   heading: string
   intro: string
+  /** Replaces the date the legal pages share. */
+  updated?: string
   sections: { title: string; paragraphs: LegalRun[][] }[]
 }
 
@@ -156,6 +158,7 @@ const mcpPrivacy: LegalPage = {
   description:
     'What the Devot connector for Claude can reach, what it sends, what it records and where your data goes when an AI tool uses it.',
   heading: 'Devot for Claude: privacy policy',
+  updated: 'Effective 3 November 2026',
   intro:
     'This policy covers the Devot connector for Claude: the plugin and the bridge built into the Devot app.',
   sections: [

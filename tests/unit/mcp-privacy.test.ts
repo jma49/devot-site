@@ -37,6 +37,12 @@ describe('the AI tools privacy page', () => {
     for (const section of page.sections) expect(section.paragraphs.length).toBeGreaterThan(0)
   })
 
+  it('carries its own effective date, apart from the other legal pages', () => {
+    expect(page.updated).toBe('Effective 3 November 2026')
+    expect(en.terms.updated).toBeUndefined()
+    expect(en.refunds.updated).toBeUndefined()
+  })
+
   it('turns the usage list into paragraphs that start with their labels', () => {
     const usage = page.sections.find((section) => section.title === 'Usage and storage')
     const starts = usage?.paragraphs.map((runs) => String(runs[0]).split(' ')[0])
