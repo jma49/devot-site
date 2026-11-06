@@ -7,6 +7,7 @@ import { legalCopy } from './en/legal.ts'
 import { mediaCopy } from './en/media.ts'
 import { pricingCopy } from './en/pricing.ts'
 import { privacyCopy } from './en/privacy.ts'
+import { supportCopy } from './en/support.ts'
 
 /** Copy shared by several sections lives here; each package's own copy lives in `en/<package>.ts`. */
 export const en = {
@@ -22,6 +23,7 @@ export const en = {
   ...privacyCopy,
   ...pricingCopy,
   ...legalCopy,
+  ...supportCopy,
   ...mediaCopy,
   ...demoCopy,
 }

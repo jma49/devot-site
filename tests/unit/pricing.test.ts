@@ -199,6 +199,10 @@ it('links each legal destination to its page or service', () => {
     issues: ISSUES_URL,
     anthropicPrivacy: 'https://www.anthropic.com/legal/privacy',
     privacyEmail: `mailto:${PRIVACY_EMAIL}`,
+    privacy: '/privacy',
+    mcpPrivacy: '/mcp-privacy',
+    devices: 'https://licence.devot.online/devices',
+    appleRefund: 'https://reportaproblem.apple.com',
   })
   expect(TERMS_PATH).toBe('/terms')
   expect(REFUNDS_PATH).toBe('/refunds')
@@ -216,8 +220,10 @@ it('gives no email address in the copy but the privacy contact, which links to a
   expect(addresses).toEqual([PRIVACY_EMAIL])
 })
 
+// The privacy policy and the support page serve the iPhone app's App Store listing.
 it('promises nothing Devot has not shipped', () => {
-  const claims = [...catalogStrings(en, [2026])].filter((text) =>
+  const { privacyPolicy: _privacy, support: _support, ...rest } = en
+  const claims = [...catalogStrings(rest, [2026])].filter((text) =>
     /\biPhone\b|\biPad\b|\biOS\b|semantic search/i.test(text),
   )
   expect(claims).toEqual([])
