@@ -89,6 +89,7 @@ export const privacyCopy = {
       community: {
         title: 'Community',
         links: {
+          support: 'Support',
           github: 'Source on GitHub',
           issues: 'Issues',
           pulls: 'Pull requests',
@@ -102,6 +103,7 @@ export const privacyCopy = {
           licence: 'FSL-1.1-MIT licence',
           terms: 'Terms of sale',
           refunds: 'Refund policy',
+          privacy: 'Privacy policy',
           mcpPrivacy: 'AI tools privacy',
           security: 'Security policy',
           report: 'Report a vulnerability',

@@ -274,6 +274,123 @@ const mcpPrivacy: LegalPage = {
   ],
 }
 
+const privacyPolicy: LegalPage = {
+  title: 'Devot: privacy policy',
+  description:
+    'What Devot on Mac and iPhone keeps, what it sends and to whom: your notes, sync, AI, purchases, licences and crash reports.',
+  heading: 'Privacy policy',
+  updated: 'Effective 6 November 2026',
+  intro: 'This policy covers the Devot app on Mac and iPhone and the licence service it talks to.',
+  sections: [
+    {
+      title: 'Summary',
+      paragraphs: [
+        [
+          'Your notes stay on your devices unless you turn on sync, and sync is end-to-end encrypted. Devot has no accounts, no ads and no tracking, and it does not sell or share your data. Devot itself runs one service, for licences and purchases, and it never sees your notes.',
+        ],
+      ],
+    },
+    {
+      title: 'Your notes',
+      paragraphs: [
+        [
+          "Notes, notebooks, tags, images and settings are stored on your device. Devot sends none of it to Devot's servers. Your device's own backups, such as iCloud Backup or a backup to a computer, can include Devot's data as they do for other apps.",
+        ],
+        [
+          'If a note shows an image by its web address, Devot loads that image from its address, and that server sees the request as it would from a browser.',
+        ],
+      ],
+    },
+    {
+      title: 'Sync',
+      paragraphs: [
+        [
+          'Sync is off until you turn it on. It runs through your own iCloud account or through a relay you deploy, never through a Devot server.',
+        ],
+        [
+          'Everything Devot syncs is encrypted on your device (AES-256-GCM) before it leaves, under a vault key that only your devices hold. iCloud and the relay store encrypted records only. They can see how many records there are, their sizes, whether each is a note or a file, and when they were written, but never a title, a note, a name or the key. With iCloud, the vault key reaches your other devices through iCloud Keychain, which Apple encrypts end to end.',
+        ],
+      ],
+    },
+    {
+      title: 'AI',
+      paragraphs: [
+        [
+          'AI features are off until you add a key for an AI provider in Settings > AI. Devot then sends text to that provider directly from your device, only when you use an AI feature, and only from notebooks where you switched Allow AI Access on. Nothing goes through Devot. The provider handles it under its own terms and privacy policy. Your key is kept in the keychain on your device.',
+        ],
+        [
+          'The connector that lets Claude and other AI tools reach Devot on a Mac has ',
+          { text: 'its own privacy policy', link: 'mcpPrivacy' },
+          '.',
+        ],
+      ],
+    },
+    {
+      title: 'Purchases and licences',
+      paragraphs: [
+        [
+          "On iPhone, Apple handles the trial and the purchase of Devot Pro. Devot learns from Apple whether this Apple Account holds them, never your name, email address or payment details. If you ask for a Mac licence key in Settings, the iPhone sends that purchase's signed transaction to Devot's licence service, which asks Apple about it and answers with the key.",
+        ],
+        [
+          'On the Mac, Stripe handles the payment and keeps your email address and payment details. The licence service receives your address from Stripe to put in the licence key and to email it to you, through the email service Resend. It does not store the address itself; it keeps a keyed hash of it, so that a lost key can be sent again.',
+        ],
+        [
+          "When a device uses a licence key, it sends the key, a random device ID made on that device, and whether it is a Mac or an iPhone, to hold one of the licence's device seats. Once a day it also downloads the public list of revoked licences.",
+        ],
+        [
+          'The licence service keeps the licence, its purchase (Stripe or App Store IDs and times, never a card or an Apple Account), and its device seats with when each was last used. These records are kept for as long as the licence exists, so it can be checked, sent again and revoked; a seat is removed when you remove the device. Your IP address is used only to limit requests, stored as a keyed hash for that hour. Logs hold codes and IDs only.',
+        ],
+      ],
+    },
+    {
+      title: 'Crash reports',
+      paragraphs: [
+        [
+          "Crash reports are off until you turn on Send Crash Reports in Settings. Devot then sends a report to Sentry, a crash reporting service, after an error. A report holds error codes, where in the code it happened, the Devot version and the system details (system version and device model), never note text, the names of your files or folders, your name or your device's name. Sentry handles reports under its own privacy policy. Turn it off and nothing more is sent, and reports not yet sent are deleted.",
+        ],
+      ],
+    },
+    {
+      title: 'Other connections',
+      paragraphs: [
+        [
+          'The Mac app checks GitHub for updates. Devot on the Mac counts a few kinds of events, such as how many notes you create, to show you in Settings > Usage Data; they stay on that Mac and are never sent. The iPhone counts none.',
+        ],
+      ],
+    },
+    {
+      title: 'What Devot does not do',
+      paragraphs: [
+        [
+          'Devot has no accounts and no sign-in. It shows no ads, contains no analytics or advertising code, does not track you across apps or websites, and does not sell or share your data with anyone.',
+        ],
+      ],
+    },
+    {
+      title: 'Your choices',
+      paragraphs: [
+        [
+          "Deleting Devot from an iPhone deletes its data from that iPhone. Turning off sync stops sending; to remove the encrypted copy, delete Devot's data in iCloud settings or on your relay. To have the licence service's records about a licence deleted, write to the address below; a deleted licence no longer works.",
+        ],
+      ],
+    },
+    {
+      title: 'Changes',
+      paragraphs: [
+        [
+          'If this policy changes, the new version is published at this address with a new effective date.',
+        ],
+      ],
+    },
+    {
+      title: 'Contact',
+      paragraphs: [
+        ['Questions about this policy: ', { text: PRIVACY_EMAIL, link: 'privacyEmail' }, '.'],
+      ],
+    },
+  ],
+}
+
 export const legalCopy = {
   legal: {
     updated: 'Updated 25 October 2026',
@@ -282,4 +399,5 @@ export const legalCopy = {
   terms,
   refunds,
   mcpPrivacy,
+  privacyPolicy,
 }

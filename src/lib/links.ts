@@ -1,4 +1,4 @@
-import { ISSUES_URL, PRIVACY_EMAIL, REPO_URL, RESEND_URL } from '../site.ts'
+import { DEVICES_URL, ISSUES_URL, PRIVACY_EMAIL, REPO_URL, RESEND_URL } from '../site.ts'
 
 const blob = (path: string) => `${REPO_URL}/blob/main/${path}`
 
@@ -9,8 +9,10 @@ export const PRICING_PATH = '/#pricing'
 export const TERMS_PATH = '/terms'
 export const REFUNDS_PATH = '/refunds'
 export const MCP_PRIVACY_PATH = '/mcp-privacy'
+export const PRIVACY_PATH = '/privacy'
+export const SUPPORT_PATH = '/support'
 
-/** Where the links inside the terms and the refund policy go, by the id the copy names. */
+/** Where the links inside the legal and support pages go, by the id the copy names. */
 export const LEGAL_LINKS = {
   terms: TERMS_PATH,
   refunds: REFUNDS_PATH,
@@ -18,6 +20,10 @@ export const LEGAL_LINKS = {
   issues: ISSUES_URL,
   anthropicPrivacy: 'https://www.anthropic.com/legal/privacy',
   privacyEmail: `mailto:${PRIVACY_EMAIL}`,
+  privacy: PRIVACY_PATH,
+  mcpPrivacy: MCP_PRIVACY_PATH,
+  devices: DEVICES_URL,
+  appleRefund: 'https://reportaproblem.apple.com',
 } as const
 
 export type LegalLinkId = keyof typeof LEGAL_LINKS
@@ -58,6 +64,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
   {
     id: 'community',
     links: [
+      { id: 'support', href: SUPPORT_PATH },
       { id: 'github', href: REPO_URL },
       { id: 'issues', href: ISSUES_URL },
       { id: 'pulls', href: `${REPO_URL}/pulls` },
@@ -71,6 +78,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
       { id: 'licence', href: blob('LICENSE') },
       { id: 'terms', href: TERMS_PATH },
       { id: 'refunds', href: REFUNDS_PATH },
+      { id: 'privacy', href: PRIVACY_PATH },
       { id: 'mcpPrivacy', href: MCP_PRIVACY_PATH },
       { id: 'security', href: `${REPO_URL}/security/policy` },
       { id: 'report', href: `${REPO_URL}/security/advisories/new` },

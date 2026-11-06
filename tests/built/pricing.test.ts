@@ -80,20 +80,24 @@ it.each(pages)('%s links the terms and the refund policy from its footer', (page
 })
 
 const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g
-const privacyPage = 'dist/mcp-privacy.html'
+const contactPages = {
+  'dist/mcp-privacy.html': en.mcpPrivacy,
+  'dist/privacy.html': en.privacyPolicy,
+  'dist/support.html': en.support,
+}
 
-it.each(pages.filter((page) => page !== privacyPage))('%s gives no email address', (page) => {
+it.each(pages.filter((page) => !(page in contactPages)))('%s gives no email address', (page) => {
   const html = readRepoFile(page)
   expect(html).not.toMatch(/mailto:/i)
   expect(text(html)).not.toMatch(EMAIL)
 })
 
-it('gives only the privacy address, on the privacy policy', () => {
-  const html = readRepoFile(privacyPage)
+it.each(Object.entries(contactPages))('%s gives only the privacy address', (page, copy) => {
+  const html = readRepoFile(page)
   expect(hrefs(html).filter((href) => href?.startsWith('mailto:'))).toEqual([
     `mailto:${PRIVACY_EMAIL}`,
   ])
   expect([...new Set(text(html).match(EMAIL))]).toEqual([PRIVACY_EMAIL])
-  expect(text(html)).toContain(en.mcpPrivacy.updated)
+  expect(text(html)).toContain(copy.updated)
   expect(text(html)).not.toContain(en.legal.updated)
 })

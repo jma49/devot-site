@@ -11,9 +11,11 @@ const LICENCE_SERVICE_URL = 'https://licence.devot.online'
 export const BUY_URL = `${LICENCE_SERVICE_URL}/buy`
 /** The form that mails every licence bought with an address back to it. */
 export const RESEND_URL = `${LICENCE_SERVICE_URL}/resend`
+/** Lists the devices a licence key is activated on, and removes one. */
+export const DEVICES_URL = `${LICENCE_SERVICE_URL}/devices`
 export const LICENCE_PRICE = 'US$29.90'
 export const REFUND_DAYS = 30
 /** Starts the first time Devot opens; Devot is read-only once it ends without a licence. */
 export const TRIAL_DAYS = 30
-/** Where questions about the privacy of the AI tools connector go. */
+/** Where privacy questions, and support questions too private for an issue, go. */
 export const PRIVACY_EMAIL = 'privacy@devot.online'
