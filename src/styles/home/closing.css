@@ -34,17 +34,6 @@
   rotate: -3deg;
 }
 
-.closing::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  z-index: -1;
-  height: clamp(5rem, 14vh, 9rem);
-  background: linear-gradient(to bottom, transparent, var(--site-color-page));
-  pointer-events: none;
-}
-
 @media (prefers-color-scheme: dark) {
   .closing {
     --closing-veil: color-mix(in oklab, var(--site-color-page) 80%, transparent);

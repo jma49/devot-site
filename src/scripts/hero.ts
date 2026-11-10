@@ -1,6 +1,6 @@
 import { setVar } from '../lib/motion.ts'
 import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
-import { keepInStep, type InStep } from './hero-day.ts'
+import { keepInStep, mirrorPlayback, type InStep, type Mirror } from './hero-day.ts'
 import { browserPause } from './pause.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
@@ -125,17 +125,21 @@ const DAYLIGHT_ARRIVAL = 450
  * wears the night until half of it has gone and the header for as long as it is also over the
  * hero. On a light page the light recording comes over the hero clip as the night goes, and
  * daylight reaches the window (`--hero-daylight`) once that recording is on the clip's moment.
+ * The iPhone's recording plays whenever the hero clip does, and its light one comes the same way.
  */
 function startNight(hero: HTMLElement): { set(night: number): void } {
   const header = document.querySelector<HTMLElement>('[data-site-header]')
   const day = hero.querySelector<HTMLElement>('[data-hero-day]')
   const recording = day?.querySelector<HTMLVideoElement>('video')
   const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
+  const phone = hero.querySelector<HTMLVideoElement>('[data-hero-phone="night"]')
+  const phoneDay = hero.querySelector<HTMLVideoElement>('[data-hero-phone="day"]')
   const dark = window.matchMedia(DARK_QUERY)
   const pause = browserPause()
   let night = 1
   let underHeader = true
   let step: InStep | null = null
+  let phoneLight: Mirror | null = null
   let readyAt: number | null = null
   let daylight = '0'
 
@@ -149,6 +153,12 @@ function startNight(hero: HTMLElement): { set(night: number): void } {
     const wanted = !dark.matches && !pause.paused && night < 1
     if (day && day.hidden === wanted) day.hidden = !wanted
     if (wanted && !step && recording && clip) step = keepInStep(clip, recording, light)
+    if (phoneDay && phoneDay.hidden === wanted) phoneDay.hidden = !wanted
+    if (wanted && !phoneLight && phone && phoneDay) {
+      phoneLight = mirrorPlayback(phone, phoneDay)
+      keepInStep(phone, phoneDay, () => {})
+    }
+    phoneLight?.rest(!wanted)
     if (step?.ready()) readyAt ??= performance.now()
     // A recording that loads while the page scrolls is let in over a moment, not at a stroke.
     const arrived =
@@ -170,6 +180,7 @@ function startNight(hero: HTMLElement): { set(night: number): void } {
   ).observe(hero)
   dark.addEventListener('change', light)
   pause.subscribe(light)
+  if (clip && phone) mirrorPlayback(clip, phone)
   dress()
 
   return {

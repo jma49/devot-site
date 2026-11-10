@@ -3,6 +3,8 @@ import '../../styles/home/hero.css'
 import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
 import notesLight from '../../assets/iphone/p1-notes-light.png'
+import readingDark from '../../assets/iphone/p2-read-dark.mp4?url'
+import readingLight from '../../assets/iphone/p2-read-light.mp4?url'
 import { messages } from '../../i18n/index.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
@@ -11,9 +13,12 @@ import InstallNote from '../InstallNote.astro'
 
 const t = messages()
 
-// The widest the phone is drawn is 216 px; twice that covers a 2x screen.
-const phone = (src: ImageMetadata) => getImage({ src, width: 440, format: 'webp', quality: 82 })
+// The widest the phone is drawn is 216 px; twice that covers a 2x screen. Its recording opens on
+// the Notes tab, which these stills show, and is 440 by 956 too.
+const phone = (src: ImageMetadata) =>
+  getImage({ src, width: 440, height: 956, format: 'webp', quality: 82 })
 const [phoneDark, phoneLight] = await Promise.all([phone(notesDark), phone(notesLight)])
+const phoneSize = { width: phoneDark.attributes.width, height: phoneDark.attributes.height }
 ---
 
 <section
@@ -97,22 +102,47 @@ const [phoneDark, phoneLight] = await Promise.all([phone(notesDark), phone(notes
       </div>
     </div>
     <div class="hero-phone">
-      <img
-        src={phoneDark.src}
-        width={phoneDark.attributes.width}
-        height={phoneDark.attributes.height}
-        alt={t.media.iphoneNotes}
-        decoding="async"
-      />
-      <img
-        class="hero-phone-day"
-        src={phoneLight.src}
-        width={phoneLight.attributes.width}
-        height={phoneLight.attributes.height}
-        alt=""
-        loading="lazy"
-        decoding="async"
-      />
+      <video
+        class="hero-phone-screen"
+        data-hero-phone="night"
+        width={phoneSize.width}
+        height={phoneSize.height}
+        poster={phoneDark.src}
+        aria-label={t.media.iphoneReading}
+        preload="none"
+        tabindex="-1"
+        muted
+        loop
+        playsinline
+      >
+        <source data-src={readingDark} type="video/mp4" />
+      </video>
+      <noscript>
+        <img
+          class="hero-phone-screen"
+          src={phoneDark.src}
+          width={phoneSize.width}
+          height={phoneSize.height}
+          alt={t.media.iphoneNotes}
+          decoding="async"
+        />
+      </noscript>
+      <video
+        class="hero-phone-screen hero-phone-day"
+        data-hero-phone="day"
+        width={phoneSize.width}
+        height={phoneSize.height}
+        data-poster={phoneLight.src}
+        aria-hidden="true"
+        preload="none"
+        tabindex="-1"
+        muted
+        loop
+        playsinline
+        hidden
+      >
+        <source data-src={readingLight} type="video/mp4" />
+      </video>
     </div>
   </div>
 </section>

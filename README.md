@@ -88,7 +88,11 @@ The page opens under a night in either scheme. `Hero.astro` renders the hero wit
 
 The window opens on the hero slot's dark recording in either scheme: `<Clip name="hero" scheme="dark" priority />` pins the clip to that appearance (`pinned` in `src/media.ts`), so the first screen loads one recording and one poster, the dark ones. On a light page the light recording is a second clip, `hero-day`, in `[data-hero-day]`, which starts `hidden`: nothing of it is requested until the night starts to go, when `hero.ts` shows it and `src/scripts/clips.ts` loads and plays it like any clip. `keepInStep` (`src/scripts/hero-day.ts`) keeps it on the hero clip's moment, and once it has a frame of that moment `--hero-daylight` follows the scroll from 0 to 1: a mask lets the light recording cross the window from the left, an edge that moves, so the two recordings never blend to grey (the iPhone beside the window does the same with two stills). Back at the top it is hidden again and rests. A dark page keeps the dark recording and never asks for the light one; so does a page without scripts, and one with reduced motion, where the night stays.
 
-The iPhone screens (the hero's, and the two in the iPhone section) are the stills in `src/assets/iphone/`, resized to WebP at build time; a device's outline is drawn in CSS around each (`--site-device-bezel`).
+The iPhone beside the window plays a recording too, `src/assets/iphone/p2-read-<scheme>.mp4` (440 by 956, built to `/_astro/`): `mirrorPlayback` (`src/scripts/hero-day.ts`) asks for it when the hero clip first plays, and plays and rests it with that clip, so the reader's pause, the tab and the scroll stop both. Its light recording comes with the day as the window's does, kept in step with the dark one. The two phones in the iPhone section are the stills in `src/assets/iphone/`, resized to WebP at build time, as are the hero phone's posters; a device's outline is drawn in CSS around each (`--site-device-bezel`).
+
+### The sky behind the page
+
+`PageSky.astro` puts the hero's aurora behind the rest of the home page: a fixed layer under every section (`src/styles/home/sky.css`), faint and holding still, so the sections and the margins beside them lie under one sky and the hero's night fades into it. The ones that move stay where they were: the hero's, the iPhone stage's and the closing section's.
 
 ### Pricing and the pages a sale needs
 

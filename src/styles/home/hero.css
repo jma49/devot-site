@@ -54,6 +54,10 @@
   justify-items: center;
   padding-block-start: clamp(5.75rem, 3.5rem + 5vh, 7rem);
   overflow: clip;
+  /* Everything here that moves with the scroll moves by transform. As a scroll anchor such an
+     element has the browser correct the scroll by that movement whenever layout runs in the same
+     frame, as when a recording starts; nothing in the hero changes the height of the page. */
+  overflow-anchor: none;
   text-align: center;
 }
 
@@ -565,11 +569,23 @@
   transform-origin: 50% 100%;
 }
 
-.hero-phone img {
+/* The screen: the app's recording, which plays with the hero clip (hero.ts), or its still. */
+.hero-phone-screen {
   display: block;
   width: 100%;
   height: auto;
   border-radius: calc(var(--hero-phone-width) * 0.14);
+}
+
+.hero-phone-day[hidden] {
+  display: none;
+}
+
+/* Without scripts nothing plays, and Chromium would give a video its native controls. */
+@media (scripting: none) {
+  .hero-phone video {
+    display: none;
+  }
 }
 
 /* Daylight reaches the phone as it reaches the window, a beat later. */

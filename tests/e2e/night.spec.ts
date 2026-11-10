@@ -12,6 +12,8 @@ const header = (page: Page) => page.locator('[data-site-header]')
 const day = (page: Page) => page.locator('[data-hero-day]')
 const dayClip = (page: Page) => page.locator('video[data-clip="hero-day"]')
 const heroClip = (page: Page) => page.locator('video[data-clip="hero"]')
+const phone = (page: Page) => page.locator('[data-hero-phone="night"]')
+const phoneDay = (page: Page) => page.locator('[data-hero-phone="day"]')
 const heroVar = (page: Page, name: string) =>
   hero(page).evaluate(
     (element, prop) => Number(getComputedStyle(element).getPropertyValue(prop)),
@@ -35,12 +37,29 @@ test.describe('the night over the hero, on a light page', () => {
 
     await expect(hero(page)).toHaveAttribute('data-scope', 'dark')
     await expect(header(page)).toHaveAttribute('data-scope', 'dark')
+    // Its parts move by transform, which must not count as the page moving under the reader.
+    await expect(hero(page)).toHaveCSS('overflow-anchor', 'none')
     expect(await heroVar(page, '--hero-night')).toBe(1)
     expect(await heroVar(page, '--hero-daylight')).toBe(0)
     await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
     expect(await source(heroClip(page))).toMatch(/\/media\/hero\/hero-dark\.(webm|mp4)$/)
     await expect(day(page)).toBeHidden()
     expect(await requested(dayClip(page))).toBe(false)
+  })
+
+  test('plays the iPhone beside the window whenever the hero clip plays', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await expect.poll(() => isPlaying(heroClip(page)), { timeout: 10_000 }).toBe(true)
+    await expect.poll(() => isPlaying(phone(page)), { timeout: 10_000 }).toBe(true)
+    expect(await source(phone(page))).toMatch(/\/_astro\/p2-read-dark\.[\w-]+\.mp4$/)
+    await expect(phoneDay(page)).toBeHidden()
+    expect(await requested(phoneDay(page))).toBe(false)
+
+    // Past the hero the clip rests, and the phone with it.
+    await page.locator('#cards').evaluate((section) => section.scrollIntoView())
+    await expect.poll(() => heroClip(page).evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
+    await expect.poll(() => phone(page).evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
   })
 
   test('gives way to the day as the page scrolls, the light recording on the moment of the dark one, and back', async ({
@@ -64,14 +83,24 @@ test.describe('the night over the hero, on a light page', () => {
         timeout: 10_000,
       })
       .toBeLessThan(STEP_DRIFT * 3)
+    await expect(phoneDay(page)).toBeVisible()
+    await expect.poll(() => isPlaying(phoneDay(page)), { timeout: 10_000 }).toBe(true)
+    expect(await source(phoneDay(page))).toMatch(/\/_astro\/p2-read-light\.[\w-]+\.mp4$/)
+    await expect
+      .poll(async () => Math.abs((await time(phoneDay(page))) - (await time(phone(page)))), {
+        timeout: 10_000,
+      })
+      .toBeLessThan(STEP_DRIFT * 3)
 
     await scrollToY(page, 0)
     await expect.poll(() => heroVar(page, '--hero-night')).toBe(1)
     expect(await heroVar(page, '--hero-daylight')).toBe(0)
     await expect(day(page)).toBeHidden()
+    await expect(phoneDay(page)).toBeHidden()
     await expect(hero(page)).toHaveAttribute('data-scope', 'dark')
     await expect(header(page)).toHaveAttribute('data-scope', 'dark')
     await expect.poll(() => dayClip(page).evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
+    await expect.poll(() => phoneDay(page).evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
   })
 
   test('keeps the night with reduced motion, and takes it off the header after the hero', async ({
@@ -111,6 +140,7 @@ test.describe('the night over the hero, on a dark page', () => {
     await expect(day(page)).toBeHidden()
     expect(await heroVar(page, '--hero-daylight')).toBe(0)
     expect(await requested(dayClip(page))).toBe(false)
+    expect(await requested(phoneDay(page))).toBe(false)
     expect(await source(heroClip(page))).toMatch(/hero-dark\.(webm|mp4)$/)
   })
 })
@@ -144,5 +174,28 @@ for (const colorScheme of ['light', 'dark'] as const) {
         ).toBe(colorScheme === 'dark')
       }
     })
+  })
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`keeps the sky behind the whole page, still and out of the way, ${colorScheme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(desktop)
+    await page.emulateMedia({ colorScheme, reducedMotion: 'no-preference' })
+    await page.goto('/')
+    const sky = page.locator('.page-sky')
+    await expect(sky).toHaveCSS('position', 'fixed')
+    await expect(sky).toHaveCSS('pointer-events', 'none')
+    await expect(sky).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await sky.evaluate((element) =>
+        [...element.querySelectorAll('.aurora-band')].flatMap((band) => band.getAnimations()),
+      ),
+    ).toHaveLength(0)
+
+    await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+    const box = await sky.boundingBox()
+    expect(box).toEqual({ x: 0, y: 0, width: desktop.width, height: desktop.height })
   })
 }

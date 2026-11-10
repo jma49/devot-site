@@ -2,6 +2,8 @@ export const mediaCopy = {
   media: {
     iphoneNotes:
       'Devot on an iPhone: the Notes tab, with a pinned note above the recent ones and the tab bar below.',
+    iphoneReading:
+      'Devot on an iPhone: Spring launch plan opens from the Notes tab and scrolls past its goals, its timeline and its tasks.',
     iphoneRead:
       'Devot on an iPhone: Spring launch plan open, with its notebook, status and tags above its goals and timeline.',
     hero: 'The Devot window: a note opens, a task is typed in the split editor and preview, its status becomes Completed, and a search for launch narrows the notes.',
