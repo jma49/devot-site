@@ -1,0 +1,1378 @@
+[
+  {
+    "id": "p1-notes",
+    "file": "iphone/p1-notes-dark.mp4",
+    "scheme": "dark",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 13.73,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 1.17,
+        "what": "scroll the list up",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 4.3,
+        "what": "scroll further",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 7.29,
+        "what": "scroll back",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 10.09,
+        "what": "back to the top",
+        "x": 201,
+        "y": 437
+      }
+    ],
+    "still": "iphone/stills/p1-notes-dark.png"
+  },
+  {
+    "id": "p1-notes",
+    "file": "iphone/p1-notes-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 13.73,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 1.17,
+        "what": "scroll the list up",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 4.31,
+        "what": "scroll further",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 7.31,
+        "what": "scroll back",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 10.09,
+        "what": "back to the top",
+        "x": 201,
+        "y": 437
+      }
+    ],
+    "still": "iphone/stills/p1-notes-light.png"
+  },
+  {
+    "id": "p2-read",
+    "file": "iphone/p2-read-dark.mp4",
+    "scheme": "dark",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 14.13,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.16,
+        "what": "open Spring launch plan",
+        "x": 201,
+        "y": 241
+      },
+      {
+        "t": 5.87,
+        "what": "scroll past the goals",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 8.77,
+        "what": "scroll past the table",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 11.52,
+        "what": "scroll to the tasks",
+        "x": 201,
+        "y": 437
+      }
+    ],
+    "still": "iphone/stills/p2-read-dark.png"
+  },
+  {
+    "id": "p2-read",
+    "file": "iphone/p2-read-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 14.23,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.14,
+        "what": "open Spring launch plan",
+        "x": 201,
+        "y": 241
+      },
+      {
+        "t": 5.73,
+        "what": "scroll past the goals",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 8.79,
+        "what": "scroll past the table",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 11.57,
+        "what": "scroll to the tasks",
+        "x": 201,
+        "y": 437
+      }
+    ],
+    "still": "iphone/stills/p2-read-light.png"
+  },
+  {
+    "id": "p3-edit",
+    "file": "iphone/p3-edit-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 13.07,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.2,
+        "what": "switch to Edit",
+        "x": 310,
+        "y": 84
+      },
+      {
+        "t": 6.64,
+        "what": "switch to Preview",
+        "x": 304,
+        "y": 84
+      },
+      {
+        "t": 10.18,
+        "what": "tick a task",
+        "x": 36,
+        "y": 605
+      }
+    ],
+    "still": "iphone/stills/p3-edit-light.png"
+  },
+  {
+    "id": "p4-search",
+    "file": "iphone/p4-search-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 17.9,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.13,
+        "what": "open Search",
+        "x": 350,
+        "y": 822
+      },
+      {
+        "t": 6.99,
+        "what": "type launch",
+        "x": 173,
+        "y": 514
+      },
+      {
+        "t": 13.3,
+        "what": "open a result",
+        "x": 201,
+        "y": 193
+      }
+    ],
+    "still": "iphone/stills/p4-search-light.png"
+  },
+  {
+    "id": "p5-library",
+    "file": "iphone/p5-library-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 8.05,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 3.18,
+        "what": "open the Journal notebook",
+        "x": 201,
+        "y": 685
+      }
+    ],
+    "still": "iphone/stills/p5-library-light.png"
+  },
+  {
+    "id": "p6-activity",
+    "file": "iphone/p6-activity-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 14.08,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.13,
+        "what": "open Activity",
+        "x": 200,
+        "y": 822
+      },
+      {
+        "t": 8.19,
+        "what": "scroll a little",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 11.28,
+        "what": "scroll back",
+        "x": 201,
+        "y": 437
+      }
+    ],
+    "still": "iphone/stills/p6-activity-light.png"
+  },
+  {
+    "id": "p7-new-note",
+    "file": "iphone/p7-new-note-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 11.45,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.22,
+        "what": "New Note",
+        "x": 364,
+        "y": 84
+      }
+    ],
+    "still": "iphone/stills/p7-new-note-light.png"
+  },
+  {
+    "id": "p8-settings",
+    "file": "iphone/p8-settings-light.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 25.57,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.12,
+        "what": "open Settings",
+        "x": 269,
+        "y": 822
+      },
+      {
+        "t": 7.96,
+        "what": "open Appearance",
+        "x": 201,
+        "y": 448
+      },
+      {
+        "t": 12.08,
+        "what": "choose Sage",
+        "x": 69,
+        "y": 705
+      },
+      {
+        "t": 15.08,
+        "what": "back to Tide",
+        "x": 260,
+        "y": 556
+      },
+      {
+        "t": 16.63,
+        "what": "scroll to Gradient",
+        "x": 201,
+        "y": 437
+      },
+      {
+        "t": 19.79,
+        "what": "drag Gradient to full",
+        "x": 206,
+        "y": 669
+      }
+    ],
+    "still": "iphone/stills/p8-settings-light.png"
+  },
+  {
+    "id": "card-1",
+    "file": "mac/card-1-dark.mp4",
+    "scheme": "dark",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 9.1,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.2,
+        "what": "click"
+      },
+      {
+        "t": 4.3,
+        "what": "click"
+      },
+      {
+        "t": 6.4,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "card-1",
+    "file": "mac/card-1-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 9.1,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.2,
+        "what": "click"
+      },
+      {
+        "t": 4.3,
+        "what": "click"
+      },
+      {
+        "t": 6.4,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "card-2",
+    "file": "mac/card-2-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [1800, 1400],
+    "points": [900, 700],
+    "fps": 30,
+    "duration": 7.3,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.4,
+        "what": "click"
+      },
+      {
+        "t": 4.2,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "card-3",
+    "file": "mac/card-3-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [1800, 1400],
+    "points": [900, 700],
+    "fps": 30,
+    "duration": 7.07,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.2,
+        "what": "click"
+      },
+      {
+        "t": 2.7,
+        "what": "type \"\\tRosemary\\t3 sprigs\""
+      }
+    ]
+  },
+  {
+    "id": "card-4",
+    "file": "mac/card-4-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 8.77,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.4,
+        "what": "press Meta+KeyK"
+      },
+      {
+        "t": 2,
+        "what": "type \"status\""
+      },
+      {
+        "t": 3.67,
+        "what": "type \" com\""
+      },
+      {
+        "t": 5.48,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "card-5",
+    "file": "mac/card-5-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1240],
+    "points": [1280, 620],
+    "fps": 30,
+    "duration": 8.8,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.3,
+        "what": "press Meta+Alt+KeyY"
+      },
+      {
+        "t": 2.8,
+        "what": "click"
+      },
+      {
+        "t": 4.8,
+        "what": "press Space"
+      },
+      {
+        "t": 6.6,
+        "what": "click"
+      },
+      {
+        "t": 7,
+        "what": "press Meta+KeyZ"
+      }
+    ]
+  },
+  {
+    "id": "card-6",
+    "file": "mac/card-6-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [1800, 1400],
+    "points": [900, 700],
+    "fps": 30,
+    "duration": 7.27,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.3,
+        "what": "press Meta+KeyT"
+      },
+      {
+        "t": 2.75,
+        "what": "click"
+      },
+      {
+        "t": 3.95,
+        "what": "press Enter"
+      }
+    ]
+  },
+  {
+    "id": "find",
+    "file": "mac/find-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 12.6,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.78,
+        "what": "click"
+      },
+      {
+        "t": 2.03,
+        "what": "type \"\\nSee [[spring\""
+      },
+      {
+        "t": 4.3,
+        "what": "click"
+      },
+      {
+        "t": 5.58,
+        "what": "click"
+      },
+      {
+        "t": 5.83,
+        "what": "type \"launch tag:planning\""
+      },
+      {
+        "t": 7.98,
+        "what": "click"
+      },
+      {
+        "t": 8.33,
+        "what": "press Meta+KeyE"
+      },
+      {
+        "t": 9.51,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "hero",
+    "file": "mac/hero-dark.mp4",
+    "scheme": "dark",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 18.3,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.4,
+        "what": "click"
+      },
+      {
+        "t": 3.65,
+        "what": "click"
+      },
+      {
+        "t": 4.9,
+        "what": "click"
+      },
+      {
+        "t": 5.15,
+        "what": "type \"\\nBook the train to the coast\""
+      },
+      {
+        "t": 8.82,
+        "what": "click"
+      },
+      {
+        "t": 9.77,
+        "what": "click"
+      },
+      {
+        "t": 11.07,
+        "what": "click"
+      },
+      {
+        "t": 11.27,
+        "what": "type \"launch\""
+      },
+      {
+        "t": 13.14,
+        "what": "click"
+      },
+      {
+        "t": 14.34,
+        "what": "click"
+      },
+      {
+        "t": 15.59,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "hero",
+    "file": "mac/hero-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 18.3,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.4,
+        "what": "click"
+      },
+      {
+        "t": 3.65,
+        "what": "click"
+      },
+      {
+        "t": 4.9,
+        "what": "click"
+      },
+      {
+        "t": 5.15,
+        "what": "type \"\\nBook the train to the coast\""
+      },
+      {
+        "t": 8.82,
+        "what": "click"
+      },
+      {
+        "t": 9.77,
+        "what": "click"
+      },
+      {
+        "t": 11.07,
+        "what": "click"
+      },
+      {
+        "t": 11.27,
+        "what": "type \"launch\""
+      },
+      {
+        "t": 13.14,
+        "what": "click"
+      },
+      {
+        "t": 14.34,
+        "what": "click"
+      },
+      {
+        "t": 15.59,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n1-write-mode",
+    "file": "mac/n1-write-mode-dark.mp4",
+    "scheme": "dark",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 14.1,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.3,
+        "what": "enter Write Mode"
+      },
+      {
+        "t": 2.3,
+        "what": "click"
+      },
+      {
+        "t": 4.2,
+        "what": "click"
+      },
+      {
+        "t": 4.6,
+        "what": "type \"\\nBook the train to the coast\\nCall the studio about Friday\""
+      },
+      {
+        "t": 11.4,
+        "what": "leave Write Mode"
+      },
+      {
+        "t": 11.4,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n1-write-mode",
+    "file": "mac/n1-write-mode-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 14.1,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.3,
+        "what": "enter Write Mode"
+      },
+      {
+        "t": 2.3,
+        "what": "click"
+      },
+      {
+        "t": 4.2,
+        "what": "click"
+      },
+      {
+        "t": 4.6,
+        "what": "type \"\\nBook the train to the coast\\nCall the studio about Friday\""
+      },
+      {
+        "t": 11.4,
+        "what": "leave Write Mode"
+      },
+      {
+        "t": 11.4,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n2-gallery-board",
+    "file": "mac/n2-gallery-board-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 11.7,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.7,
+        "what": "Gallery"
+      },
+      {
+        "t": 2.7,
+        "what": "click"
+      },
+      {
+        "t": 5.4,
+        "what": "Board"
+      },
+      {
+        "t": 5.4,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n3-note-info",
+    "file": "mac/n3-note-info-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 8.3,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.7,
+        "what": "open Note Info"
+      },
+      {
+        "t": 2.7,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n4-outline",
+    "file": "mac/n4-outline-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 9.67,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.8,
+        "what": "open the command palette"
+      },
+      {
+        "t": 1.8,
+        "what": "press Meta+KeyK"
+      },
+      {
+        "t": 2.4,
+        "what": "type \"outline\""
+      },
+      {
+        "t": 4.26,
+        "what": "Show Outline"
+      },
+      {
+        "t": 4.26,
+        "what": "click"
+      },
+      {
+        "t": 6.56,
+        "what": "jump to a heading"
+      },
+      {
+        "t": 6.56,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n5-saved-search",
+    "file": "mac/n5-saved-search-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 15.2,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.3,
+        "what": "click"
+      },
+      {
+        "t": 2.6,
+        "what": "type \"tag:planning\""
+      },
+      {
+        "t": 4.07,
+        "what": "open the command palette"
+      },
+      {
+        "t": 4.07,
+        "what": "press Meta+KeyK"
+      },
+      {
+        "t": 4.67,
+        "what": "type \"save s\""
+      },
+      {
+        "t": 6.34,
+        "what": "Save Search"
+      },
+      {
+        "t": 6.34,
+        "what": "click"
+      },
+      {
+        "t": 7.24,
+        "what": "press Meta+KeyA"
+      },
+      {
+        "t": 7.54,
+        "what": "type \"Planning\""
+      },
+      {
+        "t": 9.21,
+        "what": "click"
+      },
+      {
+        "t": 11.11,
+        "what": "click"
+      },
+      {
+        "t": 12.91,
+        "what": "open the saved search from the sidebar"
+      },
+      {
+        "t": 12.91,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "n6-daily-note",
+    "file": "mac/n6-daily-note-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 12.43,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.5,
+        "what": "open the command palette"
+      },
+      {
+        "t": 1.5,
+        "what": "press Meta+KeyK"
+      },
+      {
+        "t": 2.1,
+        "what": "type \"today\""
+      },
+      {
+        "t": 3.75,
+        "what": "Open Today's Note"
+      },
+      {
+        "t": 3.75,
+        "what": "click"
+      },
+      {
+        "t": 5.85,
+        "what": "click"
+      },
+      {
+        "t": 6.25,
+        "what": "type \"Walked before work. Draft the release notes.\""
+      }
+    ]
+  },
+  {
+    "id": "n7-gradient",
+    "file": "mac/n7-gradient-dark.mp4",
+    "scheme": "dark",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 11.5,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.8,
+        "what": "drag Gradient from solid to full"
+      },
+      {
+        "t": 2.8,
+        "what": "press and hold"
+      },
+      {
+        "t": 5.8,
+        "what": "release"
+      },
+      {
+        "t": 7,
+        "what": "drag Gradient back to the middle"
+      },
+      {
+        "t": 7,
+        "what": "press and hold"
+      },
+      {
+        "t": 9.1,
+        "what": "release"
+      }
+    ]
+  },
+  {
+    "id": "n7-gradient",
+    "file": "mac/n7-gradient-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 11.5,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.8,
+        "what": "drag Gradient from solid to full"
+      },
+      {
+        "t": 2.8,
+        "what": "press and hold"
+      },
+      {
+        "t": 5.8,
+        "what": "release"
+      },
+      {
+        "t": 7,
+        "what": "drag Gradient back to the middle"
+      },
+      {
+        "t": 7,
+        "what": "press and hold"
+      },
+      {
+        "t": 9.1,
+        "what": "release"
+      }
+    ]
+  },
+  {
+    "id": "n8-diagram",
+    "file": "mac/n8-diagram-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 12.2,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.3,
+        "what": "click"
+      },
+      {
+        "t": 2.7,
+        "what": "type a Markmap code block"
+      },
+      {
+        "t": 2.7,
+        "what": "type \"\\n\\n```markmap\\n# Launch\\n## Build\\n## Test\\n- Private beta\\n## Ship\""
+      }
+    ]
+  },
+  {
+    "id": "organise",
+    "file": "mac/organise-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 11.97,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 1.88,
+        "what": "click"
+      },
+      {
+        "t": 3.13,
+        "what": "click"
+      },
+      {
+        "t": 4.36,
+        "what": "click"
+      },
+      {
+        "t": 5.43,
+        "what": "click"
+      },
+      {
+        "t": 6.66,
+        "what": "click"
+      },
+      {
+        "t": 6.91,
+        "what": "type \"pla\""
+      },
+      {
+        "t": 8.08,
+        "what": "click"
+      },
+      {
+        "t": 9.26,
+        "what": "click"
+      }
+    ]
+  },
+  {
+    "id": "write",
+    "file": "mac/write-light.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3",
+    "pixels": [1520, 1240],
+    "points": [760, 620],
+    "fps": 30,
+    "duration": 9.4,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.05,
+        "what": "click"
+      },
+      {
+        "t": 2.35,
+        "what": "type \"\\n\\nFour retries wait $\\\\sum_{n=0}^{3} 2^n d_0$ in all.\""
+      }
+    ]
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take1-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 17.83,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 3.11,
+        "what": "type \"Call the studio about Friday\" on the Mac"
+      },
+      {
+        "t": 5.85,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take1-mac.mp4"
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take1-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 17.83,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 3.11,
+        "what": "type \"Call the studio about Friday\" on the Mac"
+      },
+      {
+        "t": 5.85,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take1-iphone.mp4"
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take2-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 17.1,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.6,
+        "what": "type \"Water the basil on Sunday\" on the Mac"
+      },
+      {
+        "t": 5.1,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take2-mac.mp4"
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take2-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 17.1,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.6,
+        "what": "type \"Water the basil on Sunday\" on the Mac"
+      },
+      {
+        "t": 5.1,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take2-iphone.mp4"
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take3-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 17.27,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 2.6,
+        "what": "type \"Plan the walk for next week\" on the Mac"
+      },
+      {
+        "t": 5.25,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take3-mac.mp4"
+  },
+  {
+    "id": "x1-mac-to-iphone",
+    "file": "sync/x1-mac-to-iphone-take3-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 17.27,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 2.6,
+        "what": "type \"Plan the walk for next week\" on the Mac"
+      },
+      {
+        "t": 5.25,
+        "what": "typing ends; waiting for the iPhone"
+      }
+    ],
+    "pair": "sync/x1-mac-to-iphone-take3-iphone.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take1-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 18.23,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 3.52,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 6.24,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take1-mac.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take1-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 18.23,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 3.52,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 6.24,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take1-iphone.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take2-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 18.17,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 3.44,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 6.18,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take2-mac.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take2-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 18.17,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 3.44,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 6.18,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take2-iphone.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take3-iphone.mp4",
+    "scheme": "light",
+    "source": "iOS Simulator (iPhone 17, iOS 27.2), debug build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [1206, 2622],
+    "points": [402, 874],
+    "fps": 60,
+    "duration": 17.63,
+    "cursor": false,
+    "beats": [
+      {
+        "t": 3.36,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 5.64,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take3-mac.mp4"
+  },
+  {
+    "id": "x2-iphone-to-mac",
+    "file": "sync/x2-iphone-to-mac-take3-mac.mp4",
+    "scheme": "light",
+    "source": "demo build @ e2a39a3, synced through a relay on this Mac",
+    "pixels": [2560, 1600],
+    "points": [1280, 800],
+    "fps": 30,
+    "duration": 17.63,
+    "cursor": true,
+    "beats": [
+      {
+        "t": 3.36,
+        "what": "tick a task on the iPhone"
+      },
+      {
+        "t": 5.64,
+        "what": "the test ends; waiting for the Mac"
+      }
+    ],
+    "pair": "sync/x2-iphone-to-mac-take3-iphone.mp4"
+  }
+]
