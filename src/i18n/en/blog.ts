@@ -1,4 +1,5 @@
-import { REPO_URL } from '../../site.ts'
+import { numberWord } from '../../lib/words.ts'
+import { LICENCE_PRICE, REFUND_DAYS, REPO_URL, TRIAL_DAYS } from '../../site.ts'
 import type { DocBlock, DocRun, DocSection } from './docs.ts'
 
 export interface BlogPost {
@@ -19,6 +20,235 @@ const text = (...runs: DocRun[]): DocBlock => ({ kind: 'text', runs })
 const list = (...items: DocRun[][]): DocBlock => ({ kind: 'list', items })
 const blob = (path: string) => `${REPO_URL}/blob/main/${path}`
 const APP = '/Applications/Devot.app/Contents/MacOS/devot'
+
+const payOnce: BlogPost = {
+  slug: 'notes-app-without-a-subscription',
+  title: 'A notes app you pay for once · Devot',
+  description: `Devot has a ${numberWord(TRIAL_DAYS)}-day trial and then one licence at ${LICENCE_PRICE}: no subscription, every future version, and the source to build it yourself.`,
+  heading: 'A notes app you pay for once',
+  intro:
+    'Notes are a lifetime habit, and a subscription turns them into a bill that never ends. Devot is paid for once, and what happens if you stop paying is spelled out before you start.',
+  published: '2026-11-11',
+  publishedLabel: 'Published 11 November 2026',
+  sections: [
+    {
+      id: 'deal',
+      title: 'The deal',
+      blocks: [
+        list(
+          [
+            `A ${numberWord(TRIAL_DAYS)}-day trial with everything included, starting the first time you open Devot.`,
+          ],
+          [`Then one licence at ${LICENCE_PRICE}, tax included. No renewal.`],
+          ['Every future version of Devot, on up to three devices at a time.'],
+          [`A ${REFUND_DAYS}-day refund, no questions asked.`],
+        ),
+      ],
+    },
+    {
+      id: 'stop',
+      title: 'If you never buy',
+      blocks: [
+        text(
+          'Nothing is deleted and nothing is held back. Without a licence Devot turns read-only: you can still read, search, copy and export every note. Export always works, so leaving is always possible.',
+        ),
+      ],
+    },
+    {
+      id: 'source',
+      title: 'The source is public',
+      blocks: [
+        text(
+          'Devot is source-available under FSL-1.1-MIT, whose terms turn each release into a permissive licence two years after it is published. You can build it from source and every feature works without a licence, as long as you do not sell it or offer it as a competing product.',
+        ),
+        text(
+          'The licence pays for the signed app, automatic updates and the work on Devot. ',
+          { text: 'How to build Devot', href: blob('docs/development.md') },
+          ' is in the repository.',
+        ),
+      ],
+    },
+  ],
+}
+
+const codex: BlogPost = {
+  slug: 'codex-markdown-notes-mcp',
+  title: 'Use Codex with your Markdown notes over MCP · Devot',
+  description:
+    'Connect Codex to Devot over MCP so it can search, read and update your notes while it works, only in the notebooks you allow.',
+  heading: 'Use Codex with your Markdown notes over MCP',
+  intro:
+    'Codex can read your repository, but the reasons behind the code often live in your notes. Connect it to Devot and it can look them up, and write down what it did.',
+  published: '2026-11-11',
+  publishedLabel: 'Published 11 November 2026',
+  sections: [
+    {
+      id: 'connect',
+      title: 'Connect Codex',
+      blocks: [
+        text(
+          'In Devot, open Settings > Integrations and choose Connect for Codex, then restart Codex. Or add this to ',
+          { code: '~/.codex/config.toml' },
+          ' yourself:',
+        ),
+        {
+          kind: 'code',
+          label: 'Codex configuration',
+          lines: ['[mcp_servers.devot]', `command = "${APP}"`, 'args = ["--cli", "mcp"]'],
+        },
+        text(
+          'The token stays in your keychain. Codex then sees only the notebooks with Allow AI Access on.',
+        ),
+      ],
+    },
+    {
+      id: 'workflow',
+      title: 'A working loop',
+      blocks: [
+        list(
+          [
+            'Keep a notebook per project with Allow AI Access on, and leave everything else switched off.',
+          ],
+          ['Ask Codex to read the design note before it starts a change.'],
+          ['Ask it to append what it changed, and why, to the project log when it finishes.'],
+        ),
+        text(
+          'Devot keeps each note as it was before an edit, so a log entry you do not want is one restore away.',
+        ),
+      ],
+    },
+    {
+      id: 'more',
+      title: 'Every tool it can call',
+      blocks: [
+        text('The full list is in ', { text: 'AI tools and MCP', href: '/docs/ai-tools' }, '.'),
+      ],
+    },
+  ],
+}
+
+const daily: BlogPost = {
+  slug: 'daily-note-template',
+  title: 'A daily note in one keystroke, with Markdown templates · Devot',
+  description:
+    'Make a Devot template that files itself in the right notebook, tags itself and fills in the date, then start each day with Command T.',
+  heading: 'A daily note in one keystroke',
+  intro:
+    'A daily note only works if starting one costs nothing. A Devot template sets the title, notebook, tags and status for you, and fills in the date.',
+  published: '2026-11-11',
+  publishedLabel: 'Published 11 November 2026',
+  sections: [
+    {
+      id: 'template',
+      title: 'The template',
+      blocks: [
+        text('Make a new note under Templates in the sidebar and paste this in:'),
+        {
+          kind: 'code',
+          label: 'Daily note template',
+          lines: [
+            '---',
+            'title: {{date:dddd, D MMMM}}',
+            'notebook: Journal/Daily',
+            'tags: [daily]',
+            'status: active',
+            '---',
+            '',
+            '## Plan',
+            '',
+            '- ',
+            '',
+            '## Notes',
+            '',
+            '## Done',
+          ],
+        },
+        text(
+          'The four front matter keys decide where the note goes and are then taken out of it, so the note itself starts at Plan.',
+        ),
+      ],
+    },
+    {
+      id: 'use',
+      title: 'Every morning',
+      blocks: [
+        text(
+          'Press ',
+          { code: 'Command T' },
+          ', pick the template, and the note is filed in Journal/Daily, tagged daily and titled with the day. The picker puts the templates you used last first, so it is usually the one already selected.',
+        ),
+        text(
+          'At the end of the week, search ',
+          { code: 'book:Journal tag:daily is:active' },
+          ' to find the days you have not closed yet.',
+        ),
+      ],
+    },
+    {
+      id: 'more',
+      title: 'Placeholders',
+      blocks: [
+        text(
+          'Dates, times, the title and a random ID are all available: ',
+          { text: 'Templates', href: '/docs/templates' },
+          ' lists them with their formats.',
+        ),
+      ],
+    },
+  ],
+}
+
+const importing: BlogPost = {
+  slug: 'import-markdown-folder',
+  title: 'Move a folder of Markdown notes into Devot · Devot',
+  description:
+    'Import a whole folder of Markdown notes and images into Devot: folders become nested notebooks, images become attachments, nothing is lost silently.',
+  heading: 'Move a folder of Markdown notes into Devot',
+  intro:
+    'If your notes already live in a folder of Markdown files, moving them into Devot is one import. Here is what happens to your folders, titles and images.',
+  published: '2026-11-11',
+  publishedLabel: 'Published 11 November 2026',
+  sections: [
+    {
+      id: 'import',
+      title: 'Import the folder',
+      blocks: [
+        text(
+          'Choose File > Import > Markdown Folder and pick the folder. Devot scans it first and shows a tree of what it found: each folder with its notes, images and size, and the files it will skip. Pick a destination notebook and import.',
+        ),
+      ],
+    },
+    {
+      id: 'what',
+      title: 'What becomes what',
+      blocks: [
+        list(
+          ['Every folder that holds notes becomes a notebook, nested as on disk.'],
+          ["A note's title comes from its first heading, else its file name."],
+          [
+            'Front matter stays in the note as written, except the block a Devot export writes, which brings back the title, tags and status.',
+          ],
+          ['Local images become attachments, with the links in the note pointing at them.'],
+          ['Hidden files and folders are skipped.'],
+        ),
+        text(
+          'Anything Devot could not import, a missing image or a file it could not read, is listed with the reason at the end. Nothing is dropped without saying so.',
+        ),
+      ],
+    },
+    {
+      id: 'back',
+      title: 'And back out again',
+      blocks: [
+        text(
+          'Export a notebook as Markdown and you get the same layout back, or keep a ',
+          { text: 'Markdown mirror', href: '/docs/markdown-mirror' },
+          ' of every note all the time.',
+        ),
+      ],
+    },
+  ],
+}
 
 const mcp: BlogPost = {
   slug: 'claude-code-markdown-notes-mcp',
@@ -276,6 +506,6 @@ export const blogCopy = {
       listLabel: 'Posts',
     },
     allPosts: 'All posts',
-    posts: [mcp, sync, mirror, tauri] satisfies BlogPost[],
+    posts: [payOnce, codex, daily, importing, mcp, sync, mirror, tauri] satisfies BlogPost[],
   },
 }
