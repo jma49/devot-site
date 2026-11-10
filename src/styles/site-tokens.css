@@ -6,6 +6,9 @@
   /* The clips hold Devot's real window, whose macOS corner is 26 pt and has the wallpaper outside it;
      a frame rounds one point more so none of that shows. Multiply by a clip's points per CSS px. */
   --site-window-radius-pt: 27;
+  /* Devot's Gradient setting, which every theme backdrop reads: the site shows the full gradient,
+     as the clips do. */
+  --gradient-strength: 100;
   /* The one radius of every card that sits on the page. */
   --site-radius-card: 1.25rem;
 

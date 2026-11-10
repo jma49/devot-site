@@ -85,7 +85,7 @@ export const privacyCopy = {
           install: 'Install steps',
           architecture: 'How Devot works',
           development: 'Development guide',
-          mcp: 'devot-mcp (from source)',
+          mcp: 'AI tools over MCP',
         },
       },
       community: {

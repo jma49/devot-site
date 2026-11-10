@@ -38,9 +38,13 @@ const SEARCH = 'src/core/search.ts'
 const STORAGE = 'src/core/storage.ts'
 const TEMPLATES = 'src/core/templates.ts'
 const REVISIONS = 'src/core/revisions.ts'
-const STRINGS = 'src/renderer/src/i18n/en.ts'
+// Devot's English catalog is one module per area of the app; these hold the strings the page names.
+const STRINGS = ['commands', 'editor', 'noteList', 'settings', 'sidebar'].map(
+  (area) => `src/renderer/src/i18n/en/${area}.ts`,
+)
 const BACKDROPS = 'design/tokens/backdrops.tokens.json'
 const UPDATES = 'src-tauri/src/updates.rs'
+const SCHEDULE = 'src-tauri/src/licence/schedule.rs'
 const LICENSE = 'LICENSE'
 const TAURI = 'src-tauri/tauri.conf.json'
 const RELEASE = '.github/workflows/release.yml'
@@ -54,9 +58,10 @@ export const DEVOT_FILES = [
   STORAGE,
   TEMPLATES,
   REVISIONS,
-  STRINGS,
+  ...STRINGS,
   BACKDROPS,
   UPDATES,
+  SCHEDULE,
   LICENSE,
   TAURI,
   RELEASE,
@@ -154,6 +159,8 @@ function registryKeys(registry: string, id: string): string[] | undefined {
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const catalog = (devot: (path: string) => string) => STRINGS.map(devot).join('\n')
 
 /** A string from Devot's English catalog, its escapes resolved. */
 function appString(strings: string, key: string): string | undefined {
@@ -294,9 +301,9 @@ const FACTS: Fact[] = [
   },
   {
     code: 'E_FACT_LABEL',
-    needs: [STRINGS],
+    needs: STRINGS,
     check: (devot, copy) => {
-      const strings = devot(STRINGS)
+      const strings = catalog(devot)
       const backlinks = appString(strings, 'noteInfo.backlinks')
       const names = Object.entries(CARD_NAMES).flatMap(([slot, key]) => {
         const label = copy.cards.items[slot as CardSlot].label
@@ -321,7 +328,7 @@ const FACTS: Fact[] = [
   },
   {
     code: 'E_FACT_STATUS',
-    needs: [STORAGE, STRINGS],
+    needs: [STORAGE, ...STRINGS],
     check: (devot, copy) => {
       const ids = [
         ...(/NOTE_STATUSES\s*=\s*\[([^\]]*)\]/.exec(devot(STORAGE))?.[1]?.matchAll(/'(\w+)'/g) ??
@@ -333,7 +340,7 @@ const FACTS: Fact[] = [
       return ids
         .filter((id) => id !== 'none')
         .flatMap((id) => {
-          const label = appString(devot(STRINGS), `status.${id}`)
+          const label = appString(catalog(devot), `status.${id}`)
           return label !== undefined && organise.includes(label)
             ? []
             : [
@@ -347,7 +354,7 @@ const FACTS: Fact[] = [
   },
   {
     code: 'E_FACT_THEME',
-    needs: [BACKDROPS, STRINGS],
+    needs: [BACKDROPS, ...STRINGS],
     check: (devot, copy) => {
       const backdrop = (JSON.parse(devot(BACKDROPS)) as { backdrop?: Record<string, unknown> })
         .backdrop
@@ -365,7 +372,7 @@ const FACTS: Fact[] = [
               ),
             ]),
         ...themes.flatMap(([id, modes]) => {
-          const name = appString(devot(STRINGS), `appearanceSettings.theme${capitalised(id)}`)
+          const name = appString(catalog(devot), `appearanceSettings.theme${capitalised(id)}`)
           const both =
             typeof modes === 'object' && modes !== null && 'light' in modes && 'dark' in modes
           return [
@@ -399,20 +406,21 @@ const FACTS: Fact[] = [
   },
   {
     code: 'E_FACT_UPDATES',
-    needs: [UPDATES],
+    needs: [UPDATES, SCHEDULE],
     check: (devot, copy) => {
       const source = devot(UPDATES)
+      const schedule = devot(SCHEDULE)
       const text = copy.privacy.network.items.map((item) => item.text).join(' ')
-      const first = rustSeconds(source, 'FIRST_CHECK')
-      const every = (name: string) => {
-        const seconds = rustSeconds(source, name)
+      const first = rustSeconds(schedule, 'FIRST_CHECK')
+      const every = (from: string, name: string) => {
+        const seconds = rustSeconds(from, name)
         return seconds === 86_400 ? 'daily' : seconds === 3_600 ? 'hourly' : `every ${seconds} s`
       }
       const feed = /const FEED_BASE: &str = "([^"]+)"/.exec(source)?.[1] ?? ''
       const expected = [
         `${first} seconds after launch`,
-        `then ${every('CHECK_EVERY')}`,
-        `${every('CHECK_EVERY_BETA')} for betas`,
+        `then ${every(schedule, 'CHECK_EVERY')}`,
+        `${every(source, 'CHECK_EVERY_BETA')} for betas`,
       ]
       return [
         ...says(text, 'ask GitHub for the update feed', 'The network list'),
@@ -542,10 +550,10 @@ const FACTS: Fact[] = [
     code: 'E_FACT_MCP',
     needs: [README],
     check: (devot, copy) => [
-      ...says(copy.footer.groups.resources.links.mcp, 'from source', 'The footer devot-mcp link'),
-      ...(devot(README).includes('devot-mcp runs from a checkout')
+      ...says(copy.footer.groups.resources.links.mcp, 'MCP', 'The footer AI tools link'),
+      ...(devot(README).includes("bridge inside Devot's own binary")
         ? []
-        : [problem('E_FACT_MCP', `${README} no longer says devot-mcp runs from a checkout`)]),
+        : [problem('E_FACT_MCP', `${README} no longer says the MCP bridge is inside Devot`)]),
     ],
   },
   {

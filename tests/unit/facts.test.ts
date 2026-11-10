@@ -60,18 +60,30 @@ const WEEK = 7 * DAY
 }
     if (name === 'title' && format === undefined && context.title !== undefined) {
 `,
-  'src/renderer/src/i18n/en.ts': `export const en = {
+  'src/renderer/src/i18n/en/sidebar.ts': `export const strings = {
   'status.none': 'No Status',
   'status.active': 'Active',
   'status.on_hold': 'On Hold',
   'status.completed': 'Completed',
   'status.dropped': 'Dropped',
-  'noteMenu.history': 'Revision History\\u2026',
-  'mode.focus': 'Focus Mode',
-  'noteInfo.backlinks': 'Linked to This Note',
   'sidebar.templates': 'Templates',
+}
+`,
+  'src/renderer/src/i18n/en/noteList.ts': `export const strings = {
+  'noteMenu.history': 'Revision History\\u2026',
+}
+`,
+  'src/renderer/src/i18n/en/editor.ts': `export const strings = {
+  'mode.focus': 'Focus Mode',
+  'noteInfo.backlinks': 'Backlinks',
+}
+`,
+  'src/renderer/src/i18n/en/commands.ts': `export const strings = {
   'command.palette':
     'Command Palette',
+}
+`,
+  'src/renderer/src/i18n/en/settings.ts': `export const strings = {
   'appearanceSettings.themeIvory': 'Ivory',
   'appearanceSettings.themeDawn': 'Dawn',
   'appearanceSettings.themeTide': 'Tide',
@@ -87,10 +99,11 @@ const WEEK = 7 * DAY
     ]),
   }),
   'src-tauri/src/updates.rs': `const FEED_BASE: &str = "https://github.com/jma49/devot/releases/download/updater";
-const FIRST_CHECK: Duration = Duration::from_secs(30);
-const CHECK_EVERY: Duration = Duration::from_secs(24 * 60 * 60);
 /// Betas ship several times a day.
 const CHECK_EVERY_BETA: Duration = Duration::from_secs(60 * 60);
+`,
+  'src-tauri/src/licence/schedule.rs': `pub(crate) const FIRST_CHECK: Duration = Duration::from_secs(30);
+pub(crate) const CHECK_EVERY: Duration = Duration::from_secs(24 * 60 * 60);
 `,
   'src-tauri/src/licence/trial.rs': `const MINUTE_MS: i64 = 60_000;
 const HOUR_MS: i64 = 60 * MINUTE_MS;
@@ -122,8 +135,8 @@ export const PLAN_GATED_FEATURES: readonly Feature[] = [
 Updates arrive in the app: Devot checks shortly after launch.
 - \`[[\` note links with a link index; each note lists the notes that link to it.
 The folder is written by Devot and never read back: edit notes in Devot.
-## Claude and other MCP clients (devot-mcp)
-devot-mcp runs from a checkout of this repository (requirements in \`docs/development.md\`).
+## Claude and other MCP clients
+Nothing else needs to be installed: clients run a small bridge inside Devot's own binary, which talks to the running app on this Mac only.
 ## Contributing
 `,
 }
@@ -166,11 +179,11 @@ describe('checkFacts', () => {
     ],
     ['E_FACT_OPERATOR', 'src/core/search.ts', replace("['book', 'book'],", '')],
     ['E_FACT_OPERATOR', 'src/core/search.ts', replace('-anything', 'anything')],
-    ['E_FACT_STATUS', 'src/renderer/src/i18n/en.ts', replace("'On Hold'", "'Paused'")],
+    ['E_FACT_STATUS', 'src/renderer/src/i18n/en/sidebar.ts', replace("'On Hold'", "'Paused'")],
     ['E_FACT_STATUS', 'src/core/storage.ts', replace("'dropped'", "'dropped', 'waiting'")],
     [
       'E_FACT_THEME',
-      'src/renderer/src/i18n/en.ts',
+      'src/renderer/src/i18n/en/settings.ts',
       replace("themeSage': 'Sage'", "themeSage': 'Moss'"),
     ],
     [
@@ -183,14 +196,32 @@ describe('checkFacts', () => {
     ],
     [
       'E_FACT_LABEL',
-      'src/renderer/src/i18n/en.ts',
-      replace("'Linked to This Note'", "'Backlinks'"),
+      'src/renderer/src/i18n/en/editor.ts',
+      replace("'Backlinks'", "'Linked to This Note'"),
     ],
-    ['E_FACT_LABEL', 'src/renderer/src/i18n/en.ts', replace("'Focus Mode'", "'Zen Mode'")],
+    ['E_FACT_LABEL', 'src/renderer/src/i18n/en/editor.ts', replace("'Focus Mode'", "'Zen Mode'")],
+    [
+      'E_FACT_LABEL',
+      'src/renderer/src/i18n/en/commands.ts',
+      replace("'command.palette'", "'command.switcher'"),
+    ],
     ['E_FACT_LINKS', 'README.md', replace('`[[` note links', 'Note links')],
     ['E_FACT_PLACEHOLDER', 'src/core/templates.ts', replace("date: 'YYYY-MM-DD',", '')],
-    ['E_FACT_UPDATES', 'src-tauri/src/updates.rs', replace('from_secs(30)', 'from_secs(60)')],
-    ['E_FACT_UPDATES', 'src-tauri/src/updates.rs', replace('24 * 60 * 60', '7 * 24 * 60 * 60')],
+    [
+      'E_FACT_UPDATES',
+      'src-tauri/src/licence/schedule.rs',
+      replace('from_secs(30)', 'from_secs(60)'),
+    ],
+    [
+      'E_FACT_UPDATES',
+      'src-tauri/src/licence/schedule.rs',
+      replace('24 * 60 * 60', '7 * 24 * 60 * 60'),
+    ],
+    [
+      'E_FACT_UPDATES',
+      'src-tauri/src/licence/schedule.rs',
+      replace('const FIRST_CHECK', 'const FIRST_LOOK'),
+    ],
     [
       'E_FACT_UPDATES',
       'src-tauri/src/updates.rs',
@@ -256,7 +287,8 @@ describe('checkFacts', () => {
       replace('Feature[] = [\n', "Feature[] = [\n  'localNotes',\n"),
     ],
     ['E_FACT_MIRROR', 'README.md', replace('never read back', 'read back')],
-    ['E_FACT_MCP', 'README.md', replace('runs from a checkout', 'ships inside the app')],
+    ['E_FACT_MCP', 'README.md', replace("inside Devot's own binary", 'from a checkout')],
+    ['E_FACT_ANCHOR', 'README.md', replace('## Claude and other MCP clients', '## AI tools')],
     ['E_FACT_SOURCE', 'src/core/search.ts', () => undefined],
   ])('%s when %s no longer backs the page', (code, path, change) => {
     const problems = checkFacts(devot({ [path]: change }), en)

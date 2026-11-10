@@ -137,12 +137,30 @@ describe('parseBackdrop', () => {
     expect(parseBackdrop(tideBackdrop('light'))).toEqual({
       angle: 160,
       stops: [
-        [205, 223, 249],
-        [230, 233, 248],
-        [224, 214, 245],
+        [196, 216, 247],
+        [216, 227, 248],
+        [198, 229, 242],
       ],
     })
-    expect(parseBackdrop(tideBackdrop('dark'))?.stops[0]).toEqual([34, 49, 77])
+    expect(parseBackdrop(tideBackdrop('dark'))?.stops[0]).toEqual([30, 47, 80])
+  })
+
+  it('blends an outer stop toward the middle as the Gradient setting does', () => {
+    const at = (strength: number) =>
+      parseBackdrop(
+        `linear-gradient(160deg, color-mix(in srgb, rgb(0 0 0 / 0.7) calc(${strength} * 1%), rgb(100 100 100 / 0.7)) 0%, rgb(100 100 100 / 0.7) 50%, color-mix(in srgb, rgb(200 200 200 / 0.7) calc(${strength} * 1%), rgb(100 100 100 / 0.7)) 100%)`,
+      )?.stops
+    expect(at(100)).toEqual([
+      [0, 0, 0],
+      [100, 100, 100],
+      [200, 200, 200],
+    ])
+    expect(at(50)).toEqual([
+      [50, 50, 50],
+      [100, 100, 100],
+      [150, 150, 150],
+    ])
+    expect(at(0)?.[2]).toEqual([100, 100, 100])
   })
 
   it('also reads the form a browser serialises, with commas', () => {

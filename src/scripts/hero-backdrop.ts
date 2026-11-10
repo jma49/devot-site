@@ -1,4 +1,5 @@
 import { REDUCED_MOTION_QUERY } from '../lib/dom-env.ts'
+import { parseGradient } from '../lib/gradient.ts'
 import { browserPause, type Pause } from './pause.ts'
 
 export type Rgb = readonly [number, number, number]
@@ -173,7 +174,6 @@ export function framesTooSlow(intervals: readonly number[]): boolean | null {
   return median > FRAME_CHECK.medianMs
 }
 
-const GRADIENT = /^\s*linear-gradient\(\s*(-?[\d.]+)deg\s*,/
 // A stop in functional notation with spaces or commas, or in hex, which minified stylesheets carry.
 const COLOUR = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)|#([\da-f]{3,8})\b/gi
 
@@ -191,11 +191,17 @@ const channels = (match: RegExpMatchArray): Rgb | null =>
 
 /** The angle and the opaque stop colours of a token gradient such as `--backdrop`. */
 export function parseBackdrop(value: string): Backdrop | null {
-  const gradient = GRADIENT.exec(value)
-  if (!gradient) return null
-  const stops = [...value.matchAll(COLOUR)].map(channels)
-  if (stops.length !== 3 || stops.some((stop) => stop === null)) return null
-  return { angle: Number(gradient[1]), stops: stops as Rgb[] }
+  const gradient = parseGradient(value)
+  if (gradient?.stops.length !== 3) return null
+  const stops = gradient.stops.map(({ colours, share }): Rgb | null => {
+    const first = parseColour(colours[0])
+    const second = colours[1] === undefined ? first : parseColour(colours[1])
+    if (!first || !second) return null
+    const mix = (at: 0 | 1 | 2) => Math.round(first[at] * share + second[at] * (1 - share))
+    return [mix(0), mix(1), mix(2)]
+  })
+  if (stops.some((stop) => stop === null)) return null
+  return { angle: gradient.angle, stops: stops as Rgb[] }
 }
 
 /** The opaque channels of a single token colour, in hex or functional notation. */

@@ -1,5 +1,6 @@
 import sharp from 'sharp'
 import { OG_IMAGE } from '../site.ts'
+import { parseGradient } from './gradient.ts'
 import { squareSvg } from './icons.ts'
 import { themeColors } from './theme-color.ts'
 
@@ -42,12 +43,16 @@ export function backdrop(css: string, theme: string): Backdrop {
     `:root[data-theme='${theme}'][data-appearance='light']`,
     '--backdrop',
   )
-  const gradient = value && /^linear-gradient\((\d+)deg,(.*)\)$/.exec(value)
+  const gradient = value ? parseGradient(value) : null
   if (!gradient) throw new Error(`E_OG_BACKDROP no light --backdrop for the ${theme} theme`)
-  const stops = [...(gradient[2] ?? '').matchAll(/(\S+\([^)]*\)|#\w+)\s+([\d.]+)%/g)].map(
-    ([, color, offset]) => ({ offset: Number(offset) / 100, ...cssColor(color ?? '') }),
-  )
-  return { angle: Number(gradient[1]), stops }
+  // The image shows the full gradient, so a stop that follows the app's Gradient setting is drawn
+  // as its first colour.
+  const last = Math.max(1, gradient.stops.length - 1)
+  const stops = gradient.stops.map(({ colours, offset }, index) => ({
+    offset: offset ?? index / last,
+    ...cssColor(colours[0]),
+  }))
+  return { angle: gradient.angle, stops }
 }
 
 function rootColor(css: string, token: string): Color {
