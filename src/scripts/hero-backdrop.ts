@@ -245,7 +245,8 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`
 // Tide's gradient line under a slow warp is the sky. Two aurora bands, Sage and Tide, hang across
 // it: a bright lower edge, a long glow above fringed with Ember violet, faint curtain rays, and
 // a caustic shimmer where they are brightest. Ember peach warms the side edges. Colours mix in
-// OKLab and the result is dithered so the soft ramps do not band.
+// OKLab and the result is dithered so the soft ramps do not band. uSoft, 0 to 1, takes the bands'
+// tight lower edge and bright core away and most of the shimmer, for a sky that lies behind text.
 const FRAGMENT = `precision highp float;
 uniform vec2 uRes;
 uniform float uTime;
@@ -256,6 +257,7 @@ uniform vec3 uFringe;
 uniform vec3 uWarm;
 uniform vec3 uStrength;
 uniform float uGlow;
+uniform float uSoft;
 uniform vec2 uDir;
 
 float hash(vec2 p) {
@@ -290,7 +292,7 @@ vec3 ramp(float t) {
 
 // A band's profile across its centre line: tight below, a long glow above (screen y grows down).
 float band(float d, float width) {
-  float w = d > 0.0 ? width * 0.4 : width * 1.7;
+  float w = d > 0.0 ? width * mix(0.4, 1.5, uSoft) : width * 1.7;
   return exp(-d * d / (w * w));
 }
 
@@ -369,7 +371,7 @@ void main() {
   float coreB = exp(-pow((dB - 0.014) / 0.016, 2.0)) * presB;
   coreA += exp(-pow((dC - 0.006) / 0.008, 2.0)) * 0.4;
   float shimmer = caustic(p * vec2(5.0, 7.0), t) * (a * a + b * b * 0.8) * 0.3;
-  lab.x += (shimmer + (coreA * 0.8 + coreB * 0.5) * rays) * uStrength.y;
+  lab.x += (shimmer * (1.0 - 0.8 * uSoft) + (coreA * 0.8 + coreB * 0.5) * rays * (1.0 - uSoft)) * uStrength.y;
 
   vec3 colour = toSrgb(oklabToLinear(lab));
   colour += (hash(gl_FragCoord.xy + fract(t)) - 0.5) / 255.0;
@@ -408,7 +410,7 @@ function built(gl: WebGLRenderingContext, program: WebGLProgram): Promise<void> 
   })
 }
 
-async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | null> {
+async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise<Renderer | null> {
   const gl = canvas.getContext('webgl', {
     alpha: false,
     antialias: false,
@@ -462,6 +464,7 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     glow: uniform('uGlow'),
     dir: uniform('uDir'),
   }
+  gl.uniform1f(uniform('uSoft'), soft ? 1 : 0)
 
   const resize = () => {
     const { width, height } = renderSize(canvas.clientWidth, canvas.clientHeight)
@@ -512,8 +515,12 @@ function readAurora(root: HTMLElement): AuroraInputs | null {
     : null
 }
 
+/** Calls `report` with whether the sky can be seen, now and on each change; returns its stop. */
+export type Sight = (report: (shown: boolean) => void) => () => void
+
 export interface BackdropParts {
-  hero: HTMLElement
+  /** The element the sky belongs to: it carries `data-backdrop` and `data-backdrop-state`. */
+  stage: HTMLElement
   canvas: HTMLCanvasElement
   /**
    * Per appearance, the element whose computed `--backdrop` is the Tide gradient; inside it,
@@ -524,6 +531,10 @@ export interface BackdropParts {
   webgl?: boolean
   /** The reader's pause: while it holds, the flow stops where it is. */
   pause?: Pause
+  /** Bands without a tight edge, for a sky behind text. */
+  soft?: boolean
+  /** When the sky can be seen, if that is not simply when the stage is on screen. */
+  inView?: Sight
 }
 
 export interface BackdropHandle {
@@ -533,19 +544,21 @@ export interface BackdropHandle {
 }
 
 /**
- * Draws the hero's aurora with WebGL at up to 30 frames a second while the hero is on screen and
- * the tab is shown, once its shaders are built; with reduced motion it drifts at a third of the
- * pace. The CSS layers underneath show until then, without WebGL, on a software renderer and when
- * the first frames run slow. `data-backdrop` on the hero says which one shows (`webgl` or `css`)
- * and `data-backdrop-state` whether it moves (`running`, or `idle` while off screen, in a hidden
- * tab or paused).
+ * Draws an aurora with WebGL at up to 30 frames a second while it can be seen and the tab is
+ * shown, once its shaders are built; with reduced motion it drifts at a third of the pace. The
+ * CSS layers underneath show until then, without WebGL, on a software renderer and when the first
+ * frames run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
+ * `data-backdrop-state` whether it moves (`running`, or `idle` while out of sight, in a hidden tab
+ * or paused).
  */
 export function startBackdrop({
-  hero,
+  stage,
   canvas,
   sources,
   webgl = true,
   pause = browserPause(),
+  soft = false,
+  inView,
 }: BackdropParts): BackdropHandle {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
@@ -561,7 +574,7 @@ export function startBackdrop({
 
   const palette = () => {
     // A page that wears the night draws the dark palette whatever the reader's scheme.
-    const scheme: Scheme = dark.matches || hero.closest(NIGHT) !== null ? 'dark' : 'light'
+    const scheme: Scheme = dark.matches || stage.closest(NIGHT) !== null ? 'dark' : 'light'
     const inputs = readAurora(sources[scheme])
     if (!inputs || !renderer) return false
     renderer.setPalette(auroraPalette(inputs, scheme))
@@ -572,7 +585,7 @@ export function startBackdrop({
     const released = renderer
     renderer = null
     released?.release()
-    hero.dataset['backdrop'] = 'css'
+    stage.dataset['backdrop'] = 'css'
   }
 
   const draw = () => {
@@ -583,7 +596,7 @@ export function startBackdrop({
 
   const sync = () => {
     const moving = visible && !document.hidden && !pause.paused
-    hero.dataset['backdropState'] = moving ? 'running' : 'idle'
+    stage.dataset['backdropState'] = moving ? 'running' : 'idle'
     const animate = moving && renderer !== null
     if (animate && !frame) {
       lastTick = 0
@@ -633,24 +646,28 @@ export function startBackdrop({
     renderer = created
     if (renderer && palette()) {
       draw()
-      hero.dataset['backdrop'] = 'webgl'
+      stage.dataset['backdrop'] = 'webgl'
     } else {
       fallBack()
     }
     sync()
   }
   if (webgl) {
-    createRenderer(canvas).then(begin, (error: unknown) => {
+    createRenderer(canvas, soft).then(begin, (error: unknown) => {
       console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
       begin(null)
     })
   }
 
-  const observer = new IntersectionObserver(([entry]) => {
-    visible = entry?.isIntersecting ?? true
+  const onScreen: Sight = (report) => {
+    const observer = new IntersectionObserver(([entry]) => report(entry?.isIntersecting ?? true))
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }
+  const stopWatching = (inView ?? onScreen)((shown) => {
+    visible = shown
     sync()
   })
-  observer.observe(hero)
   const resize = new ResizeObserver(() => {
     if (!frame) draw()
   })
@@ -672,7 +689,7 @@ export function startBackdrop({
       stopped = true
       if (frame) cancelAnimationFrame(frame)
       frame = 0
-      observer.disconnect()
+      stopWatching()
       resize.disconnect()
       canvas.removeEventListener('webglcontextlost', onLost)
       document.removeEventListener('visibilitychange', sync)

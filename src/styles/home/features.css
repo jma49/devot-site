@@ -370,10 +370,12 @@
     transition: color var(--features-dur-state) var(--features-ease-state);
   }
 
+  /* The list lies on the page's sky, where the faintest tier would fall under 4.5:1 at the sky's
+     brightest (sky.css); the muted tier holds it. */
   .feature-item:not([data-active]) .feature-number,
   .feature-item:not([data-active]) .feature-name,
   .feature-item:not([data-active]) .feature-title {
-    color: var(--site-color-text-faint);
+    color: var(--site-color-text-muted);
   }
 
   .feature-item::before {
@@ -409,7 +411,7 @@
 @media (min-width: 800px) and (hover: hover) and (pointer: fine) {
   .feature-item:not([data-active]):hover .feature-name,
   .feature-item:not([data-active]):hover .feature-title {
-    color: var(--site-color-text-muted);
+    color: var(--site-color-text);
   }
 
   .feature-item:not([data-active]):hover .feature-number {

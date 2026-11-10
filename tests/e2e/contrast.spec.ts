@@ -233,3 +233,140 @@ test.describe('the glass bar over the page, dark, at 1440', () => {
     expect(Object.keys(lowest)).toEqual(['links'])
   })
 })
+
+// The sky behind the page is fixed to the viewport, so every line that lies on it passes its
+// brightest point as the page scrolls. The CSS sky is measured: the shader draws the same sky no
+// brighter.
+
+/** The WCAG relative luminance of each colour as the browser resolves it. */
+const colourLuminance = (page: Page, colours: Record<string, string>) =>
+  page.evaluate((entries) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const context = canvas.getContext('2d', { willReadFrequently: true })!
+    const probe = document.createElement('span')
+    document.body.append(probe)
+    const out: Record<string, number> = {}
+    for (const [name, value] of Object.entries(entries)) {
+      probe.style.setProperty('color', value)
+      context.clearRect(0, 0, 1, 1)
+      context.fillStyle = getComputedStyle(probe).color
+      context.fillRect(0, 0, 1, 1)
+      const [r = 0, g = 0, b = 0] = [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)].map(
+        (channel) => {
+          const c = channel / 255
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+        },
+      )
+      out[name] = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    probe.remove()
+    return out
+  }, colours)
+
+/** The mean luminance of the brightest cell on screen, in cells the size of a line of small text. */
+async function brightestPatch(page: Page, cell = 16): Promise<number> {
+  const { data, info } = await sharp(await page.screenshot({ scale: 'css' }))
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  let brightest = 0
+  for (let top = 0; top + cell <= info.height; top += cell) {
+    for (let left = 0; left + cell <= info.width; left += cell) {
+      let sum = 0
+      for (let y = top; y < top + cell; y++) {
+        for (let x = left; x < left + cell; x++) {
+          const at = (y * info.width + x) * 3
+          sum +=
+            0.2126 * linear(data[at]!) +
+            0.7152 * linear(data[at + 1]!) +
+            0.0722 * linear(data[at + 2]!)
+        }
+      }
+      brightest = Math.max(brightest, sum / (cell * cell))
+    }
+  }
+  return brightest
+}
+
+/** Keeps the WebGL backdrop from starting, without a console error: its module never finishes. */
+const keepCssSky = (page: Page) =>
+  page.route('**/hero-backdrop.*.js', (route) =>
+    route.fulfill({ contentType: 'text/javascript', body: 'await new Promise(() => {})' }),
+  )
+
+for (const viewport of [
+  { width: 1440, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`the sky behind the page keeps text, muted text and links at 4.5:1 at its brightest, ${viewport.width}`, async ({
+    page,
+  }) => {
+    test.slow()
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
+    await keepCssSky(page)
+    await page.goto('/')
+    await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+    const tiers = await colourLuminance(page, {
+      text: 'var(--site-color-text)',
+      muted: 'var(--site-color-text-muted)',
+      link: 'var(--site-color-link)',
+    })
+    // The sky alone: everything that lies on it goes, at once and not by a transition.
+    await page.evaluate(() => {
+      for (const part of document.querySelectorAll<HTMLElement>(
+        'main > section, body > footer, body > header, [data-download-pill]',
+      )) {
+        part.style.setProperty('display', 'none', 'important')
+      }
+    })
+
+    let brightest = 0
+    for (const sage of PHASES) {
+      for (const tide of PHASES) {
+        await holdAurora(page, sage, tide)
+        await frames(page)
+        brightest = Math.max(brightest, await brightestPatch(page))
+      }
+    }
+    // A sky that was hidden with the rest would pass at any strength.
+    expect(brightest).toBeGreaterThan(0.015)
+    for (const [tier, luminance] of Object.entries(tiers)) {
+      expect((luminance + 0.05) / (brightest + 0.05), tier).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+}
+
+// The footer's labels are the faintest tier, which the sky alone would not carry.
+test('the footer keeps every line at 4.5:1 on the ground the night comes down to', async ({
+  page,
+}) => {
+  test.slow()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
+  await keepCssSky(page)
+  await page.goto('/')
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await frames(page)
+  const footer = { footer: '.site-footer' }
+  const lines = await textLines(page, footer)
+  expect(lines.length).toBeGreaterThan(20)
+  await hideText(page, Object.values(footer))
+
+  const lowest: Record<string, number> = {}
+  for (const sage of PHASES) {
+    for (const tide of PHASES) {
+      await holdAurora(page, sage, tide)
+      await frames(page)
+      merge(lowest, await lowestContrast(page, lines))
+    }
+  }
+  expect(lowest['footer']).toBeGreaterThanOrEqual(4.5)
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBe(0)
+})

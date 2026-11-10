@@ -3,6 +3,13 @@ import '../../styles/home/sky.css'
 import Aurora from '../Aurora.astro'
 ---
 
-<div class="page-sky" aria-hidden="true">
+<div class="page-sky" aria-hidden="true" data-page-sky data-backdrop="css">
   <Aurora class="page-sky__aurora" />
+  <canvas class="page-sky__canvas" data-sky-canvas></canvas>
 </div>
+
+<script>
+  import { startPageSky } from '../../scripts/page-sky.ts'
+
+  startPageSky()
+</script>

@@ -58,6 +58,9 @@ const draws = (page: Page) =>
 const contexts = (page: Page) =>
   page.evaluate(() => (window as unknown as { glContexts: number }).glContexts)
 const hero = (page: Page) => page.locator('[data-hero]')
+const sky = (page: Page) => page.locator('[data-page-sky]')
+const skyIs = (page: Page, kind: 'webgl' | 'css') => () =>
+  sky(page).evaluate((element, expected) => element.dataset['backdrop'] === expected, kind)
 
 /** Runs the page's fake clock a tenth of a second at a time until `check` holds. */
 async function advanceUntil(page: Page, check: () => Promise<boolean>, limit = 20_000) {
@@ -274,4 +277,95 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     const logged = problems.filter((text) => text !== 'WebGL: context lost.')
     problems.splice(0, problems.length, ...logged)
   })
+})
+
+// The hero's shader goes on behind the rest of the page, in its soft form, on a canvas fixed to
+// the viewport. The hero covers that sky at the top of the page.
+test.describe('WebGL sky behind the page', () => {
+  test.use({ viewport: DESKTOP })
+
+  test.beforeEach(async ({ page }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+    await advanceUntil(page, backdropIs(page, 'webgl'))
+  })
+
+  test('is not built while the hero covers the page', async ({ page }) => {
+    await page.clock.runFor(1500)
+    expect(await contexts(page)).toBe(1)
+    await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
+    await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '0')
+  })
+
+  test('flows behind the sections once one is on screen, and rests under the hero again', async ({
+    page,
+  }) => {
+    await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+    await advanceUntil(page, skyIs(page, 'webgl'))
+    expect(await contexts(page)).toBe(2)
+    await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'running')
+    await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'idle')
+    await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '1')
+    await expect(page.locator('.page-sky [data-aurora="dark"] .aurora-band').first()).toHaveCSS(
+      'visibility',
+      'hidden',
+    )
+
+    // Only the sky draws here: the hero is off screen.
+    await pauseSoon(page)
+    const start = (await draws(page)).length
+    await page.clock.runFor(3000)
+    const seen = (await draws(page)).slice(start)
+    expect(seen.length).toBeGreaterThanOrEqual(80)
+    expect(flowPerSecond(seen)).toBeCloseTo(1, 1)
+
+    await page.clock.resume()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'idle')
+    await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
+    await expect(sky(page)).toHaveAttribute('data-backdrop', 'webgl')
+  })
+
+  test('stops with the pause', async ({ page }) => {
+    await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+    await advanceUntil(page, skyIs(page, 'webgl'))
+    await togglePause(page)
+    await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'idle')
+    const held = (await draws(page)).length
+    await page.clock.runFor(2000)
+    expect(await draws(page)).toHaveLength(held)
+
+    await togglePause(page)
+    await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'running')
+  })
+})
+
+test('keeps the CSS sky behind the page on a phone', async ({ page }) => {
+  await page.setViewportSize(PHONE)
+  await page.clock.install()
+  await watchWebgl(page, GPU)
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+  await page.clock.runFor(2000)
+  expect(await contexts(page)).toBe(0)
+  await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
+  await expect(sky(page)).not.toHaveAttribute('data-backdrop-state', /.*/)
+})
+
+test('keeps the CSS sky behind the page, and still, on a software renderer', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await page.clock.install()
+  await watchWebgl(page, SOFTWARE)
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  await advanceUntil(page, async () => (await contexts(page)) > 0)
+  await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+  await advanceUntil(page, async () => (await contexts(page)) > 1)
+  await page.clock.runFor(1000)
+  await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
+  await expect(page.locator('html')).toHaveAttribute('data-aurora-still', '')
+  expect(await draws(page)).toEqual([])
 })

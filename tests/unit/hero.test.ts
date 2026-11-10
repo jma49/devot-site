@@ -16,7 +16,8 @@ import {
   type Lab,
   type Scheme,
 } from '../../src/scripts/hero-backdrop.ts'
-import { HERO_SCROLL, heroScroll, WEBGL_QUERY } from '../../src/scripts/hero.ts'
+import { WEBGL_QUERY } from '../../src/lib/webgl.ts'
+import { HERO_SCROLL, heroScroll } from '../../src/scripts/hero.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
 const tokensCss = readRepoFile('src/theme/tokens.css')
