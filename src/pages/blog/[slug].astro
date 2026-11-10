@@ -1,0 +1,25 @@
+---
+import type { GetStaticPaths } from 'astro'
+import Article from '../../components/Article.astro'
+import type { BlogPost } from '../../i18n/en/blog.ts'
+import { messages } from '../../i18n/index.ts'
+import { BLOG_PATH } from '../../lib/links.ts'
+import { blogPosting } from '../../lib/structured-data.ts'
+
+export const getStaticPaths = (() =>
+  messages().blog.posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }))) satisfies GetStaticPaths
+
+const t = messages()
+const { post } = Astro.props as { post: BlogPost }
+---
+
+<Article
+  page={post}
+  up={{ href: BLOG_PATH, label: t.blog.allPosts }}
+  byline={{ text: post.publishedLabel, datetime: post.published }}
+  toc={false}
+  structuredData={blogPosting(t, post)}
+/>

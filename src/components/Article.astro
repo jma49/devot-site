@@ -1,40 +1,59 @@
 ---
 import '../styles/docs.css'
-import type { DocPage, DocRun } from '../i18n/en/docs.ts'
+import type { DocRun, DocSection } from '../i18n/en/docs.ts'
 import { messages } from '../i18n/index.ts'
-import { DOCS_PATH } from '../lib/links.ts'
 import Base from '../layouts/Base.astro'
 
 interface Props {
-  page: DocPage
+  page: {
+    title: string
+    description: string
+    heading: string
+    intro: string
+    sections: DocSection[]
+  }
+  /** The page one level up: the docs index or the blog. */
+  up: { href: string; label: string }
+  /** A line under the intro, such as the date a post went up. */
+  byline?: { text: string; datetime: string }
+  /** Lists the sections at the top, for a page read in parts. */
+  toc?: boolean
+  structuredData?: unknown
 }
 
 const t = messages()
-const { page } = Astro.props
+const { page, up, byline, toc = true, structuredData } = Astro.props
 const isCode = (run: DocRun): run is { code: string } => typeof run === 'object' && 'code' in run
 ---
 
-<Base title={page.title} description={page.description}>
+<Base title={page.title} description={page.description} structuredData={structuredData}>
   <article class="doc">
     <header class="doc__head">
-      <a class="doc__up" href={DOCS_PATH}>
-        {t.docs.allDocs}
+      <a class="doc__up" href={up.href}>
+        {up.label}
       </a>
       <h1 class="doc__title">{page.heading}</h1>
       <p class="doc__intro">{page.intro}</p>
+      {byline && (
+        <p class="doc__byline">
+          <time datetime={byline.datetime}>{byline.text}</time>
+        </p>
+      )}
     </header>
-    <nav class="doc__toc" aria-labelledby="doc-toc-title">
-      <h2 class="doc__toc-title" id="doc-toc-title">
-        {t.docs.onThisPage}
-      </h2>
-      <ul>
-        {page.sections.map((section) => (
-          <li>
-            <a href={`#${section.id}`}>{section.title}</a>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    {toc && (
+      <nav class="doc__toc" aria-labelledby="doc-toc-title">
+        <h2 class="doc__toc-title" id="doc-toc-title">
+          {t.docs.onThisPage}
+        </h2>
+        <ul>
+          {page.sections.map((section) => (
+            <li>
+              <a href={`#${section.id}`}>{section.title}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
     {page.sections.map((section) => (
       <section class="doc__section" id={section.id} aria-labelledby={`${section.id}-title`}>
         <h2 id={`${section.id}-title`}>{section.title}</h2>

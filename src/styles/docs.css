@@ -39,6 +39,17 @@
   text-wrap: pretty;
 }
 
+.doc__byline,
+.doc__date {
+  margin: var(--space-6) 0 0;
+  color: var(--site-color-text-faint);
+  font-size: var(--site-type-caption-size);
+}
+
+.doc__index .doc__date {
+  margin-block-start: var(--space-2);
+}
+
 .doc__toc {
   margin-block-start: clamp(2rem, 4vw, 2.75rem);
 }

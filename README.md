@@ -83,7 +83,11 @@ Devot opens with a free trial that includes everything; once it ends without a l
 
 ### Docs
 
-`/docs` lists the guides and `/docs/<slug>` renders each one through `src/components/DocPage.astro`. Their copy, made of paragraphs, lists and code blocks, lives in `src/i18n/en/docs.ts`; a new guide is one more entry in `docs.pages`, which also adds it to the sitemap, the docs index and `/llms.txt`. Code blocks are lists of lines, so every line is catalog text. `tests/unit/docs.test.ts` checks each guide's title and description lengths, its anchors and its links.
+`/docs` lists the guides and `/docs/<slug>` renders each one through `src/components/Article.astro`. Their copy, made of paragraphs, lists and code blocks, lives in `src/i18n/en/docs.ts`; a new guide is one more entry in `docs.pages`, which also adds it to the sitemap, the docs index and `/llms.txt`. Code blocks are lists of lines, so every line is catalog text. `tests/unit/docs.test.ts` checks each guide's title and description lengths, its anchors and its links.
+
+### Blog
+
+`/blog` lists the posts, newest first, and `/blog/<slug>` renders each through the same `Article.astro`, with its date and a schema.org `BlogPosting`. Posts are copy in `src/i18n/en/blog.ts` built from the same blocks as the docs; a new post goes at the top of `blog.posts` with its ISO `published` date and the matching `publishedLabel`, which `tests/unit/blog.test.ts` checks against each other.
 
 ### Structured data and llms.txt
 

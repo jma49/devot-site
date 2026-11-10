@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
-import { structuredData } from '../../src/lib/structured-data.ts'
+import { blogPosting, structuredData } from '../../src/lib/structured-data.ts'
 import { OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
@@ -197,15 +197,32 @@ it('builds the docs index and a page for each guide', () => {
   for (const { slug } of en.docs.pages) expect(pages).toContain(`dist/docs/${slug}.html`)
 })
 
+it('builds the blog index and a page for each post', () => {
+  expect(pages).toContain('dist/blog.html')
+  for (const { slug } of en.blog.posts) expect(pages).toContain(`dist/blog/${slug}.html`)
+})
+
 describe('structured data', () => {
   const ldJson = (html: string) =>
     scripts(html)
       .filter(({ attrs }) => /\btype\s*=\s*["']?application\/ld\+json/.test(attrs))
       .map(({ body }) => JSON.parse(body) as unknown)
 
-  it('describes the app once, on the home page only', () => {
+  const posts = en.blog.posts.map((post) => `dist/blog/${post.slug}.html`)
+
+  it('describes the app once, on the home page', () => {
     expect(ldJson(readRepoFile('dist/index.html'))).toEqual([structuredData(en)])
-    const others = pages.filter((page) => page !== 'dist/index.html')
+  })
+
+  it('describes each blog post as a BlogPosting of its own', () => {
+    for (const [index, page] of posts.entries()) {
+      const post = en.blog.posts.at(index)
+      expect(ldJson(readRepoFile(page))).toEqual([blogPosting(en, post!)])
+    }
+  })
+
+  it('carries none on the other pages', () => {
+    const others = pages.filter((page) => page !== 'dist/index.html' && !posts.includes(page))
     expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
   })
 })

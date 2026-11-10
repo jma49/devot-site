@@ -1,8 +1,9 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import DocPage from '../../components/DocPage.astro'
-import type { DocPage as Page } from '../../i18n/en/docs.ts'
+import Article from '../../components/Article.astro'
+import type { DocPage } from '../../i18n/en/docs.ts'
 import { messages } from '../../i18n/index.ts'
+import { DOCS_PATH } from '../../lib/links.ts'
 
 export const getStaticPaths = (() =>
   messages().docs.pages.map((page) => ({
@@ -10,7 +11,8 @@ export const getStaticPaths = (() =>
     props: { page },
   }))) satisfies GetStaticPaths
 
-const { page } = Astro.props as { page: Page }
+const t = messages()
+const { page } = Astro.props as { page: DocPage }
 ---
 
-<DocPage page={page} />
+<Article page={page} up={{ href: DOCS_PATH, label: t.docs.allDocs }} />

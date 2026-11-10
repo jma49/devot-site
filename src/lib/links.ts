@@ -13,6 +13,8 @@ export const PRIVACY_PATH = '/privacy'
 export const SUPPORT_PATH = '/support'
 export const DOCS_PATH = '/docs'
 export const docPath = (slug: string) => `${DOCS_PATH}/${slug}`
+export const BLOG_PATH = '/blog'
+export const blogPath = (slug: string) => `${BLOG_PATH}/${slug}`
 
 /** Where the links inside the legal and support pages go, by the id the copy names. */
 export const LEGAL_LINKS = {
@@ -57,6 +59,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     id: 'resources',
     links: [
       { id: 'docs', href: DOCS_PATH },
+      { id: 'blog', href: BLOG_PATH },
       { id: 'releases', href: RELEASES_URL },
       { id: 'install', href: INSTALL_URL },
       { id: 'architecture', href: blob('docs/architecture.md') },
