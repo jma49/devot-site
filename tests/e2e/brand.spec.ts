@@ -8,21 +8,17 @@ const MARKS = [
   ['.site-footer__mark', null, 'small'],
 ] as const
 
+// The home page wears the night in either scheme, so its doves are the dark ones.
 for (const scheme of ['light', 'dark'] as const) {
-  test(`draws the dove in its own ${scheme} ink wherever the page shows it`, async ({
+  test(`draws the dove in its dark ink wherever the home page shows it, on a ${scheme} system`, async ({
     page,
     request,
   }) => {
     await page.emulateMedia({ colorScheme: scheme })
     await page.goto('/')
-    // Past the hero, where the header no longer wears its night.
-    await page.locator('#write').evaluate((section) => section.scrollIntoView())
-    await expect(page.locator('[data-site-header]')).not.toHaveAttribute('data-scope', /.*/)
 
     for (const [selector, pseudo, cut] of MARKS) {
-      const file = new RegExp(
-        `/dove${cut === 'small' ? '-small' : ''}${scheme === 'dark' ? '-dark' : ''}\\.[\\w-]+\\.svg"?\\)$`,
-      )
+      const file = new RegExp(`/dove${cut === 'small' ? '-small' : ''}-dark\\.[\\w-]+\\.svg"?\\)$`)
       const look = await page.locator(selector).evaluate((element, part) => {
         const style = getComputedStyle(element, part)
         return { image: style.backgroundImage, mask: style.maskImage }
@@ -38,14 +34,17 @@ for (const scheme of ['light', 'dark'] as const) {
   })
 }
 
-test('draws the header dove in its dark ink over the hero at night, on a light page too', async ({
-  page,
-}) => {
-  await page.emulateMedia({ colorScheme: 'light' })
-  await page.goto('/')
-  await expect(page.locator('[data-site-header]')).toHaveAttribute('data-scope', 'dark')
-  const image = await page
-    .locator('.site-header .brand-mark')
-    .evaluate((element) => getComputedStyle(element).backgroundImage)
-  expect(image).toMatch(/\/dove-small-dark\.[\w-]+\.svg"?\)$/)
-})
+for (const scheme of ['light', 'dark'] as const) {
+  test(`draws the header dove in its own ${scheme} ink on a page that follows the system`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: scheme })
+    await page.goto('/docs')
+    const image = await page
+      .locator('.site-header .brand-mark')
+      .evaluate((element) => getComputedStyle(element).backgroundImage)
+    expect(image).toMatch(
+      new RegExp(`/dove-small${scheme === 'dark' ? '-dark' : ''}\\.[\\w-]+\\.svg"?\\)$`),
+    )
+  })
+}

@@ -2,11 +2,8 @@
 import '../../styles/home/iphone.css'
 import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
-import notesLight from '../../assets/iphone/p1-notes-light.png'
 import readDark from '../../assets/iphone/p2-read-dark.png'
-import readLight from '../../assets/iphone/p2-read-light.png'
 import { messages } from '../../i18n/index.ts'
-import { DARK_MEDIA } from '../../media.ts'
 import { APP_STORE_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 
@@ -17,18 +14,8 @@ const news = t.whatsNew
 // The widest a phone is drawn is 224 px; a 2x screen gets nearly two pixels for each.
 const screen = (src: ImageMetadata) => getImage({ src, width: 440, format: 'webp', quality: 82 })
 const screens = [
-  {
-    name: 'back',
-    light: await screen(notesLight),
-    dark: await screen(notesDark),
-    alt: t.media.iphoneNotes,
-  },
-  {
-    name: 'front',
-    light: await screen(readLight),
-    dark: await screen(readDark),
-    alt: t.media.iphoneRead,
-  },
+  { name: 'back', still: await screen(notesDark), alt: t.media.iphoneNotes },
+  { name: 'front', still: await screen(readDark), alt: t.media.iphoneRead },
 ]
 ---
 
@@ -99,19 +86,16 @@ const screens = [
     <figure class="iphone__stage" data-reveal="scale">
       <Aurora class="iphone__aurora" />
       <div class="iphone__devices">
-        {screens.map(({ name, light, dark, alt }) => (
+        {screens.map(({ name, still, alt }) => (
           <div class:list={['iphone__device', `iphone__device--${name}`]}>
-            <picture>
-              <source srcset={dark.src} media={DARK_MEDIA} />
-              <img
-                src={light.src}
-                width={light.attributes.width}
-                height={light.attributes.height}
-                alt={alt}
-                loading="lazy"
-                decoding="async"
-              />
-            </picture>
+            <img
+              src={still.src}
+              width={still.attributes.width}
+              height={still.attributes.height}
+              alt={alt}
+              loading="lazy"
+              decoding="async"
+            />
           </div>
         ))}
       </div>

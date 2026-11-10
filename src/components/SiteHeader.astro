@@ -146,7 +146,7 @@ const sections = [
     }
   }
 
-  /* Over the hero's night the bar wears the dark appearance in either scheme (hero.ts). */
+  /* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
   :global([data-scope='dark']) {
     --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 62%, transparent);
     --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 91%, transparent);
@@ -270,8 +270,9 @@ const sections = [
     }
   }
 
-  .site-header[data-scope='dark'] .brand-mark,
-  .site-header[data-scope='dark'] .pill-mark {
+  /* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+  :global([data-scope='dark']) .brand-mark,
+  :global([data-scope='dark']) .pill-mark {
     background-image: url('../assets/dove-small-dark.svg');
   }
 

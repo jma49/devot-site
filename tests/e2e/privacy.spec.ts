@@ -383,7 +383,7 @@ test.describe('closing call to action', () => {
     expect(await type('#download h2')).toEqual(await type('#hero h1'))
   })
 
-  test('brings the aurora back, in the scheme of the page', async ({ page }) => {
+  test('brings the aurora back, in the night the page wears in either scheme', async ({ page }) => {
     for (const colorScheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme })
       await page.goto('/')
@@ -399,7 +399,7 @@ test.describe('closing call to action', () => {
           })),
       )
       expect(shown).toHaveLength(1)
-      expect(shown[0]?.appearance).toBe(colorScheme)
+      expect(shown[0]?.appearance).toBe('dark')
       expect(shown[0]?.image.match(/linear-gradient/g)).toHaveLength(3)
       expect(shown[0]?.themes).toEqual(['sage', 'ember'])
     }

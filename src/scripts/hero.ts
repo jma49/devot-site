@@ -1,7 +1,6 @@
 import { setVar } from '../lib/motion.ts'
 import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
-import { keepInStep, mirrorPlayback, type InStep, type Mirror } from './hero-day.ts'
-import { browserPause } from './pause.ts'
+import { mirrorPlayback } from './hero-phone.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
 export const HERO_SCROLL = {
@@ -16,9 +15,6 @@ export const HERO_SCROLL = {
   sheenEnd: 200,
   domeStart: 60,
   domeEnd: 180,
-  /** The night gives way to the reader's own scheme between these shares of the viewport. */
-  nightStart: 0.06,
-  nightEnd: 0.5,
   /** Seconds the layers trail the scroll by. */
   lag: 0.45,
 } as const
@@ -42,20 +38,15 @@ export interface HeroScroll {
   sheen: number
   /** Opacity of the horizon under the window. */
   dome: number
-  /** How much of the night is left: 1 at the top of the page, 0 once the window stands. */
-  night: number
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
-const smooth = (value: number) => value * value * (3 - 2 * value)
 
 /** Where every scroll-linked layer of the hero stands `scroll` pixels into it. */
 export function heroScroll(scroll: number, viewport: number): HeroScroll {
   const y = Math.max(0, scroll)
   const progress = (range: number) => (viewport > 0 ? clamp01(y / (range * viewport)) : 0)
-  const { liftRate, liftMax, skyRate, sheenEnd, domeStart, domeEnd, nightStart, nightEnd } =
-    HERO_SCROLL
-  const gone = viewport > 0 ? clamp01((y / viewport - nightStart) / (nightEnd - nightStart)) : 0
+  const { liftRate, liftMax, skyRate, sheenEnd, domeStart, domeEnd } = HERO_SCROLL
   return {
     settle: progress(HERO_SCROLL.settleRange),
     drift: progress(HERO_SCROLL.driftRange),
@@ -63,7 +54,6 @@ export function heroScroll(scroll: number, viewport: number): HeroScroll {
     sky: y * skyRate,
     sheen: 1 - clamp01(y / sheenEnd),
     dome: clamp01((y - domeStart) / (domeEnd - domeStart)),
-    night: 1 - smooth(gone),
   }
 }
 
@@ -74,7 +64,6 @@ const VARS = {
   sky: '--hero-sky',
   sheen: '--hero-sheen',
   dome: '--hero-dome',
-  night: '--hero-night',
 } as const satisfies Record<keyof HeroScroll, `--${string}`>
 
 function applyScroll(hero: HTMLElement, state: HeroScroll, written: Map<string, string>): void {
@@ -103,100 +92,10 @@ function afterFirstPaint(task: () => void): void {
   else window.addEventListener('load', painted, { once: true })
 }
 
-const DARK_QUERY = '(prefers-color-scheme: dark)'
-const SCOPE = ['data-scope', 'data-appearance-preview'] as const
-
-/** Dresses `element` in the dark appearance whatever the reader's scheme, or leaves it to that. */
-function wear(element: HTMLElement | null, night: boolean): void {
-  if (!element || element.hasAttribute(SCOPE[0]) === night) return
-  for (const name of SCOPE) {
-    if (night) element.setAttribute(name, 'dark')
-    else element.removeAttribute(name)
-  }
-}
-
-const DAYLIGHT = '--hero-daylight'
-/** Milliseconds daylight takes to catch up with the scroll once the light recording is ready. */
-const DAYLIGHT_ARRIVAL = 450
-
 /**
- * The night over the hero. The page opens under it in either scheme: the hero and the header over
- * it wear the dark appearance, and the window shows its dark recording. `set` moves it: the hero
- * wears the night until half of it has gone and the header for as long as it is also over the
- * hero. On a light page the light recording comes over the hero clip as the night goes, and
- * daylight reaches the window (`--hero-daylight`) once that recording is on the clip's moment.
- * The iPhone's recording plays whenever the hero clip does, and its light one comes the same way.
- */
-function startNight(hero: HTMLElement): { set(night: number): void } {
-  const header = document.querySelector<HTMLElement>('[data-site-header]')
-  const day = hero.querySelector<HTMLElement>('[data-hero-day]')
-  const recording = day?.querySelector<HTMLVideoElement>('video')
-  const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
-  const phone = hero.querySelector<HTMLVideoElement>('[data-hero-phone="night"]')
-  const phoneDay = hero.querySelector<HTMLVideoElement>('[data-hero-phone="day"]')
-  const dark = window.matchMedia(DARK_QUERY)
-  const pause = browserPause()
-  let night = 1
-  let underHeader = true
-  let step: InStep | null = null
-  let phoneLight: Mirror | null = null
-  let readyAt: number | null = null
-  let daylight = '0'
-
-  const dress = () => {
-    wear(hero, night >= 0.5)
-    wear(header, night >= 0.5 && underHeader)
-  }
-  // A dark page keeps the dark recording, and so does a reader who has paused the page, for whom
-  // no clip loads: the light one is never shown or loaded there.
-  const light = () => {
-    const wanted = !dark.matches && !pause.paused && night < 1
-    if (day && day.hidden === wanted) day.hidden = !wanted
-    if (wanted && !step && recording && clip) step = keepInStep(clip, recording, light)
-    if (phoneDay && phoneDay.hidden === wanted) phoneDay.hidden = !wanted
-    if (wanted && !phoneLight && phone && phoneDay) {
-      phoneLight = mirrorPlayback(phone, phoneDay)
-      keepInStep(phone, phoneDay, () => {})
-    }
-    phoneLight?.rest(!wanted)
-    if (step?.ready()) readyAt ??= performance.now()
-    // A recording that loads while the page scrolls is let in over a moment, not at a stroke.
-    const arrived =
-      readyAt === null ? 0 : smooth(clamp01((performance.now() - readyAt) / DAYLIGHT_ARRIVAL))
-    if (wanted && readyAt !== null && arrived < 1) requestAnimationFrame(light)
-    const next = wanted ? String(Number(((1 - night) * arrived).toFixed(3))) : '0'
-    if (next === daylight) return
-    daylight = next
-    setVar(hero, DAYLIGHT, next)
-  }
-
-  new IntersectionObserver(
-    ([entry]) => {
-      underHeader = entry?.isIntersecting ?? true
-      dress()
-    },
-    // The strip of the viewport the header floats in.
-    { rootMargin: '0px 0px -92% 0px' },
-  ).observe(hero)
-  dark.addEventListener('change', light)
-  pause.subscribe(light)
-  if (clip && phone) mirrorPlayback(clip, phone)
-  dress()
-
-  return {
-    set(value) {
-      if (value === night) return
-      night = value
-      dress()
-      light()
-    },
-  }
-}
-
-/**
- * Starts the hero: the night it opens under, the first-scroll choreography that hero.css draws
- * from the `--hero-*` variables, and the WebGL backdrop, which loads once the page has painted
- * with the CSS gradient standing in for it.
+ * Starts the hero: the first-scroll choreography that hero.css draws from the `--hero-*`
+ * variables, the iPhone's recording, which plays whenever the hero clip does, and the WebGL
+ * backdrop, which loads once the page has painted with the CSS gradient standing in for it.
  */
 export function startHero(root: ParentNode = document): void {
   const hero = root.querySelector<HTMLElement>('[data-hero]')
@@ -205,27 +104,20 @@ export function startHero(root: ParentNode = document): void {
   const dark = hero?.querySelector<HTMLElement>('[data-backdrop-source="dark"]')
   if (!hero || !canvas || !light || !dark) return
 
-  const night = startNight(hero)
-  let left = 1
-  let repaint = () => {}
-  const setNight = (value: number) => {
-    if (value === left) return
-    left = value
-    night.set(value)
-    repaint()
-  }
+  const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
+  const phone = hero.querySelector<HTMLVideoElement>('[data-hero-phone]')
+  if (clip && phone) mirrorPlayback(clip, phone)
 
   afterFirstPaint(() => {
     import('./hero-backdrop.ts')
-      .then(({ startBackdrop }) => {
-        repaint = startBackdrop({
+      .then(({ startBackdrop }) =>
+        startBackdrop({
           hero,
           canvas,
           sources: { light, dark },
           webgl: window.matchMedia(WEBGL_QUERY).matches,
-          night: () => left,
-        }).repaint
-      })
+        }),
+      )
       .catch((error: unknown) =>
         console.warn('W_HERO_BACKDROP_LOAD', error instanceof Error ? error.name : 'unknown'),
       )
@@ -239,18 +131,14 @@ export function startHero(root: ParentNode = document): void {
     sizes.observe(hero)
     const written = new Map<string, string>()
     const stop = scrubScroll(
-      (scroll) => {
-        const state = heroScroll(Math.min(scroll, height), window.innerHeight)
-        applyScroll(hero, state, written)
-        setNight(Number(state.night.toFixed(3)))
-      },
+      (scroll) =>
+        applyScroll(hero, heroScroll(Math.min(scroll, height), window.innerHeight), written),
       { lag: HERO_SCROLL.lag },
     )
     return () => {
       stop()
       sizes.disconnect()
       Object.values(VARS).forEach((name) => hero.style.removeProperty(name))
-      setNight(1)
     }
   })
 }

@@ -94,7 +94,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.goto('/')
       await animationsDone(page)
 
-      await expect(page.locator('body')).toHaveCSS('background-color', rgb(surface[colorScheme]))
+      // The home page wears the night in either scheme.
+      await expect(page.locator('body')).toHaveCSS('background-color', rgb(surface.dark))
       expect(await violations(page)).toEqual([])
     })
 

@@ -50,13 +50,8 @@ describe.each(pages)('%s', (page) => {
 
 it('offers every variant of every clip on the home page, with its posters', () => {
   const clips = builtClips(readRepoFile('dist/index.html'))
-  // The hero is two clips: its dark recording, which the window opens on in either scheme, and
-  // its light one, which comes over it with the day.
-  const shown = [
-    ...SLOTS.filter((name) => name !== 'hero').map((name) => media[name]),
-    pinned(media.hero, 'dark'),
-    pinned(media.hero, 'light'),
-  ]
+  // The home page wears the night in either scheme, so it carries the dark recordings only.
+  const shown = SLOTS.map((name) => pinned(media[name], 'dark'))
   expect(clips).toHaveLength(shown.length)
   for (const slot of shown) {
     const last = slot.sources.at(-1)!.src
@@ -98,15 +93,10 @@ it('shows each poster as a picture of its variants when scripts do not run', () 
       }
     },
   )
-  // The hero comes first, as its dark recording and then its light one.
-  const shown = [
-    { slot: pinned(media.hero, 'dark'), loading: 'eager' },
-    { slot: pinned(media.hero, 'light'), loading: 'lazy' },
-    ...SLOTS.filter((name) => name !== 'hero' && media[name].clip).map((name) => ({
-      slot: media[name],
-      loading: 'lazy',
-    })),
-  ]
+  const shown = SLOTS.filter((name) => media[name].clip).map((name) => ({
+    slot: pinned(media[name], 'dark'),
+    loading: name === 'hero' ? 'eager' : 'lazy',
+  }))
   expect(pictures).toEqual(
     shown.map(({ slot, loading }) => ({
       sources: slot.variants.filter((v) => v.media).map((v) => v.poster),

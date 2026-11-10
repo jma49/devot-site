@@ -90,12 +90,15 @@ async function scrollThrough(page: Page) {
   }
   await expect
     .poll(() =>
-      page.locator('video[data-clip]').evaluateAll((videos) =>
-        videos
-          // A clip that is not drawn, as the hero's light recording on a dark page, loads nothing.
-          .filter((video) => (video as HTMLElement).offsetParent !== null)
-          .every((video) => (video as HTMLVideoElement).currentSrc && video.getAttribute('poster')),
-      ),
+      page
+        .locator('video[data-clip]')
+        .evaluateAll((videos) =>
+          videos
+            .filter((video) => (video as HTMLElement).offsetParent !== null)
+            .every(
+              (video) => (video as HTMLVideoElement).currentSrc && video.getAttribute('poster'),
+            ),
+        ),
     )
     .toBe(true)
 }
@@ -119,7 +122,7 @@ for (const scheme of ['light', 'dark'] as const) {
     ['desktop', desktop, 1500, 4000],
     ['phone', phone, 1000, 3000],
   ] as const) {
-    test(`loads only the ${scheme} ${label} files, within ${firstBudget} KB first and ${wholeBudget} KB in all`, async ({
+    test(`loads only the dark ${label} files on a ${scheme} system, within ${firstBudget} KB first and ${wholeBudget} KB in all`, async ({
       page,
       browserName,
     }) => {
@@ -137,13 +140,8 @@ for (const scheme of ['light', 'dark'] as const) {
       const dark = (file: string) => /-dark[.-]/.test(file)
       const cut = (file: string) => /-phone[.-]/.test(file)
       expect(log.files.length).toBeGreaterThan(SLOTS.length)
-      // The hero opens on its dark recording in either scheme; its light one comes with the day.
-      const hero = (file: string) => file.split('/')[2] === 'hero'
-      const wrongScheme = log.files.filter((file) =>
-        hero(file) ? !dark(file) && scheme === 'dark' : dark(file) !== (scheme === 'dark'),
-      )
-      expect(wrongScheme).toEqual([])
-      expect(log.files.some((file) => hero(file) && !dark(file))).toBe(scheme === 'light')
+      // The page wears the night in either scheme, so no light file is ever asked for.
+      expect(log.files.filter((file) => !dark(file))).toEqual([])
       const wrongCut = log.files.filter((file) => {
         const slot = file.split('/')[2] as (typeof SLOTS)[number]
         return cut(file) !== (label === 'phone' && media[slot].phone !== undefined)

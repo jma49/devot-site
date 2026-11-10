@@ -129,29 +129,9 @@ export function auroraPalette(inputs: AuroraInputs, scheme: Scheme): AuroraPalet
   }
 }
 
-/** `amount` of the way from one palette to another, in OKLab: 0 is `from`, 1 is `to`. */
-export function mixPalette(from: AuroraPalette, to: AuroraPalette, amount: number): AuroraPalette {
-  if (amount <= 0) return from
-  if (amount >= 1) return to
-  const blend = (a: Lab, b: Lab) => mixLab(a, b, amount)
-  const number = (a: number, b: number) => a + (b - a) * amount
-  return {
-    angle: number(from.angle, to.angle),
-    sky: from.sky.map((stop, index) => blend(stop, to.sky[index] ?? stop)),
-    sage: blend(from.sage, to.sage),
-    tide: blend(from.tide, to.tide),
-    fringe: blend(from.fringe, to.fringe),
-    warm: blend(from.warm, to.warm),
-    strength: [
-      number(from.strength[0], to.strength[0]),
-      number(from.strength[1], to.strength[1]),
-      number(from.strength[2], to.strength[2]),
-    ],
-    glow: number(from.glow, to.glow),
-  }
-}
-
 const FPS = 30
+/** A part of the page that keeps the dark appearance in either scheme (site-tokens.css). */
+const NIGHT = "[data-scope='dark']"
 /**
  * The shader draws at this share of CSS pixels, so device pixels never count: the aurora is soft,
  * and upscaling hides nothing.
@@ -544,12 +524,6 @@ export interface BackdropParts {
   webgl?: boolean
   /** The reader's pause: while it holds, the flow stops where it is. */
   pause?: Pause
-  /**
-   * How much of the night is left over the hero, from 1 to 0: that share of the dark palette is
-   * drawn over the palette of the reader's scheme. Call the returned backdrop's `repaint` when it
-   * changes.
-   */
-  night?: () => number
 }
 
 export interface BackdropHandle {
@@ -572,7 +546,6 @@ export function startBackdrop({
   sources,
   webgl = true,
   pause = browserPause(),
-  night = () => 0,
 }: BackdropParts): BackdropHandle {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
@@ -587,13 +560,11 @@ export function startBackdrop({
   let intervals: number[] | null = []
 
   const palette = () => {
-    const scheme: Scheme = dark.matches ? 'dark' : 'light'
+    // A page that wears the night draws the dark palette whatever the reader's scheme.
+    const scheme: Scheme = dark.matches || hero.closest(NIGHT) !== null ? 'dark' : 'light'
     const inputs = readAurora(sources[scheme])
     if (!inputs || !renderer) return false
-    const day = auroraPalette(inputs, scheme)
-    const left = scheme === 'dark' ? 0 : Math.min(1, Math.max(0, night()))
-    const dusk = left > 0 ? readAurora(sources.dark) : null
-    renderer.setPalette(dusk ? mixPalette(day, auroraPalette(dusk, 'dark'), left) : day)
+    renderer.setPalette(auroraPalette(inputs, scheme))
     return true
   }
 

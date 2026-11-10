@@ -36,10 +36,6 @@
   --hero-sky: 0;
   --hero-sheen: 1;
   --hero-dome: 0;
-  /* How much of the night is left over the hero: hero.ts moves it from 1 to 0 with the scroll,
-     and --hero-daylight from 0 to 1 as the day reaches the window. */
-  --hero-night: 1;
-  --hero-daylight: 0;
   --hero-phone-width: clamp(6.5rem, 17cqw, 13.5rem);
 
   position: relative;
@@ -143,6 +139,17 @@
   }
 }
 
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .hero {
+  --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 60%, transparent);
+}
+
+[data-scope='dark'] .hero .hero-lead,
+[data-scope='dark'] .hero .hero-requirements,
+[data-scope='dark'] .hero .install-note {
+  color: var(--site-color-text);
+}
+
 .hero .install-note a {
   color: var(--site-color-text);
 }
@@ -154,6 +161,17 @@
   }
 
   .hero .aurora {
+    --aurora-band-filter: saturate(1.6);
+  }
+}
+
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+@media (max-width: 639.98px) {
+  [data-scope='dark'] .hero {
+    --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 72%, transparent);
+  }
+
+  [data-scope='dark'] .hero .aurora {
     --aurora-band-filter: saturate(1.6);
   }
 }
@@ -480,67 +498,26 @@
 }
 
 /*
- * The night. The hero opens in the dark appearance whatever the reader's scheme (data-scope, see
- * site-tokens.css) and gives way to that scheme as the window stands up: hero.ts moves
- * --hero-night from 1 to 0 and takes the scope off halfway.
+ * The night. The home page wears the dark appearance whatever the reader's scheme (data-scope on
+ * its root, see site-tokens.css): the hero's sky is the brightest part of it, and gives way to
+ * the page's own fainter sky below (sky.css).
  */
 
-/* The night sky stays whole down to where the window dissolves, so a dark window never fades out
-   over a sky already turning to the page, and gives way to the page below that. */
-.hero[data-scope='dark'] .hero-backdrop {
+/* The sky stays whole down to where the window dissolves, so the window never fades out over a
+   sky that is already thinning. */
+[data-scope='dark'] .hero-backdrop {
   mask-image: linear-gradient(to bottom, var(--site-color-page) 84%, transparent 100%);
 }
 
-/* On a phone the call to action ends the hero, in light text under the night: the sky stays whole
-   behind it and fades out in the room the hero keeps below it (--hero-night-fade). */
+/* On a phone the call to action ends the hero: the sky stays whole behind it and fades out in the
+   room the hero keeps below it (--hero-night-fade). */
 @media (max-width: 639.98px) {
-  .hero[data-scope='dark'] .hero-backdrop {
+  [data-scope='dark'] .hero-backdrop {
     mask-image: linear-gradient(
       to bottom,
       var(--site-color-page) calc(100% - var(--hero-night-fade)),
       transparent 100%
     );
-  }
-}
-
-.hero[data-scope='dark'] .hero-lead,
-.hero[data-scope='dark'] .hero-requirements,
-.hero[data-scope='dark'] .install-note,
-.hero[data-scope='dark'] .install-note a {
-  color: var(--site-color-text);
-}
-
-.hero[data-scope='dark'] .aurora[data-aurora='light'] {
-  display: none;
-}
-
-.hero[data-scope='dark'] .aurora[data-aurora='dark'] {
-  display: block;
-}
-
-/*
- * The window opens on its dark recording. On a light page the light recording lies over it once
- * the night starts to go (hero.ts takes `hidden` off it), and daylight crosses the window from the
- * left: an edge that moves, so the two recordings never blend to grey. --hero-daylight is how much
- * of the day has come to the window, which waits for the light recording to be on the dark one's
- * moment. A dark page keeps the dark recording.
- */
-.hero-day {
-  --hero-day-edge: calc(var(--hero-daylight) * 136% - 18%);
-
-  position: absolute;
-  inset: 0;
-  mask-image: linear-gradient(
-    100deg,
-    var(--site-color-page) calc(var(--hero-day-edge) - 9%),
-    transparent calc(var(--hero-day-edge) + 9%)
-  );
-}
-
-@media (prefers-color-scheme: dark) {
-  .hero-day,
-  .hero-phone-day {
-    display: none;
   }
 }
 
@@ -577,29 +554,11 @@
   border-radius: calc(var(--hero-phone-width) * 0.14);
 }
 
-.hero-phone-day[hidden] {
-  display: none;
-}
-
 /* Without scripts nothing plays, and Chromium would give a video its native controls. */
 @media (scripting: none) {
   .hero-phone video {
     display: none;
   }
-}
-
-/* Daylight reaches the phone as it reaches the window, a beat later. */
-.hero-phone .hero-phone-day {
-  --hero-day-edge: calc(var(--hero-daylight) * 150% - 40%);
-
-  position: absolute;
-  inset: var(--hero-phone-bezel);
-  width: calc(100% - var(--hero-phone-bezel) * 2);
-  mask-image: linear-gradient(
-    100deg,
-    var(--site-color-page) calc(var(--hero-day-edge) - 14%),
-    transparent calc(var(--hero-day-edge) + 14%)
-  );
 }
 
 @media (prefers-reduced-motion: no-preference) {

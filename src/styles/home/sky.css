@@ -1,24 +1,19 @@
 /*
- * The hero's sky goes on behind the rest of the page: the same aurora, faint and holding still,
- * fixed to the viewport so every section and the margins beside it lie under one sky instead of
- * the bare page. The hero, the iPhone stage and the closing section keep the ones that move.
+ * The hero's sky goes on behind the rest of the page: the same aurora, fainter and slower, fixed
+ * to the viewport so every section and the margins beside it lie under one night. Its bands drift
+ * on transforms only, rest with the reader's pause and slow down with reduced motion, as every
+ * aurora does (aurora.css).
  */
 .page-sky {
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0.5;
+  opacity: 0.7;
   pointer-events: none;
 }
 
-.page-sky .aurora-band {
-  animation: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .page-sky {
-    opacity: 0.7;
-  }
+.page-sky .aurora {
+  --aurora-drift: 26s;
 }
 
 @media (forced-colors: active) {

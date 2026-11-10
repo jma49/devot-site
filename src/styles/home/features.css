@@ -166,6 +166,15 @@
   }
 }
 
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .feature-light-day {
+  display: none;
+}
+
+[data-scope='dark'] .feature-light-night {
+  display: block;
+}
+
 .feature-well::after {
   position: absolute;
   z-index: -1;

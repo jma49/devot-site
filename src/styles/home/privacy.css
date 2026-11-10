@@ -82,6 +82,11 @@
   }
 }
 
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .local__mark::after {
+  background-image: url('../../assets/dove-small-dark.svg');
+}
+
 .local__title,
 .local__lede {
   margin: 0;

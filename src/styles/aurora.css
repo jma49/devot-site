@@ -38,6 +38,15 @@
   }
 }
 
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .aurora[data-aurora='light'] {
+  display: none;
+}
+
+[data-scope='dark'] .aurora[data-aurora='dark'] {
+  display: block;
+}
+
 /* A band: tight at its lower edge, a long glow above, fading out at both ends. */
 .aurora-band {
   position: absolute;
