@@ -1,4 +1,6 @@
 import type { Messages } from '../i18n/en.ts'
+import type { BlogPost } from '../i18n/en/blog.ts'
+import { blogPath } from './links.ts'
 import {
   DOWNLOAD_URL,
   LICENCE_AMOUNT,
@@ -32,6 +34,23 @@ export function structuredData(t: Messages) {
       },
       { '@type': 'WebSite', name: t.siteName, url: SITE_URL },
     ],
+  }
+}
+
+/** A post's schema.org `BlogPosting`, published by the site itself. */
+export function blogPosting(t: Messages, post: BlogPost) {
+  const url = new URL(blogPath(post.slug), SITE_URL).href
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.heading,
+    description: post.description,
+    datePublished: post.published,
+    url,
+    mainEntityOfPage: url,
+    image: new URL(OG_IMAGE.path, SITE_URL).href,
+    author: { '@type': 'Organization', name: t.siteName, url: SITE_URL },
+    publisher: { '@type': 'Organization', name: t.siteName, url: SITE_URL },
   }
 }
 

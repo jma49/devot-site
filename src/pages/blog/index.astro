@@ -1,0 +1,29 @@
+---
+import '../../styles/docs.css'
+import { messages } from '../../i18n/index.ts'
+import Base from '../../layouts/Base.astro'
+import { blogPath } from '../../lib/links.ts'
+
+const t = messages()
+const { index, posts } = t.blog
+---
+
+<Base title={index.title} description={index.description}>
+  <article class="doc">
+    <header class="doc__head">
+      <h1 class="doc__title">{index.heading}</h1>
+      <p class="doc__intro">{index.intro}</p>
+    </header>
+    <ul class="doc__index" aria-label={index.listLabel}>
+      {posts.map((post) => (
+        <li>
+          <a href={blogPath(post.slug)}>{post.heading}</a>
+          <p class="doc__date">
+            <time datetime={post.published}>{post.publishedLabel}</time>
+          </p>
+          <p>{post.intro}</p>
+        </li>
+      ))}
+    </ul>
+  </article>
+</Base>

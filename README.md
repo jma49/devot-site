@@ -81,6 +81,14 @@ It reads the checkout `DEVOT_CHECKOUT` names; without it, the pinned commit in `
 
 Devot opens with a free trial that includes everything; once it ends without a licence, Devot is read-only. A licence, bought once, unlocks everything. The facts of the sale live once in `src/site.ts`: the price (`LICENCE_PRICE`), the refund window (`REFUND_DAYS`), the trial length (`TRIAL_DAYS`, spelled out by `src/lib/words.ts`), and the licence service's `/buy` (Stripe Checkout) and `/resend` (the form that mails a lost key) URLs. The copy builds on them, and a unit test fails when the price, the window or the trial length is written anywhere else in `src/`; a policy test refuses "free" anywhere but in "free trial". Hyphenated words in the read-only notes stay on one line: `src/components/Unbroken.astro` wraps each in a `site-nowrap` span. The Pricing section links the terms of sale (`/terms`) and the refund policy (`/refunds`), both rendered by `src/components/LegalPage.astro` from `src/i18n/en/legal.ts`; the footer links them on every page. The site gives no email address: `pnpm test:dist` fails on one in any page.
 
+### Docs
+
+`/docs` lists the guides and `/docs/<slug>` renders each one through `src/components/Article.astro`. Their copy, made of paragraphs, lists and code blocks, lives in `src/i18n/en/docs.ts`; a new guide is one more entry in `docs.pages`, which also adds it to the sitemap, the docs index and `/llms.txt`. Code blocks are lists of lines, so every line is catalog text. `tests/unit/docs.test.ts` checks each guide's title and description lengths, its anchors and its links.
+
+### Blog
+
+`/blog` lists the posts, newest first, and `/blog/<slug>` renders each through the same `Article.astro`, with its date and a schema.org `BlogPosting`. Posts are copy in `src/i18n/en/blog.ts` built from the same blocks as the docs; a new post goes at the top of `blog.posts` with its ISO `published` date and the matching `publishedLabel`, which `tests/unit/blog.test.ts` checks against each other.
+
 ### Structured data and llms.txt
 
 The home page carries a schema.org `SoftwareApplication` as JSON-LD (`src/lib/structured-data.ts`), and `/llms.txt` lists the site's facts, features, pricing and docs as Markdown for language models (`src/lib/llms-txt.ts`, served by `src/pages/llms.txt.ts`). Both are built from the catalog and `src/site.ts` at build time, never written by hand: rewording copy or adding a feature or card updates them with no other change. They read copy by key, so renaming or regrouping a key they use (the hero lead, the features and cards, the pricing tiers, the footer links) is a type error until `src/lib/llms-txt.ts` follows it. The platform (`PLATFORM`), the price and the currency are facts in `src/site.ts`, so the copy may word them however it likes. `pnpm test:dist` checks that only the home page carries JSON-LD and that `dist/llms.txt` matches the generator.

@@ -1,0 +1,26 @@
+---
+import '../../styles/docs.css'
+import { messages } from '../../i18n/index.ts'
+import Base from '../../layouts/Base.astro'
+import { docPath } from '../../lib/links.ts'
+
+const t = messages()
+const { index, pages } = t.docs
+---
+
+<Base title={index.title} description={index.description}>
+  <article class="doc">
+    <header class="doc__head">
+      <h1 class="doc__title">{index.heading}</h1>
+      <p class="doc__intro">{index.intro}</p>
+    </header>
+    <ul class="doc__index" aria-label={index.listLabel}>
+      {pages.map((page) => (
+        <li>
+          <a href={docPath(page.slug)}>{page.heading}</a>
+          <p>{page.summary}</p>
+        </li>
+      ))}
+    </ul>
+  </article>
+</Base>

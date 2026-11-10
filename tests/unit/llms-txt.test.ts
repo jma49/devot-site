@@ -44,6 +44,14 @@ it('links only to absolute https addresses on this site or the Devot repository'
   expect(links).toContain(new URL('/mcp-privacy', SITE_URL).href)
 })
 
+it('links every docs page with its summary', () => {
+  for (const page of en.docs.pages) {
+    expect(text).toContain(
+      `- [${page.heading}](${new URL(`/docs/${page.slug}`, SITE_URL).href}): ${page.summary}`,
+    )
+  }
+})
+
 it('carries no markup a reader would see as raw HTML', () => {
   expect(text).not.toMatch(/<[a-z/]/i)
 })
