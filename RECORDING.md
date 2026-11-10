@@ -81,7 +81,15 @@ iPhone 这一套只能在 Mac 上跑，云端没法验证，第一次跑大概�
 
 把 `$DEVOT`、`$SITE` 换成绝对路径，然后 `pnpm tauri dev --config /tmp/devot-demo.json`，窗口出现后退出。二进制在 `$DEVOT/src-tauri/target/debug/devot`，下文叫 `$BIN`。
 
-### 5.2 B 部分：Mac 整窗母带（先做，优先级最高的 `hero` 在这里）
+### 5.2 先空跑一遍（几分钟）
+
+```bash
+DEVOT_CHECKOUT=$DEVOT pnpm media:dry
+```
+
+不录制，只在 Devot 的 UI 测试构建里把 18 个镜头按真实时间线各跑一遍，截图在 `.cache/media/dry/`。全部应该是 `ok`（云端用 Chromium 跑的是全 `ok`；Mac 上默认用 WebKit，更接近真 app）。以后改了某个场景，先用它验，再上真机管线，省掉一轮一轮的 25 分钟。
+
+### 5.3 B 部分：Mac 整窗母带（先做，优先级最高的 `hero` 在这里）
 
 ```bash
 MEDIA_FULL_WINDOW=1 DEVOT_CHECKOUT=$DEVOT DEVOT_BINARY=$BIN pnpm media:device hero
@@ -100,7 +108,7 @@ DEVOT_CHECKOUT=$DEVOT pnpm media:film:pack
 - **Gradient 默认是 0。** v1.1.5 里渐变主题在新库上是纯色，要到 设置 > 外观 把 Gradient 拉起来才有渐变。默认设置下录出来的 Tide 是一整片淡蓝，旧素材是有渐变的。`MEDIA_GRADIENT=100` 可以让所有镜头从满渐变开始（`n7` 除外，它演示的就是拖滑块，应保持默认 0）。建议：`n7` 用默认，其余用 `MEDIA_GRADIENT=100` 录，并在 `notes.md` 写明。拿不准就两种都录，文件名加后缀。
 - **每个镜头都要看成片。** 重点看 `n2`（拖卡片有没有真的拖起来）、`n7`（滑块）、`organise`（结尾在正文空行点了一下来关浮层，会露出 "Type '/' for commands..." 的占位文字，觉得碍眼就换个点击位置）。
 
-### 5.3 A 部分：落地页 10 个片段
+### 5.4 A 部分：落地页 10 个片段
 
 ```bash
 DEVOT_CHECKOUT=$DEVOT DEVOT_BINARY=$BIN pnpm media:device
@@ -118,7 +126,7 @@ pnpm test
 
 片段提交到 `media/v1.1.5-clips`（从 `media/v1.1.5-recording` 开），draft PR 标题 `chore: re-record product clips at Devot v1.1.5`，不带 AI 署名。
 
-### 5.4 C 部分：iPhone（模拟器）
+### 5.5 C 部分：iPhone（模拟器）
 
 ```bash
 DEVOT_CHECKOUT=$DEVOT pnpm media:phone build
@@ -132,7 +140,7 @@ DEVOT_CHECKOUT=$DEVOT pnpm media:phone shot p1-notes
 
 测试失败时，`xcodebuild` 的输出会说哪个元素没找到。改 `scripts/media/phone/FilmShots.swift`，然后重新 `build`（它每次把这个文件拷进 Devot 的 `DevotUITests/Tests/`，构建完再删掉）。元素名去 `$DEVOT/src-tauri/apple/DevotUITests/Tests/` 和 `DevotScreens/Sources/DevotScreens/UI/` 里核对。
 
-### 5.5 D 部分：同步镜头
+### 5.6 D 部分：同步镜头
 
 1. 起中继，留着它跑：
 
@@ -142,7 +150,7 @@ DEVOT_CHECKOUT=$DEVOT pnpm media:phone shot p1-notes
 
    它会打印地址 `http://localhost:8787` 和密钥。
 
-2. 准备两边。Mac：演示库已经在演示构建的数据目录里（跑过 5.2 的任意一个镜头就有了），再跑一次 5.1 的 `pnpm tauri dev --config ...` 把它开起来。iPhone：
+2. 准备两边。Mac：演示库已经在演示构建的数据目录里（跑过 5.3 的任意一个镜头就有了），再跑一次 5.1 的 `pnpm tauri dev --config ...` 把它开起来。iPhone：
 
    ```bash
    DEVOT_CHECKOUT=$DEVOT pnpm media:phone seed light empty
@@ -166,7 +174,7 @@ DEVOT_CHECKOUT=$DEVOT pnpm media:phone shot p1-notes
 
    如果中继同步比预期慢，把 `SYNC_WAIT` 调大，不要剪。如果配对走不通，把卡在哪一步写进 `notes.md`，D 部分跳过，不要造一个。
 
-### 5.6 交付
+### 5.7 交付
 
 同上一版第 9 节：`footage/` 推到分支 `footage/v1.1.5`（从 `origin/main` 开，只提交 `footage/`，不开 PR）。`manifest.json` 由上面的命令逐条写入，`notes.md` 你来写。交付前按上一版第 10 节自查，另加一条：**iPhone 镜头的 `source` 写的是模拟器**。
 
