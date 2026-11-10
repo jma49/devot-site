@@ -11,8 +11,9 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 import type { Scheme } from '../../../src/media.ts'
-import { Input, windows, type Rect } from '../device/device.ts'
+import { bringToFront, Input, windows, type Rect } from '../device/device.ts'
 import { withEntry } from '../device/film.ts'
+import { inputHelper } from '../device/helper.ts'
 import { writeLibrary } from '../device/record.ts'
 import { FFMPEG } from '../encode.ts'
 import { typingTimes } from '../timeline.ts'
@@ -22,7 +23,8 @@ import { phoneCut, phoneEntry, phoneSettings, phoneShotsToRecord, type ShotNote 
 // Simulator, and the shots of the Mac and the iPhone side by side. DEVOT_CHECKOUT names the Devot
 // checkout. Steps:
 //   build                 the simulator app and the UI test runner with FilmShots.swift in it
-//   seed <light|dark>     a booted simulator with the app, the demo library and a clean status bar
+//   seed <light|dark> [empty]  a booted simulator with the app, the demo library (or, with
+//                         `empty`, a new install's own notes) and a clean status bar
 //   shot [id ...]         records shots of shots.ts into footage/iphone/, each with its still
 //   relay                 runs Devot's relay on this Mac, for the two devices to sync through
 //   sync <id> <take>      records the whole screen while one device changes a note (see below)
@@ -123,14 +125,22 @@ function dataDir(udid: string): string | undefined {
   return db ? join(db, '..') : undefined
 }
 
-async function seed(scheme: Scheme): Promise<string> {
+async function seed(scheme: Scheme, library = true): Promise<string> {
   const udid = simulator()
   run('sh', [join(devotDir!, 'scripts', 'ci', 'iphone-simulator-ready.sh'), udid])
   const app = join(uiBuild, 'Devot.app')
   if (!existsSync(app)) fail(`E_PHONE_NO_BUILD ${app} is missing; run pnpm media:phone build`)
+  terminate(udid)
+  // Without the library the app starts as a new install does, for a device that joins a vault.
+  if (!library) {
+    try {
+      simctl('uninstall', udid, BUNDLE)
+    } catch {
+      // Not installed.
+    }
+  }
   simctl('install', udid, app)
   // The app makes its data folder on its first start; the library replaces what it made.
-  terminate(udid)
   let dir = dataDir(udid)
   if (!dir) {
     simctl('launch', udid, BUNDLE)
@@ -142,13 +152,16 @@ async function seed(scheme: Scheme): Promise<string> {
     terminate(udid)
   }
   if (!dir) fail('E_PHONE_NO_DATA the app made no devot.sqlite in its container')
-  const fresh = join(cache, 'phone', 'devot.sqlite')
-  rmSync(join(cache, 'phone'), { recursive: true, force: true })
-  mkdirSync(join(cache, 'phone'), { recursive: true })
-  writeLibrary(devotDir!, fresh, join(cache, 'phone', 'ids.json'))
-  for (const suffix of ['', '-wal', '-shm'])
-    rmSync(join(dir, `devot.sqlite${suffix}`), { force: true })
-  copyFileSync(fresh, join(dir, 'devot.sqlite'))
+  if (library) {
+    const fresh = join(cache, 'phone', 'devot.sqlite')
+    rmSync(join(cache, 'phone'), { recursive: true, force: true })
+    mkdirSync(join(cache, 'phone'), { recursive: true })
+    writeLibrary(devotDir!, fresh, join(cache, 'phone', 'ids.json'))
+    for (const suffix of ['', '-wal', '-shm']) {
+      rmSync(join(dir, `devot.sqlite${suffix}`), { force: true })
+    }
+    copyFileSync(fresh, join(dir, 'devot.sqlite'))
+  }
   const gradient = process.env['MEDIA_GRADIENT']
   writeFileSync(
     join(dir, 'editor-settings.json'),
@@ -315,7 +328,7 @@ async function sync(id: string, take: string) {
   const phone = pid('Simulator', true)
   if (!mac || !phone)
     fail('E_PHONE_SYNC the demo build (DEVOT_BINARY) and the Simulator must be running')
-  const input = new Input(join(cache, 'bin', 'devot-input'))
+  const input = new Input(inputHelper(cache))
   const udid = simulator()
   const wait = Number(process.env['SYNC_WAIT'] ?? 12) * 1000
   const work = join(cache, 'phone-shots')
@@ -347,6 +360,8 @@ async function sync(id: string, take: string) {
     if (id === 'x1-mac-to-iphone') {
       const line = process.env['SYNC_LINE'] ?? 'Book the train to the coast'
       // Command-Down puts the caret at the end of the note.
+      bringToFront(mac)
+      await sleep(400)
       await input.send('key 125 cmd')
       await sleep(400)
       beats.push({ t: at(), what: `type ${JSON.stringify(line)} on the Mac` })
@@ -398,8 +413,8 @@ switch (step) {
     build()
     break
   case 'seed':
-    if (args[0] !== 'light' && args[0] !== 'dark') fail('E_PHONE_ARGS seed <light|dark>')
-    console.log(await seed(args[0]))
+    if (args[0] !== 'light' && args[0] !== 'dark') fail('E_PHONE_ARGS seed <light|dark> [empty]')
+    console.log(await seed(args[0], args[1] !== 'empty'))
     break
   case 'shot':
     await shots(args)
@@ -411,5 +426,7 @@ switch (step) {
     await sync(args[0] ?? '', args[1] ?? '')
     break
   default:
-    fail('E_PHONE_ARGS steps: build, seed <light|dark>, shot [id ...], relay, sync <id> <take>')
+    fail(
+      'E_PHONE_ARGS steps: build, seed <light|dark> [empty], shot [id ...], relay, sync <id> <take>',
+    )
 }
