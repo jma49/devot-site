@@ -48,6 +48,29 @@ export const DEMO_IDENTIFIER = 'io.github.jma49.devot.demo'
 export const demoDataDir = () =>
   join(homedir(), 'Library/Application Support', `${DEMO_IDENTIFIER}.dev`)
 
+/**
+ * Writes the demo library into a new database at `db` through Devot's own services (devot/seed.ts,
+ * run with Vitest in the checkout), and the note IDs by key to `ids`.
+ */
+export function writeLibrary(devotDir: string, db: string, ids: string) {
+  const test = join(devotDir, 'tests', 'media-seed.demo.test.ts')
+  copyFileSync(join(import.meta.dirname, 'devot', 'seed.ts'), test)
+  try {
+    execFileSync('pnpm', ['exec', 'vitest', 'run', test, '--reporter=dot'], {
+      cwd: devotDir,
+      env: {
+        ...process.env,
+        MEDIA_DB: db,
+        MEDIA_LIBRARY: join(import.meta.dirname, '..', 'library.ts'),
+        MEDIA_IDS: ids,
+      },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    })
+  } finally {
+    rmSync(test, { force: true })
+  }
+}
+
 function seed(ctx: DeviceContext, scene: Scene | FilmScene, scheme: Scheme) {
   rmSync(ctx.dataDir, { recursive: true, force: true })
   mkdirSync(ctx.dataDir, { recursive: true })
@@ -63,23 +86,8 @@ function seed(ctx: DeviceContext, scene: Scene | FilmScene, scheme: Scheme) {
     ...scene.settings,
   }
   writeFileSync(join(ctx.dataDir, 'editor-settings.json'), JSON.stringify(settings, null, 2))
-  const test = join(ctx.devotDir, 'tests', 'media-seed.demo.test.ts')
-  copyFileSync(join(import.meta.dirname, 'devot', 'seed.ts'), test)
   const ids = join(ctx.cache, 'device-ids.json')
-  try {
-    execFileSync('pnpm', ['exec', 'vitest', 'run', test, '--reporter=dot'], {
-      cwd: ctx.devotDir,
-      env: {
-        ...process.env,
-        MEDIA_DB: join(ctx.dataDir, 'devot.sqlite'),
-        MEDIA_LIBRARY: join(import.meta.dirname, '..', 'library.ts'),
-        MEDIA_IDS: ids,
-      },
-      stdio: ['ignore', 'pipe', 'inherit'],
-    })
-  } finally {
-    rmSync(test, { force: true })
-  }
+  writeLibrary(ctx.devotDir, join(ctx.dataDir, 'devot.sqlite'), ids)
   // A backup from a moment ago, so the footer says the library is backed up.
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   mkdirSync(join(ctx.dataDir, 'backups'), { recursive: true })

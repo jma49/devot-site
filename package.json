@@ -22,6 +22,7 @@
     "media:encode": "node scripts/media/cli.ts encode",
     "media:device": "node scripts/media/device/cli.ts",
     "media:film:pack": "node scripts/media/device/pack.ts",
+    "media:phone": "node scripts/media/phone/cli.ts",
     "facts": "node scripts/facts/cli.ts",
     "check": "pnpm tokens:check && pnpm facts && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:e2e"
   },
