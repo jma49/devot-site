@@ -3,11 +3,11 @@
 Everything here is the real app running: no frame is composed, graded, scaled or dressed.
 `manifest.json` has one record per video, with its measured duration, size, source and beats.
 
-| Part | Files | What it is |
-| --- | --- | --- |
-| `mac/` | 22 | Whole-window masters of 18 shots: `hero`, `card-1`, `n1-write-mode` and `n7-gradient` in light and dark, the rest in light. |
-| `iphone/` | 10, and 10 stills in `iphone/stills/` | `p1` to `p8`; `p1` and `p2` in light and dark. Each record names its still. |
-| `sync/` | 12 (6 takes of 2 files) | `x1-mac-to-iphone` and `x2-iphone-to-mac`, three takes each. |
+| Part      | Files                                 | What it is                                                                                                                  |
+| --------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `mac/`    | 22                                    | Whole-window masters of 18 shots: `hero`, `card-1`, `n1-write-mode` and `n7-gradient` in light and dark, the rest in light. |
+| `iphone/` | 10, and 10 stills in `iphone/stills/` | `p1` to `p8`; `p1` and `p2` in light and dark. Each record names its still.                                                 |
+| `sync/`   | 12 (6 takes of 2 files)               | `x1-mac-to-iphone` and `x2-iphone-to-mac`, three takes each.                                                                |
 
 ## Where it comes from
 
