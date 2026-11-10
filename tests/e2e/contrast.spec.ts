@@ -351,16 +351,37 @@ test('the footer keeps every line at 4.5:1 on the ground the night comes down to
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
   await frames(page)
   const footer = { footer: '.site-footer' }
-  const lines = await textLines(page, footer)
-  expect(lines.length).toBeGreaterThan(20)
+  const colours = (await textLines(page, footer)).map(({ luminance }) => luminance)
+  expect(colours.length).toBeGreaterThan(20)
   await hideText(page, Object.values(footer))
+  // With the text hidden its colour reads as none, so each line keeps the one it had.
+  const place = async () =>
+    (await textLines(page, footer)).map((line, index) => ({
+      ...line,
+      luminance: colours[index] ?? Number.NaN,
+    }))
+  const boxes = (lines: Line[]) =>
+    JSON.stringify(lines.map(({ x, y, width, height }) => [x, y, width, height]))
 
   const lowest: Record<string, number> = {}
   for (const sage of PHASES) {
     for (const tide of PHASES) {
       await holdAurora(page, sage, tide)
       await frames(page)
-      merge(lowest, await lowestContrast(page, lines))
+      // The page can still move after it has loaded (WebKit settles the end of a long page
+      // late), and a capture taken across such a move would be read at the wrong places: it
+      // counts only when the lines stand where they stood before it.
+      for (let tries = 1; ; tries++) {
+        const lines = await place()
+        expect(lines).toHaveLength(colours.length)
+        const seen = await lowestContrast(page, lines)
+        if (boxes(await place()) === boxes(lines)) {
+          merge(lowest, seen)
+          break
+        }
+        if (tries === 20) throw new Error('E_FOOTER_MOVING the footer never held still')
+        await frames(page)
+      }
     }
   }
   expect(lowest['footer']).toBeGreaterThanOrEqual(4.5)
