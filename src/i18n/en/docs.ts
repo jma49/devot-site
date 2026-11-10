@@ -265,7 +265,7 @@ const importExport: DocPage = {
           ['HTML files, cleaned and converted to Markdown.'],
         ),
         text(
-          "Choose File > Import, or Import in a notebook's menu to import straight into it. A note takes its title from its front matter, else its first heading, else its file name. Devot lists every file or image it could not import, with the reason.",
+          "Choose File > Import, or Import in a notebook's menu to import straight into it. A note takes its title from its first heading, else its file name; front matter that a Devot export wrote also brings back the title, tags and status. Devot lists every file or image it could not import, with the reason.",
         ),
       ],
     },
