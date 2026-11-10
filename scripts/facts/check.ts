@@ -24,6 +24,7 @@ export type FactCode =
   | 'E_FACT_REVISIONS'
   | 'E_FACT_ANCHOR'
   | 'E_FACT_TRIAL'
+  | 'E_FACT_STORE'
 
 export interface FactProblem {
   code: FactCode
@@ -47,6 +48,8 @@ const UPDATES = 'src-tauri/src/updates.rs'
 const SCHEDULE = 'src-tauri/src/licence/schedule.rs'
 const LICENSE = 'LICENSE'
 const TAURI = 'src-tauri/tauri.conf.json'
+const IOS_PROJECT = 'src-tauri/gen/apple/project.yml'
+const STOREKIT = 'src-tauri/apple/DevotStore/DevotStore.storekit'
 const RELEASE = '.github/workflows/release.yml'
 const README = 'README.md'
 const TRIAL = 'src-tauri/src/licence/trial.rs'
@@ -64,6 +67,8 @@ export const DEVOT_FILES = [
   SCHEDULE,
   LICENSE,
   TAURI,
+  IOS_PROJECT,
+  STOREKIT,
   RELEASE,
   README,
   TRIAL,
@@ -495,6 +500,52 @@ const FACTS: Fact[] = [
               `${TAURI} needs macOS ${minimum}; the page says "${copy.download.requirements}"`,
             ),
           ]
+    },
+  },
+  {
+    code: 'E_FACT_PLATFORM',
+    needs: [IOS_PROJECT],
+    check: (devot, copy) => {
+      const minimum = /deploymentTarget:\s*\n\s*iOS:\s*([\d.]+)/.exec(devot(IOS_PROJECT))?.[1]
+      if (minimum === undefined) {
+        return [problem('E_FACT_PLATFORM', `${IOS_PROJECT} names no iOS deployment target`)]
+      }
+      const needs = `iOS ${minimum.split('.')[0]}+`
+      return [
+        ['The download requirements', copy.download.requirements],
+        ['The App Store requirements', copy.download.iphoneRequirements],
+      ].flatMap(([where, text]) =>
+        text?.includes(needs)
+          ? []
+          : [
+              problem(
+                'E_FACT_PLATFORM',
+                `${IOS_PROJECT} needs iOS ${minimum}; ${where} say "${text}"`,
+              ),
+            ],
+      )
+    },
+  },
+  {
+    code: 'E_FACT_STORE',
+    needs: [STOREKIT],
+    check: (devot, copy) => {
+      const store = JSON.parse(devot(STOREKIT)) as {
+        products?: { displayPrice?: string; referenceName?: string }[]
+      }
+      const body = copy.pricing.iphone.body
+      const pro = store.products?.find(({ referenceName }) => referenceName === 'Devot Pro')
+      return [
+        ...says(body, 'Devot Pro', 'The iPhone pricing note'),
+        ...(pro?.displayPrice !== undefined && body.includes(`US$${pro.displayPrice}`)
+          ? []
+          : [
+              problem(
+                'E_FACT_STORE',
+                `${STOREKIT} sells Devot Pro at ${pro?.displayPrice ?? 'no price'}; the page says "${body}"`,
+              ),
+            ]),
+      ]
     },
   },
   {

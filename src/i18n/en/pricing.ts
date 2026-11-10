@@ -1,5 +1,5 @@
 import { capitalised, numberWord } from '../../lib/words.ts'
-import { LICENCE_PRICE, REFUND_DAYS, TRIAL_DAYS } from '../../site.ts'
+import { IPHONE_PRICE, LICENCE_PRICE, REFUND_DAYS, TRIAL_DAYS } from '../../site.ts'
 
 const days = `${numberWord(TRIAL_DAYS)} days`
 
@@ -7,14 +7,14 @@ export const pricingCopy = {
   pricing: {
     label: 'Pricing',
     title: [`${capitalised(days)} with everything.`, 'Then pay once.'],
-    lead: 'Open Devot and the trial starts, with editing, sync and AI included. After it, one licence unlocks everything for good.',
+    lead: 'Open Devot and the trial starts, with editing, sync and AI included. After it, one purchase unlocks everything for good, on the Mac and the iPhone.',
     trial: {
       name: 'Trial',
       price: capitalised(days),
       terms: 'A free trial with everything included. It starts the first time you open Devot.',
       items: [
         'Writing, notebooks, tags and search',
-        'End-to-end encrypted sync, through a relay you deploy',
+        'End-to-end encrypted sync, through your iCloud or a relay you deploy',
         'AI with keys from your own provider',
         'Version history, backups and Markdown export',
       ],
@@ -26,11 +26,15 @@ export const pricingCopy = {
       items: [
         'Everything in the trial, for good',
         'Every future version of Devot',
-        'Up to three devices at a time',
+        'Up to three devices at a time, Mac or iPhone',
         'No account needed',
       ],
       buy: 'Buy a licence',
       refund: `${REFUND_DAYS}-day refund, no questions asked.`,
+    },
+    iphone: {
+      title: 'On the iPhone',
+      body: `Devot for iPhone is in the App Store, with the same trial. Devot Pro unlocks it there for ${IPHONE_PRICE}, once. A Mac licence unlocks the iPhone too, and an iPhone purchase brings a Mac licence key.`,
     },
     after: {
       title: 'When the trial ends',

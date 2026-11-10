@@ -4,12 +4,12 @@ import { TRIAL_DAYS } from '../../site.ts'
 export const privacyCopy = {
   privacy: {
     label: 'Local-first',
-    title: 'Your notes live on your Mac.',
+    title: 'Your notes live on your devices.',
     lede: 'Plain Markdown files, once the mirror is on.',
     facts: {
       label: 'Where your notes live and what they need',
       rows: [
-        ['Stored on your Mac', 'No account needed', 'Works offline'],
+        ['Stored on your devices', 'No account needed', 'Works offline'],
         ['Plain Markdown export', 'Version history on your Mac'],
         ['Source available, FSL-1.1-MIT', 'Daily local backups'],
       ],
@@ -36,7 +36,7 @@ export const privacyCopy = {
         },
         {
           term: 'Sync',
-          text: 'Notes travel end-to-end encrypted, through a relay you deploy.',
+          text: 'Notes travel end-to-end encrypted, through your iCloud or a relay you deploy. Neither can read them.',
         },
         {
           term: 'AI',
@@ -44,13 +44,13 @@ export const privacyCopy = {
         },
       ],
       footnote:
-        'Your note text goes nowhere unless you export it, mirror it, sync it through your relay, send it to your AI provider or let an MCP client read it.',
+        'Your note text goes nowhere unless you export it, mirror it, sync it through your iCloud or your relay, send it to your AI provider or let an MCP client read it.',
     },
     link: 'Read how Devot stores your notes',
   },
   closing: {
     label: 'Download Devot',
-    title: ['Write on your Mac.', 'Keep what you write.'],
+    title: ['Write on your Mac and iPhone.', 'Keep what you write.'],
     lead: `A ${numberWord(TRIAL_DAYS)}-day free trial, everything included. Source available under FSL-1.1-MIT.`,
     installNote: 'Updates arrive in the app, so you install it once.',
     links: {
@@ -61,7 +61,7 @@ export const privacyCopy = {
   },
   footer: {
     label: 'Footer',
-    tagline: 'Local-first Markdown notes for macOS.',
+    tagline: 'Local-first Markdown notes for Mac and iPhone.',
     copyright: (year: number) => `© ${year} devot.online`,
     licence: 'Source available under FSL-1.1-MIT.',
     backToTop: 'Back to top',

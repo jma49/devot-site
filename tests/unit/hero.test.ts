@@ -4,6 +4,7 @@ import {
   auroraPalette,
   BACKDROP_LOOK,
   FRAME_CHECK,
+  mixPalette,
   frameDue,
   framesTooSlow,
   parseBackdrop,
@@ -78,7 +79,21 @@ describe('heroScroll', () => {
       sky: 0,
       sheen: 1,
       dome: 0,
+      night: 1,
     })
+  })
+
+  it('keeps the night for the first of the scroll, then lets it go as the window stands up', () => {
+    const night = (share: number) => heroScroll(share * viewport, viewport).night
+    expect(night(HERO_SCROLL.nightStart)).toBe(1)
+    expect(night(HERO_SCROLL.nightEnd)).toBe(0)
+    expect(night(3)).toBe(0)
+    const middle = night((HERO_SCROLL.nightStart + HERO_SCROLL.nightEnd) / 2)
+    expect(middle).toBeCloseTo(0.5)
+    const steps = [0.1, 0.2, 0.3, 0.4].map(night)
+    expect(steps).toEqual(steps.toSorted((a, b) => b - a))
+    expect(HERO_SCROLL.nightEnd).toBeLessThanOrEqual(HERO_SCROLL.settleRange)
+    expect(heroScroll(300, 0).night).toBe(1)
   })
 
   it('settles the window over 60 % of the viewport and lets the copy drift away sooner', () => {
@@ -280,6 +295,28 @@ describe('auroraPalette', () => {
       }
       expect(recipe.sky).toBeLessThanOrEqual(1)
     }
+  })
+})
+
+describe('mixPalette', () => {
+  const night = auroraPalette(auroraInputs('dark'), 'dark')
+  const day = auroraPalette(auroraInputs('light'), 'light')
+
+  it('is the night at 0 and the day at 1', () => {
+    expect(mixPalette(night, day, 0)).toEqual(night)
+    expect(mixPalette(night, day, 1)).toEqual(day)
+  })
+
+  it('passes halfway between the two, in every part', () => {
+    const half = mixPalette(night, day, 0.5)
+    const between = (value: number, a: number, b: number) =>
+      expect(value).toBeCloseTo((a + b) / 2, 6)
+    between(half.glow, night.glow, day.glow)
+    between(half.sage[0], night.sage[0], day.sage[0])
+    half.sky.forEach((stop, index) => between(stop[0], night.sky[index]![0], day.sky[index]![0]))
+    half.strength.forEach((value, index) =>
+      between(value, night.strength[index]!, day.strength[index]!),
+    )
   })
 })
 

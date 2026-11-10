@@ -1,14 +1,22 @@
 /*
  * Site-level variables, built on devot's semantic tokens (src/theme/tokens.css). Components use
  * these or devot's semantic tokens; this is the one stylesheet that may hold raw values.
+ *
+ * `[data-scope]` marks a part of the page that keeps one appearance whatever the reader's scheme,
+ * such as the hero under its night: it carries Devot's `data-appearance-preview` too, and every
+ * site variable is worked out again there from the tokens of that appearance.
  */
-:root {
+:root,
+[data-scope] {
   /* The clips hold Devot's real window, whose macOS corner is 26 pt and has the wallpaper outside it;
      a frame rounds one point more so none of that shows. Multiply by a clip's points per CSS px. */
   --site-window-radius-pt: 27;
   /* Devot's Gradient setting, which every theme backdrop reads: the site shows the full gradient,
      as the clips do. */
   --gradient-strength: 100;
+  /* A phone's outline: a dark bezel with a faint rim in either scheme, as the device has. */
+  --site-device-bezel: linear-gradient(145deg, #8a8a8e, #1c1c1e 30%);
+  --site-device-rim: rgb(255 255 255 / 0.12);
   /* The one radius of every card that sits on the page. */
   --site-radius-card: 1.25rem;
 
@@ -156,6 +164,19 @@
     --site-glass-shade: color-mix(in oklab, var(--color-surface-window) 40%, transparent);
     --site-glass-sheen: color-mix(in oklab, var(--color-text-primary) 16%, transparent);
   }
+}
+
+/* The same values as on a dark page (tests/unit/site-tokens.test.ts keeps the two in step). */
+[data-scope='dark'] {
+  --site-brand-fill: color-mix(in oklab, var(--site-brand) 62%, var(--color-surface-window));
+  --site-brand-fill-hover: color-mix(in oklab, var(--site-brand) 68%, var(--color-surface-window));
+  --site-brand-glow: color-mix(in oklab, var(--site-brand) 22%, transparent);
+
+  --site-glass-fill: color-mix(in oklab, var(--color-text-primary) 8%, transparent);
+  --site-glass-rim: color-mix(in oklab, var(--color-text-primary) 48%, transparent);
+  --site-glass-rim-faint: color-mix(in oklab, var(--color-text-primary) 12%, transparent);
+  --site-glass-shade: color-mix(in oklab, var(--color-surface-window) 40%, transparent);
+  --site-glass-sheen: color-mix(in oklab, var(--color-text-primary) 16%, transparent);
 }
 
 @media (forced-colors: active) {

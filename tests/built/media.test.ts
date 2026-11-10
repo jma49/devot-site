@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { media, SLOTS } from '../../src/media.ts'
+import { DARK_MEDIA, LIGHT_MEDIA, media, SLOTS } from '../../src/media.ts'
 import { SITE_URL } from '../../src/site.ts'
 import { builtClips } from '../support/clip-policy.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
@@ -65,9 +65,14 @@ it('preloads the hero poster once per variant, each for a query no other matches
     href: attrs.get('href'),
     media: attrs.get('media'),
   }))
-  expect(links).toEqual(
-    media.hero.variants.map(({ poster, only }) => ({ href: poster, media: only })),
-  )
+  // On a light page the window opens on the night's recording, so its dark posters load there too.
+  const night = media.hero.variants
+    .filter(({ scheme }) => scheme === 'dark')
+    .map(({ poster, only }) => ({ href: poster, media: only.replace(DARK_MEDIA, LIGHT_MEDIA) }))
+  expect(links).toEqual([
+    ...media.hero.variants.map(({ poster, only }) => ({ href: poster, media: only })),
+    ...night,
+  ])
 })
 
 it('styles the hero poster from the built stylesheet', () => {

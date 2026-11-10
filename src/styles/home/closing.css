@@ -196,3 +196,7 @@
     }
   }
 }
+
+.closing__store {
+  min-height: 3.25rem;
+}

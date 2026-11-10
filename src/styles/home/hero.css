@@ -36,6 +36,9 @@
   --hero-sky: 0;
   --hero-sheen: 1;
   --hero-dome: 0;
+  /* How much of the night is left over the hero: hero.ts moves it from 1 to 0 with the scroll. */
+  --hero-night: 1;
+  --hero-phone-width: clamp(6.5rem, 17cqw, 13.5rem);
 
   position: relative;
   isolation: isolate;
@@ -464,5 +467,150 @@
 
   .hero-download {
     max-width: 24rem;
+  }
+}
+
+/*
+ * The night. The hero opens in the dark appearance whatever the reader's scheme (data-scope, see
+ * site-tokens.css) and gives way to that scheme as the window stands up: hero.ts moves
+ * --hero-night from 1 to 0 and takes the scope off halfway.
+ */
+
+.hero[data-scope='dark'] .hero-backdrop {
+  mask-image: linear-gradient(to bottom, var(--site-color-page) 74%, transparent 100%);
+}
+
+.hero[data-scope='dark'] .hero-lead,
+.hero[data-scope='dark'] .hero-requirements,
+.hero[data-scope='dark'] .install-note,
+.hero[data-scope='dark'] .install-note a {
+  color: var(--site-color-text);
+}
+
+.hero[data-scope='dark'] .aurora[data-aurora='light'] {
+  display: none;
+}
+
+.hero[data-scope='dark'] .aurora[data-aurora='dark'] {
+  display: block;
+}
+
+/*
+ * On a light page the night's recording lies over the hero clip, and daylight crosses the window
+ * from the left as the night goes: an edge that moves, so the two recordings never blend to grey.
+ * A dark page shows that recording as its hero clip, and a page without scripts cannot keep the
+ * two on one moment, so neither draws it.
+ */
+.hero-night {
+  --hero-daylight: calc((1 - var(--hero-night)) * 136% - 18%);
+
+  position: absolute;
+  inset: 0;
+  mask-image: linear-gradient(
+    100deg,
+    transparent calc(var(--hero-daylight) - 9%),
+    var(--site-color-page) calc(var(--hero-daylight) + 9%)
+  );
+}
+
+.hero-night-clip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left top;
+  /* The poster of the first paint, before posters.ts gives the video its own
+     (tests/unit/hero-night.test.ts keeps these paths in step with src/media.ts). */
+  background: left top / cover no-repeat url('/media/hero/hero-dark-poster.webp');
+}
+
+@media (max-width: 639.98px) {
+  .hero-night-clip {
+    background-image: url('/media/hero/hero-phone-dark-poster.webp');
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero-night,
+  .hero-phone-night {
+    display: none;
+  }
+}
+
+@media (scripting: none) {
+  .hero-night,
+  .hero-phone-night {
+    display: none;
+  }
+}
+
+/* The iPhone stands in front of the window's right edge: the app's Notes tab in a device's
+   outline. */
+.hero-stage {
+  position: relative;
+}
+
+.hero-phone {
+  --hero-phone-bezel: calc(var(--hero-phone-width) * 0.034);
+
+  position: absolute;
+  inset-block-start: calc(var(--hero-shadow-room) + var(--hero-window-height) * 0.2);
+  inset-inline-start: calc(50% + var(--hero-window-width) / 2 - var(--hero-phone-width) * 0.78);
+  width: var(--hero-phone-width);
+  padding: var(--hero-phone-bezel);
+  border-radius: calc(var(--hero-phone-width) * 0.172);
+  background: var(--site-device-bezel);
+  box-shadow:
+    inset 0 0 0 1px var(--site-device-rim),
+    0 2px 6px var(--color-shadow-popover-key),
+    0 30px 60px -12px var(--color-shadow-float-bar);
+  transform: translate3d(0, calc(var(--hero-lift) * var(--hero-lift-scale) * 1px), 0)
+    rotate(calc(3deg * var(--hero-settle)));
+  transform-origin: 50% 100%;
+}
+
+.hero-phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--hero-phone-width) * 0.14);
+}
+
+/* Daylight reaches the phone as it reaches the window, a beat later. */
+.hero-phone .hero-phone-night {
+  --hero-daylight: calc((1 - var(--hero-night)) * 150% - 40%);
+
+  position: absolute;
+  inset: var(--hero-phone-bezel);
+  width: calc(100% - var(--hero-phone-bezel) * 2);
+  mask-image: linear-gradient(
+    100deg,
+    transparent calc(var(--hero-daylight) - 14%),
+    var(--site-color-page) calc(var(--hero-daylight) + 14%)
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-phone {
+    animation: hero-window-in 1100ms var(--site-ease-media) 120ms both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-phone {
+    transform: none;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .hero {
+    --hero-phone-width: 34cqw;
+  }
+
+  .hero-phone {
+    inset-inline-start: auto;
+    inset-inline-end: var(--site-gutter);
+    inset-block-start: calc(var(--hero-shadow-room) + var(--hero-window-height) * 0.16);
   }
 }

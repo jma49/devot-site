@@ -123,6 +123,18 @@ export const PLAN_GATED_FEATURES: readonly Feature[] = [
 `,
   LICENSE:
     '# Functional Source License, Version 1.1, MIT Future License\n\n## Abbreviation\n\nFSL-1.1-MIT\n\n## Notice\n\nCopyright 2026 devot.online\n',
+  'src-tauri/gen/apple/project.yml': `name: devot
+options:
+  bundleIdPrefix: io.github.jma49.devot
+  deploymentTarget:
+    iOS: 26.0
+`,
+  'src-tauri/apple/DevotStore/DevotStore.storekit': JSON.stringify({
+    products: [
+      { displayPrice: '29.99', referenceName: 'Devot Pro', type: 'NonConsumable' },
+      { displayPrice: '0.0', referenceName: '30-day Trial', type: 'NonConsumable' },
+    ],
+  }),
   'src-tauri/tauri.conf.json': JSON.stringify({
     productName: 'Devot',
     bundle: { macOS: { minimumSystemVersion: '26.0' } },
@@ -236,6 +248,18 @@ describe('checkFacts', () => {
     ['E_FACT_LICENCE', 'LICENSE', replace('## Abbreviation', '## Name')],
     ['E_FACT_LICENCE', 'LICENSE', replace('2026 devot.online', '2026 Someone Else')],
     ['E_FACT_PLATFORM', 'src-tauri/tauri.conf.json', replace('"26.0"', '"27.0"')],
+    ['E_FACT_PLATFORM', 'src-tauri/gen/apple/project.yml', replace('iOS: 26.0', 'iOS: 27.0')],
+    ['E_FACT_PLATFORM', 'src-tauri/gen/apple/project.yml', replace('iOS: 26.0', 'tvOS: 26.0')],
+    [
+      'E_FACT_STORE',
+      'src-tauri/apple/DevotStore/DevotStore.storekit',
+      replace('"29.99"', '"39.99"'),
+    ],
+    [
+      'E_FACT_STORE',
+      'src-tauri/apple/DevotStore/DevotStore.storekit',
+      replace('Devot Pro', 'Devot Plus'),
+    ],
     ['E_FACT_RELEASE', '.github/workflows/release.yml', replace('_aarch64.dmg', '_universal.dmg')],
     [
       'E_FACT_RELEASE',
