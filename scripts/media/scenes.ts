@@ -83,35 +83,36 @@ const twice = ({ width, height }: Size): Size => ({ width: width * 2, height: he
 const cut = (x: number, y: number, size: Size): Rect => ({ x, y, ...size })
 
 // Selectors are the ones devot's UI tests use: roles and accessible names.
-const noteRows = (page: Page) => page.getByRole('listbox', { name: 'Notes' }).getByRole('option')
-const noteRow = (page: Page, title: string) =>
+export const noteRows = (page: Page) =>
+  page.getByRole('listbox', { name: 'Notes' }).getByRole('option')
+export const noteRow = (page: Page, title: string) =>
   noteRows(page)
     .filter({ has: page.locator('.row-title', { hasText: title }) })
     .first()
-const viewMode = (page: Page, name: 'Edit' | 'Split' | 'Preview') =>
+export const viewMode = (page: Page, name: 'Edit' | 'Split' | 'Preview') =>
   page.getByRole('group', { name: 'View mode' }).getByRole('button', { name, exact: true })
-const body = (page: Page) => page.getByRole('textbox', { name: 'Note body' })
-const searchField = (page: Page) => page.getByRole('searchbox', { name: 'Search notes' })
-const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Sidebar' })
-const focusButton = (page: Page) => page.getByRole('button', { name: 'Focus Mode' })
-const preview = (page: Page) => page.getByRole('article', { name: 'Preview' })
+export const body = (page: Page) => page.getByRole('textbox', { name: 'Note body' })
+export const searchField = (page: Page) => page.getByRole('searchbox', { name: 'Search notes' })
+export const sidebar = (page: Page) => page.getByRole('navigation', { name: 'Sidebar' })
+export const focusButton = (page: Page) => page.getByRole('button', { name: 'Focus Mode' })
+export const preview = (page: Page) => page.getByRole('article', { name: 'Preview' })
 /** The row of themes for the scheme the page is recorded in; Settings shows one per scheme. */
-async function themeRow(page: Page) {
+export async function themeRow(page: Page) {
   const dark = await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)
   return page
     .frameLocator('#media-settings iframe')
     .getByRole('radiogroup', { name: dark ? 'Dark Mode Theme' : 'Light Mode Theme' })
 }
 // Named "Status" while a note has none, "Status: <status>" once it has one.
-const statusButton = (page: Page) =>
+export const statusButton = (page: Page) =>
   page
     .getByRole('button', { name: /^Status(: .+)?$/ })
     .and(page.locator('[aria-haspopup="listbox"]'))
     .first()
-const statusOption = (page: Page, name: string) =>
+export const statusOption = (page: Page, name: string) =>
   page.getByRole('listbox', { name: 'Status' }).getByRole('option', { name, exact: true })
 
-async function box(locator: Locator): Promise<Rect> {
+export async function box(locator: Locator): Promise<Rect> {
   await locator.waitFor({ state: 'visible' })
   const found = await locator.boundingBox()
   if (!found) throw new Error('E_MEDIA_NO_BOX')
@@ -119,7 +120,7 @@ async function box(locator: Locator): Promise<Rect> {
 }
 
 /** A point inside an element: `x` and `y` are fractions of its box. */
-const at =
+export const at =
   (locator: Locator, x = 0.5, y = 0.5) =>
   async (): Promise<Point> => {
     const b = await box(locator)
@@ -127,7 +128,7 @@ const at =
   }
 
 /** Just past the last character of an editor line, where a click leaves the caret. */
-const lineEnd = (locator: Locator) => async (): Promise<Point> => {
+export const lineEnd = (locator: Locator) => async (): Promise<Point> => {
   await locator.waitFor({ state: 'visible' })
   return locator.evaluate((line) => {
     const range = document.createRange()
@@ -138,29 +139,29 @@ const lineEnd = (locator: Locator) => async (): Promise<Point> => {
   })
 }
 
-async function openNote(page: Page, title: string) {
+export async function openNote(page: Page, title: string) {
   await noteRow(page, title).click()
   await page.getByRole('textbox', { name: 'Title' }).waitFor()
 }
 
-async function setMode(page: Page, name: 'Edit' | 'Split' | 'Preview') {
+export async function setMode(page: Page, name: 'Edit' | 'Split' | 'Preview') {
   await viewMode(page, name).click()
 }
 
-async function hideSidebar(page: Page) {
+export async function hideSidebar(page: Page) {
   if (await sidebar(page).isVisible()) {
     await page.keyboard.press('Meta+Slash')
     await sidebar(page).waitFor({ state: 'hidden' })
   }
 }
 
-async function focusMode(page: Page) {
+export async function focusMode(page: Page) {
   await focusButton(page).click()
   await page.getByRole('listbox', { name: 'Notes' }).waitFor({ state: 'hidden' })
 }
 
 /** Every diagram drawn and every font loaded. */
-async function settle(page: Page) {
+export async function settle(page: Page) {
   const islands = preview(page).locator('.island')
   for (let i = 0; i < (await islands.count()); i++) {
     await islands.nth(i).locator('svg').first().waitFor({ timeout: 15_000 })
@@ -169,9 +170,9 @@ async function settle(page: Page) {
   await page.waitForTimeout(500)
 }
 
-const WINDOW = { width: 1280, height: 800 }
+export const WINDOW = { width: 1280, height: 800 }
 /** Narrow cards show 400 points of a window more than twice as wide; Devot hides the sidebar here. */
-const NARROW_WINDOW = { width: 900, height: 700 }
+export const NARROW_WINDOW = { width: 900, height: 700 }
 const HERO_REST = { x: 690, y: 520 }
 
 const hero: Scene = {
@@ -444,7 +445,7 @@ const THEMES_PHONE_CUT = 262
  * the system draws for it (settings.rs: a titled 820 by 640 window, only the close button active),
  * dark when the system is.
  */
-async function openSettingsWindow(page: Page) {
+export async function openSettingsWindow(page: Page) {
   // On a real Mac (device/record.ts) Devot opens its own Settings window.
   const real = (page as unknown as { openSettingsWindow?: () => Promise<Page> }).openSettingsWindow
   if (real) {

@@ -27,11 +27,19 @@ export interface CursorFrame extends Point {
   press: number
 }
 
+/** A moment worth knowing when cutting a recording: a click, a key, typing, or a named step. */
+export interface Beat {
+  /** Seconds into the clip. */
+  t: number
+  what: string
+}
+
 export interface Timeline {
   duration: number
   /** Seconds into the clip of the frame that shows its idea best, taken for the poster. */
   posterTime: number
   events: ClipEvent[]
+  beats: Beat[]
   cursor(t: number): CursorFrame
 }
 
@@ -126,6 +134,7 @@ export class CursorScript {
   private readonly moves: Move[] = []
   private readonly fades: Fade[] = []
   private readonly clicks: number[] = []
+  private readonly beats: Beat[] = []
   private posterAt = 0
 
   constructor(start: Point, actions: Actions) {
@@ -165,6 +174,7 @@ export class CursorScript {
     this.events.push({ at, run: () => this.actions.down() })
     this.events.push({ at: at + CLICK_HOLD, run: () => this.actions.up() })
     this.clicks.push(at)
+    this.beats.push({ t: at, what: 'click' })
     this.t += CLICK_HOLD
     return this
   }
@@ -173,6 +183,7 @@ export class CursorScript {
     this.hide(0.12)
     const chars = [...text]
     const times = typingTimes(text, this.t, cps, seed)
+    this.beats.push({ t: this.t, what: `type ${JSON.stringify(text)}` })
     chars.forEach((ch, i) => {
       const run =
         ch === '\n'
@@ -192,6 +203,27 @@ export class CursorScript {
 
   press(key: string): this {
     this.events.push({ at: this.t, run: () => this.actions.press(key) })
+    this.beats.push({ t: this.t, what: `press ${key}` })
+    return this
+  }
+
+  /** Names the step that starts now, for whoever cuts the recording. */
+  beat(what: string): this {
+    this.beats.push({ t: this.t, what })
+    return this
+  }
+
+  /** Presses the button at the pointer and holds it, so the moves that follow drag. */
+  down(): this {
+    this.events.push({ at: this.t, run: () => this.actions.down() })
+    this.beats.push({ t: this.t, what: 'press and hold' })
+    return this
+  }
+
+  /** Releases the button a `down` holds. */
+  up(): this {
+    this.events.push({ at: this.t, run: () => this.actions.up() })
+    this.beats.push({ t: this.t, what: 'release' })
     return this
   }
 
@@ -220,6 +252,7 @@ export class CursorScript {
       duration: this.t,
       posterTime: this.posterAt,
       events: [...this.events],
+      beats: [...this.beats].sort((a, b) => a.t - b.t),
       cursor: (t) => {
         const at = this.positionAt(t)
         const click = this.clicks.findLast((c) => c <= t)
