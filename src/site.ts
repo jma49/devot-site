@@ -13,6 +13,8 @@ export const BUY_URL = `${LICENCE_SERVICE_URL}/buy`
 export const RESEND_URL = `${LICENCE_SERVICE_URL}/resend`
 /** Lists the devices a licence key is activated on, and removes one. */
 export const DEVICES_URL = `${LICENCE_SERVICE_URL}/devices`
+/** What the download needs; the copy words it, structured data states it as is. */
+export const PLATFORM = { os: 'macOS 26+', processor: 'Apple Silicon' } as const
 export const LICENCE_AMOUNT = '29.90'
 /** ISO 4217, for structured data; `LICENCE_PRICE` is how the page writes it. */
 export const LICENCE_CURRENCY = 'USD'

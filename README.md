@@ -75,11 +75,15 @@ It reads the checkout `DEVOT_CHECKOUT` names; without it, the pinned commit in `
 
 ## The page
 
-`src/pages/index.astro` composes six sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`), `Pricing` (`#pricing`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `demo.ts`, `privacy.ts`, `pricing.ts`, `legal.ts` and `media.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when a file is left out or two files define the same top-level key.
+`src/pages/index.astro` composes six sections from `src/components/home/`, each a `section` with an id and an accessible name: `Hero` (`#hero`), `Features` (`#write`), `CardGrid` (`#cards`), `Privacy` (`#local-first`), `Pricing` (`#pricing`) and `ClosingCta` (`#download`). Copy lives in one namespace file per area, `src/i18n/en/chrome.ts`, `hero.ts`, `features.ts`, `cards.ts`, `demo.ts`, `privacy.ts`, `pricing.ts`, `legal.ts`, `support.ts`, `media.ts` and `llms.ts`, which `src/i18n/en.ts` spreads into the catalog; a unit test fails when a file is left out or two files define the same top-level key.
 
 ### Pricing and the pages a sale needs
 
 Devot opens with a free trial that includes everything; once it ends without a licence, Devot is read-only. A licence, bought once, unlocks everything. The facts of the sale live once in `src/site.ts`: the price (`LICENCE_PRICE`), the refund window (`REFUND_DAYS`), the trial length (`TRIAL_DAYS`, spelled out by `src/lib/words.ts`), and the licence service's `/buy` (Stripe Checkout) and `/resend` (the form that mails a lost key) URLs. The copy builds on them, and a unit test fails when the price, the window or the trial length is written anywhere else in `src/`; a policy test refuses "free" anywhere but in "free trial". Hyphenated words in the read-only notes stay on one line: `src/components/Unbroken.astro` wraps each in a `site-nowrap` span. The Pricing section links the terms of sale (`/terms`) and the refund policy (`/refunds`), both rendered by `src/components/LegalPage.astro` from `src/i18n/en/legal.ts`; the footer links them on every page. The site gives no email address: `pnpm test:dist` fails on one in any page.
+
+### Structured data and llms.txt
+
+The home page carries a schema.org `SoftwareApplication` as JSON-LD (`src/lib/structured-data.ts`), and `/llms.txt` lists the site's facts, features, pricing and docs as Markdown for language models (`src/lib/llms-txt.ts`, served by `src/pages/llms.txt.ts`). Both are built from the catalog and `src/site.ts` at build time, never written by hand: rewording copy or adding a feature or card updates them with no other change. They read copy by key, so renaming or regrouping a key they use (the hero lead, the features and cards, the pricing tiers, the footer links) is a type error until `src/lib/llms-txt.ts` follows it. The platform (`PLATFORM`), the price and the currency are facts in `src/site.ts`, so the copy may word them however it likes. `pnpm test:dist` checks that only the home page carries JSON-LD and that `dist/llms.txt` matches the generator.
 
 ### Fonts
 

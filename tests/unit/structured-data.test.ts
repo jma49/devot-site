@@ -7,6 +7,7 @@ import {
   LICENCE_CURRENCY,
   LICENCE_PRICE,
   OG_IMAGE,
+  PLATFORM,
   SITE_URL,
 } from '../../src/site.ts'
 
@@ -21,15 +22,16 @@ it('describes Devot as a macOS productivity app with the page description', () =
     description: en.meta.description,
     url: SITE_URL,
     applicationCategory: 'ProductivityApplication',
-    operatingSystem: 'macOS 26+',
-    processorRequirements: 'Apple Silicon',
     downloadUrl: DOWNLOAD_URL,
     image: new URL(OG_IMAGE.path, SITE_URL).href,
   })
 })
 
-it('takes the platform from the download requirements the page shows', () => {
-  expect(`${app?.operatingSystem} · ${app?.processorRequirements}`).toBe(en.download.requirements)
+it('states the platform the download requirements name, however the copy words them', () => {
+  expect(app?.operatingSystem).toBe(PLATFORM.os)
+  expect(app?.processorRequirements).toBe(PLATFORM.processor)
+  expect(en.download.requirements).toContain(PLATFORM.os)
+  expect(en.download.requirements).toContain(PLATFORM.processor)
 })
 
 it('offers the licence at the price the pricing section shows', () => {

@@ -1,9 +1,15 @@
 import type { Messages } from '../i18n/en.ts'
-import { DOWNLOAD_URL, LICENCE_AMOUNT, LICENCE_CURRENCY, OG_IMAGE, SITE_URL } from '../site.ts'
+import {
+  DOWNLOAD_URL,
+  LICENCE_AMOUNT,
+  LICENCE_CURRENCY,
+  OG_IMAGE,
+  PLATFORM,
+  SITE_URL,
+} from '../site.ts'
 
 /** The home page's schema.org description of Devot, from the facts the page itself shows. */
 export function structuredData(t: Messages) {
-  const [operatingSystem, processorRequirements] = t.download.requirements.split(' · ')
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -14,8 +20,8 @@ export function structuredData(t: Messages) {
         url: SITE_URL,
         image: new URL(OG_IMAGE.path, SITE_URL).href,
         applicationCategory: 'ProductivityApplication',
-        operatingSystem,
-        processorRequirements,
+        operatingSystem: PLATFORM.os,
+        processorRequirements: PLATFORM.processor,
         downloadUrl: DOWNLOAD_URL,
         offers: {
           '@type': 'Offer',
