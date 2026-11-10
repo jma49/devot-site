@@ -21,6 +21,7 @@
     "media:capture": "node scripts/media/cli.ts capture",
     "media:encode": "node scripts/media/cli.ts encode",
     "media:device": "node scripts/media/device/cli.ts",
+    "media:dry": "node scripts/media/dry-run.ts",
     "media:film:pack": "node scripts/media/device/pack.ts",
     "media:phone": "node scripts/media/phone/cli.ts",
     "facts": "node scripts/facts/cli.ts",
