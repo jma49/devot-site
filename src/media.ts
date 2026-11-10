@@ -140,6 +140,12 @@ function variantsOf(name: SlotName, entry: Measured): MediaVariant[] {
   })
 }
 
+const sourcesOf = (variants: MediaVariant[]): MediaSlot['sources'] =>
+  variants.flatMap(({ webm, mp4, width, height, media }) => [
+    { src: webm, type: `video/webm; codecs="${av1Codecs(width, height)}"`, media },
+    { src: mp4, type: 'video/mp4', media },
+  ])
+
 function slot(name: SlotName): MediaSlot {
   const entry = (measured as Record<SlotName, Measured>)[name]
   const variants = variantsOf(name, entry)
@@ -150,10 +156,33 @@ function slot(name: SlotName): MediaSlot {
     poster: slotPaths(name).poster,
     clip: true,
     variants,
-    sources: variants.flatMap(({ webm, mp4, width, height, media }) => [
-      { src: webm, type: `video/webm; codecs="${av1Codecs(width, height)}"`, media },
-      { src: mp4, type: 'video/mp4', media },
-    ]),
+    sources: sourcesOf(variants),
+  }
+}
+
+/**
+ * A slot pinned to one appearance: only that scheme's recordings whatever the reader's scheme, so
+ * its variants differ by width alone. The hero opens on its dark recording this way.
+ */
+export function pinned(whole: MediaSlot, scheme: Scheme): MediaSlot {
+  const variants = whole.variants
+    .filter((variant) => variant.scheme === scheme)
+    .map(({ scheme: kept, phone, width, height, mp4, webm, poster }): MediaVariant => ({
+      scheme: kept,
+      phone,
+      ...(phone ? { media: PHONE_MEDIA } : {}),
+      only: whole.phone ? (phone ? PHONE_MEDIA : WIDE_MEDIA) : 'all',
+      width,
+      height,
+      mp4,
+      webm,
+      poster,
+    }))
+  return {
+    ...whole,
+    poster: slotPaths(whole.name, { scheme, phone: false }).poster,
+    variants,
+    sources: sourcesOf(variants),
   }
 }
 

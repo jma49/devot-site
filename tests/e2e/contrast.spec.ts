@@ -166,7 +166,8 @@ const PHASES = [0, 0.25, 0.5, 0.75, 1]
 for (const colorScheme of ['light', 'dark'] as const) {
   for (const viewport of [
     { width: 1440, height: 900 },
-    { width: 390, height: 844 },
+    // Tall enough to hold the phone's hero from its lead to its install note at one scroll position.
+    { width: 390, height: 1000 },
   ]) {
     test(`hero text stays at 4.5:1 over the CSS aurora, ${colorScheme}, ${viewport.width}`, async ({
       page,

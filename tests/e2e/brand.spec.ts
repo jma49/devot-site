@@ -15,6 +15,9 @@ for (const scheme of ['light', 'dark'] as const) {
   }) => {
     await page.emulateMedia({ colorScheme: scheme })
     await page.goto('/')
+    // Past the hero, where the header no longer wears its night.
+    await page.locator('#write').evaluate((section) => section.scrollIntoView())
+    await expect(page.locator('[data-site-header]')).not.toHaveAttribute('data-scope', /.*/)
 
     for (const [selector, pseudo, cut] of MARKS) {
       const file = new RegExp(
@@ -34,3 +37,15 @@ for (const scheme of ['light', 'dark'] as const) {
     }
   })
 }
+
+test('draws the header dove in its dark ink over the hero at night, on a light page too', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/')
+  await expect(page.locator('[data-site-header]')).toHaveAttribute('data-scope', 'dark')
+  const image = await page
+    .locator('.site-header .brand-mark')
+    .evaluate((element) => getComputedStyle(element).backgroundImage)
+  expect(image).toMatch(/\/dove-small-dark\.[\w-]+\.svg"?\)$/)
+})

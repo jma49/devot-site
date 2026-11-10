@@ -1,6 +1,7 @@
 import { setVar } from '../lib/motion.ts'
 import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
-import { followClip, type NightClip } from './hero-night.ts'
+import { keepInStep, type InStep } from './hero-day.ts'
+import { browserPause } from './pause.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
 export const HERO_SCROLL = {
@@ -114,35 +115,49 @@ function wear(element: HTMLElement | null, night: boolean): void {
   }
 }
 
+const DAYLIGHT = '--hero-daylight'
+/** Milliseconds daylight takes to catch up with the scroll once the light recording is ready. */
+const DAYLIGHT_ARRIVAL = 450
+
 /**
  * The night over the hero. The page opens under it in either scheme: the hero and the header over
- * it wear the dark appearance, and on a light page the dark recording lies over the hero clip.
- * `set` moves it: the hero wears the night until half of it has gone, the header for as long as it
- * is also over the hero, and the dark recording follows the clip until none of it shows.
+ * it wear the dark appearance, and the window shows its dark recording. `set` moves it: the hero
+ * wears the night until half of it has gone and the header for as long as it is also over the
+ * hero. On a light page the light recording comes over the hero clip as the night goes, and
+ * daylight reaches the window (`--hero-daylight`) once that recording is on the clip's moment.
  */
 function startNight(hero: HTMLElement): { set(night: number): void } {
   const header = document.querySelector<HTMLElement>('[data-site-header]')
-  const cover = hero.querySelector<HTMLElement>('[data-hero-night]')
-  const recording = cover?.querySelector<HTMLVideoElement>('video')
+  const day = hero.querySelector<HTMLElement>('[data-hero-day]')
+  const recording = day?.querySelector<HTMLVideoElement>('video')
   const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
   const dark = window.matchMedia(DARK_QUERY)
+  const pause = browserPause()
   let night = 1
   let underHeader = true
-  let following: NightClip | null = null
+  let step: InStep | null = null
+  let readyAt: number | null = null
+  let daylight = '0'
 
   const dress = () => {
     wear(hero, night >= 0.5)
     wear(header, night >= 0.5 && underHeader)
   }
-  // A dark page shows the dark recording as its hero clip, so nothing lies over it.
-  const follow = () => {
-    following?.stop()
-    following = null
-    if (dark.matches || !cover || !recording || !clip) return
-    following = followClip(clip, recording, () => {
-      cover.hidden = true
-    })
-    following.rest(night <= 0)
+  // A dark page keeps the dark recording, and so does a reader who has paused the page, for whom
+  // no clip loads: the light one is never shown or loaded there.
+  const light = () => {
+    const wanted = !dark.matches && !pause.paused && night < 1
+    if (day && day.hidden === wanted) day.hidden = !wanted
+    if (wanted && !step && recording && clip) step = keepInStep(clip, recording, light)
+    if (step?.ready()) readyAt ??= performance.now()
+    // A recording that loads while the page scrolls is let in over a moment, not at a stroke.
+    const arrived =
+      readyAt === null ? 0 : smooth(clamp01((performance.now() - readyAt) / DAYLIGHT_ARRIVAL))
+    if (wanted && readyAt !== null && arrived < 1) requestAnimationFrame(light)
+    const next = wanted ? String(Number(((1 - night) * arrived).toFixed(3))) : '0'
+    if (next === daylight) return
+    daylight = next
+    setVar(hero, DAYLIGHT, next)
   }
 
   new IntersectionObserver(
@@ -153,8 +168,8 @@ function startNight(hero: HTMLElement): { set(night: number): void } {
     // The strip of the viewport the header floats in.
     { rootMargin: '0px 0px -92% 0px' },
   ).observe(hero)
-  dark.addEventListener('change', follow)
-  follow()
+  dark.addEventListener('change', light)
+  pause.subscribe(light)
   dress()
 
   return {
@@ -162,7 +177,7 @@ function startNight(hero: HTMLElement): { set(night: number): void } {
       if (value === night) return
       night = value
       dress()
-      following?.rest(night <= 0)
+      light()
     },
   }
 }

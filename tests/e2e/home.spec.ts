@@ -35,11 +35,22 @@ test('lays out the sections in order, each one a named region', async ({ page })
   const ids = await page
     .locator('main > section')
     .evaluateAll((sections) => sections.map((s) => s.id))
-  expect(ids).toEqual(['hero', 'write', 'cards', 'local-first', 'pricing', 'download'])
+  expect(ids).toEqual([
+    'hero',
+    'write',
+    'cards',
+    'new',
+    'iphone',
+    'local-first',
+    'pricing',
+    'download',
+  ])
   for (const [id, name] of [
     ['hero', en.hero.title],
     ['write', en.features.label],
     ['cards', en.cards.label],
+    ['new', en.whatsNew.label],
+    ['iphone', en.iphone.label],
     ['local-first', en.privacy.label],
     ['pricing', en.pricing.label],
     ['download', en.closing.label],
@@ -93,10 +104,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       await download.focus()
 
-      const ring = await page.evaluate(() => {
+      // Beside the link, so the token is the one of the appearance the hero wears there.
+      const ring = await download.evaluate((link) => {
         const probe = document.createElement('span')
         probe.style.setProperty('color', 'var(--color-focus-ring)')
-        document.body.append(probe)
+        link.after(probe)
         const color = getComputedStyle(probe).color
         probe.remove()
         return color

@@ -36,8 +36,10 @@
   --hero-sky: 0;
   --hero-sheen: 1;
   --hero-dome: 0;
-  /* How much of the night is left over the hero: hero.ts moves it from 1 to 0 with the scroll. */
+  /* How much of the night is left over the hero: hero.ts moves it from 1 to 0 with the scroll,
+     and --hero-daylight from 0 to 1 as the day reaches the window. */
   --hero-night: 1;
+  --hero-daylight: 0;
   --hero-phone-width: clamp(6.5rem, 17cqw, 13.5rem);
 
   position: relative;
@@ -179,8 +181,9 @@
   text-wrap: balance;
 }
 
-.hero-line.site-accent {
-  margin-inline: auto;
+/* The accent closes the last line rather than taking one of its own. */
+.hero-accent {
+  display: inline;
 }
 
 .hero-lead {
@@ -442,7 +445,9 @@
       'copy'
       'stage'
       'cta';
-    padding-block-end: var(--space-10);
+    --hero-night-fade: 4.5rem;
+
+    padding-block-end: calc(var(--space-10) + var(--hero-night-fade) - 1.5rem);
   }
 
   .hero-rig {
@@ -476,8 +481,22 @@
  * --hero-night from 1 to 0 and takes the scope off halfway.
  */
 
+/* The night sky stays whole down to where the window dissolves, so a dark window never fades out
+   over a sky already turning to the page, and gives way to the page below that. */
 .hero[data-scope='dark'] .hero-backdrop {
-  mask-image: linear-gradient(to bottom, var(--site-color-page) 74%, transparent 100%);
+  mask-image: linear-gradient(to bottom, var(--site-color-page) 84%, transparent 100%);
+}
+
+/* On a phone the call to action ends the hero, in light text under the night: the sky stays whole
+   behind it and fades out in the room the hero keeps below it (--hero-night-fade). */
+@media (max-width: 639.98px) {
+  .hero[data-scope='dark'] .hero-backdrop {
+    mask-image: linear-gradient(
+      to bottom,
+      var(--site-color-page) calc(100% - var(--hero-night-fade)),
+      transparent 100%
+    );
+  }
 }
 
 .hero[data-scope='dark'] .hero-lead,
@@ -496,51 +515,27 @@
 }
 
 /*
- * On a light page the night's recording lies over the hero clip, and daylight crosses the window
- * from the left as the night goes: an edge that moves, so the two recordings never blend to grey.
- * A dark page shows that recording as its hero clip, and a page without scripts cannot keep the
- * two on one moment, so neither draws it.
+ * The window opens on its dark recording. On a light page the light recording lies over it once
+ * the night starts to go (hero.ts takes `hidden` off it), and daylight crosses the window from the
+ * left: an edge that moves, so the two recordings never blend to grey. --hero-daylight is how much
+ * of the day has come to the window, which waits for the light recording to be on the dark one's
+ * moment. A dark page keeps the dark recording.
  */
-.hero-night {
-  --hero-daylight: calc((1 - var(--hero-night)) * 136% - 18%);
+.hero-day {
+  --hero-day-edge: calc(var(--hero-daylight) * 136% - 18%);
 
   position: absolute;
   inset: 0;
   mask-image: linear-gradient(
     100deg,
-    transparent calc(var(--hero-daylight) - 9%),
-    var(--site-color-page) calc(var(--hero-daylight) + 9%)
+    var(--site-color-page) calc(var(--hero-day-edge) - 9%),
+    transparent calc(var(--hero-day-edge) + 9%)
   );
 }
 
-.hero-night-clip {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: left top;
-  /* The poster of the first paint, before posters.ts gives the video its own
-     (tests/unit/hero-night.test.ts keeps these paths in step with src/media.ts). */
-  background: left top / cover no-repeat url('/media/hero/hero-dark-poster.webp');
-}
-
-@media (max-width: 639.98px) {
-  .hero-night-clip {
-    background-image: url('/media/hero/hero-phone-dark-poster.webp');
-  }
-}
-
 @media (prefers-color-scheme: dark) {
-  .hero-night,
-  .hero-phone-night {
-    display: none;
-  }
-}
-
-@media (scripting: none) {
-  .hero-night,
-  .hero-phone-night {
+  .hero-day,
+  .hero-phone-day {
     display: none;
   }
 }
@@ -578,16 +573,16 @@
 }
 
 /* Daylight reaches the phone as it reaches the window, a beat later. */
-.hero-phone .hero-phone-night {
-  --hero-daylight: calc((1 - var(--hero-night)) * 150% - 40%);
+.hero-phone .hero-phone-day {
+  --hero-day-edge: calc(var(--hero-daylight) * 150% - 40%);
 
   position: absolute;
   inset: var(--hero-phone-bezel);
   width: calc(100% - var(--hero-phone-bezel) * 2);
   mask-image: linear-gradient(
     100deg,
-    transparent calc(var(--hero-daylight) - 14%),
-    var(--site-color-page) calc(var(--hero-daylight) + 14%)
+    var(--site-color-page) calc(var(--hero-day-edge) - 14%),
+    transparent calc(var(--hero-day-edge) + 14%)
   );
 }
 

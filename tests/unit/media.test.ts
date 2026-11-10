@@ -9,6 +9,7 @@ import {
   LIGHT_MEDIA,
   media,
   PHONE_MEDIA,
+  pinned,
   SLOTS,
   slotPaths,
   variantName,
@@ -56,6 +57,38 @@ it('names the light desktop files plainly and marks the dark and phone ones', ()
     '/media/hero/hero-phone-dark-poster.webp',
   )
   expect(variantName({ scheme: 'light', phone: true })).toBe('light-phone')
+})
+
+describe('pinned', () => {
+  it('keeps one appearance of a slot, its variants told apart by width alone', () => {
+    const night = pinned(media.hero, 'dark')
+    expect(
+      night.variants.map(({ scheme, phone, media: query, only }) => [scheme, phone, query, only]),
+    ).toEqual([
+      ['dark', true, PHONE_MEDIA, PHONE_MEDIA],
+      ['dark', false, undefined, '(min-width: 640px)'],
+    ])
+    expect(night.poster).toBe('/media/hero/hero-dark-poster.webp')
+    expect(night.sources.map(({ src, media: query }) => [src, query])).toEqual([
+      ['/media/hero/hero-phone-dark.webm', PHONE_MEDIA],
+      ['/media/hero/hero-phone-dark.mp4', PHONE_MEDIA],
+      ['/media/hero/hero-dark.webm', undefined],
+      ['/media/hero/hero-dark.mp4', undefined],
+    ])
+    expect(night.alt).toBe(media.hero.alt)
+  })
+
+  it('pins the light appearance too, and a slot without a phone cut to one variant for all', () => {
+    expect(pinned(media.hero, 'light').sources.at(-1)?.src).toBe('/media/hero/hero.mp4')
+    const card = pinned(media['card-2'], 'dark')
+    expect(card.variants.map(({ media: query, only }) => [query, only])).toEqual([
+      [undefined, 'all'],
+    ])
+    expect(card.sources.map(({ src }) => src)).toEqual([
+      '/media/card-2/card-2-dark.webm',
+      '/media/card-2/card-2-dark.mp4',
+    ])
+  })
 })
 
 it('names main-profile 8-bit AV1 at the level the picture size needs', () => {

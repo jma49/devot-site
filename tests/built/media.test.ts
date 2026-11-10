@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DARK_MEDIA, LIGHT_MEDIA, media, SLOTS } from '../../src/media.ts'
+import { media, pinned, SLOTS } from '../../src/media.ts'
 import { SITE_URL } from '../../src/site.ts'
 import { builtClips } from '../support/clip-policy.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
@@ -50,12 +50,20 @@ describe.each(pages)('%s', (page) => {
 
 it('offers every variant of every clip on the home page, with its posters', () => {
   const clips = builtClips(readRepoFile('dist/index.html'))
-  expect(clips).toHaveLength(SLOTS.length)
-  for (const name of SLOTS) {
-    const clip = clips.find(({ sources }) => sources.includes(media[name].sources.at(-1)!.src))
-    expect(clip?.sources, name).toEqual(media[name].sources.map(({ src }) => src))
-    expect(clip?.posters, name).toEqual(
-      media[name].variants.filter((variant) => variant.media).map((variant) => variant.poster),
+  // The hero is two clips: its dark recording, which the window opens on in either scheme, and
+  // its light one, which comes over it with the day.
+  const shown = [
+    ...SLOTS.filter((name) => name !== 'hero').map((name) => media[name]),
+    pinned(media.hero, 'dark'),
+    pinned(media.hero, 'light'),
+  ]
+  expect(clips).toHaveLength(shown.length)
+  for (const slot of shown) {
+    const last = slot.sources.at(-1)!.src
+    const clip = clips.find(({ sources }) => sources.at(-1) === last)
+    expect(clip?.sources, last).toEqual(slot.sources.map(({ src }) => src))
+    expect(clip?.posters, last).toEqual(
+      slot.variants.filter((variant) => variant.media).map((variant) => variant.poster),
     )
   }
 })
@@ -65,14 +73,9 @@ it('preloads the hero poster once per variant, each for a query no other matches
     href: attrs.get('href'),
     media: attrs.get('media'),
   }))
-  // On a light page the window opens on the night's recording, so its dark posters load there too.
-  const night = media.hero.variants
-    .filter(({ scheme }) => scheme === 'dark')
-    .map(({ poster, only }) => ({ href: poster, media: only.replace(DARK_MEDIA, LIGHT_MEDIA) }))
-  expect(links).toEqual([
-    ...media.hero.variants.map(({ poster, only }) => ({ href: poster, media: only })),
-    ...night,
-  ])
+  expect(links).toEqual(
+    pinned(media.hero, 'dark').variants.map(({ poster, only }) => ({ href: poster, media: only })),
+  )
 })
 
 it('styles the hero poster from the built stylesheet', () => {
@@ -80,7 +83,7 @@ it('styles the hero poster from the built stylesheet', () => {
     .filter((file) => file.endsWith('.css'))
     .map(readRepoFile)
     .join('\n')
-  for (const { poster } of media.hero.variants) expect(css).toContain(poster)
+  for (const { poster } of pinned(media.hero, 'dark').variants) expect(css).toContain(poster)
 })
 
 it('shows each poster as a picture of its variants when scripts do not run', () => {
@@ -95,11 +98,20 @@ it('shows each poster as a picture of its variants when scripts do not run', () 
       }
     },
   )
+  // The hero comes first, as its dark recording and then its light one.
+  const shown = [
+    { slot: pinned(media.hero, 'dark'), loading: 'eager' },
+    { slot: pinned(media.hero, 'light'), loading: 'lazy' },
+    ...SLOTS.filter((name) => name !== 'hero' && media[name].clip).map((name) => ({
+      slot: media[name],
+      loading: 'lazy',
+    })),
+  ]
   expect(pictures).toEqual(
-    SLOTS.filter((name) => media[name].clip).map((name) => ({
-      sources: media[name].variants.filter((v) => v.media).map((v) => v.poster),
-      img: media[name].poster,
-      loading: name === 'hero' ? 'eager' : 'lazy',
+    shown.map(({ slot, loading }) => ({
+      sources: slot.variants.filter((v) => v.media).map((v) => v.poster),
+      img: slot.poster,
+      loading,
     })),
   )
 })

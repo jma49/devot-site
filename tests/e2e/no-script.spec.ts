@@ -1,4 +1,4 @@
-import { media, SLOTS } from '../../src/media.ts'
+import { media, pinned, SLOTS } from '../../src/media.ts'
 import { expect, test } from './fixtures.ts'
 
 const DESKTOP = { width: 1440, height: 900 }
@@ -15,12 +15,14 @@ for (const viewport of [DESKTOP, PHONE]) {
       await page.emulateMedia({ colorScheme: scheme })
       await page.goto('/')
 
+      // The window opens on its dark recording in either scheme; the light one needs a script.
       const frame = page.locator('.hero-frame')
-      const poster = frame.locator('picture img')
-      const expected = media.hero.variants.find(
-        (variant) => variant.scheme === scheme && variant.phone === viewport.width < 640,
+      const poster = frame.locator('> noscript picture img')
+      const expected = pinned(media.hero, 'dark').variants.find(
+        (variant) => variant.phone === viewport.width < 640,
       )
-      await expect(frame.locator('video')).toBeHidden()
+      await expect(frame.locator('> video')).toBeHidden()
+      await expect(frame.locator('[data-hero-day]')).toBeHidden()
       await expect(poster).toBeVisible()
       await expect(poster).toHaveAttribute('alt', media.hero.alt)
       await expect(poster).toHaveJSProperty('complete', true)
@@ -45,8 +47,9 @@ for (const viewport of [DESKTOP, PHONE]) {
 test('shows a poster in place of every clip, and no video', async ({ page }) => {
   await page.setViewportSize(DESKTOP)
   await page.goto('/')
-  const clips = SLOTS.filter((name) => media[name].clip)
-  await expect(page.locator('video[data-clip]')).toHaveCount(clips.length)
+  // Every slot's clip, and the hero's light recording beside its dark one.
+  const clips = SLOTS.filter((name) => media[name].clip).length + 1
+  await expect(page.locator('video[data-clip]')).toHaveCount(clips)
   for (const video of await page.locator('video[data-clip]').all()) await expect(video).toBeHidden()
-  await expect(page.locator('noscript picture img')).toHaveCount(clips.length)
+  await expect(page.locator('noscript picture img')).toHaveCount(clips)
 })

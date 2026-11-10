@@ -32,9 +32,9 @@ const screens = [
 ]
 ---
 
-<section class="news" aria-labelledby="news-title">
+<section id="new" class="news" aria-label={news.label}>
   <div class="news__inner">
-    <h2 id="news-title" class="news__title">
+    <h2 class="news__title">
       {news.title.map((line, index) => (
         <Fragment>
           {index > 0 && ' '}

@@ -4,33 +4,12 @@ import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
 import notesLight from '../../assets/iphone/p1-notes-light.png'
 import { messages } from '../../i18n/index.ts'
-import { av1Codecs, DARK_MEDIA, LIGHT_MEDIA, media, PHONE_MEDIA } from '../../media.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 import Clip from '../Clip.astro'
 import InstallNote from '../InstallNote.astro'
 
 const t = messages()
-
-// The night's recording: the dark capture of the hero clip, whatever the reader's scheme.
-const night = media.hero.variants.filter(({ scheme }) => scheme === 'dark')
-const nightWide = night.find(({ phone }) => !phone)
-const nightPhone = night.find(({ phone }) => phone)
-if (!nightWide) throw new Error('E_HERO_NIGHT the hero slot has no dark recording')
-const nightSources = night.flatMap(({ webm, mp4, width, height, phone }) => {
-  const query = phone ? PHONE_MEDIA : undefined
-  return [
-    { src: webm, type: `video/webm; codecs="${av1Codecs(width, height)}"`, media: query },
-    { src: mp4, type: 'video/mp4', media: query },
-  ]
-})
-const nightPosters = JSON.stringify(nightPhone ? [[PHONE_MEDIA, nightPhone.poster]] : [])
-// On a light page the night's poster is the first thing the window shows; a dark page has it
-// from the hero clip itself.
-const nightPreloads = night.map(({ poster, only }) => ({
-  href: poster,
-  media: only.replace(DARK_MEDIA, LIGHT_MEDIA),
-}))
 
 // The widest the phone is drawn is 216 px; twice that covers a 2x screen.
 const phone = (src: ImageMetadata) => getImage({ src, width: 440, format: 'webp', quality: 82 })
@@ -61,10 +40,14 @@ const [phoneDark, phoneLight] = await Promise.all([phone(notesDark), phone(notes
       {t.hero.titleLines.map((line, index) => (
         <>
           {index > 0 && ' '}
-          <span
-            class:list={['hero-line', { 'site-accent': index === t.hero.titleLines.length - 1 }]}
-          >
+          <span class="hero-line">
             {line}
+            {index === t.hero.titleLines.length - 1 && (
+              <>
+                {' '}
+                <span class="site-accent hero-accent">{t.hero.titleAccent}</span>
+              </>
+            )}
           </span>
         </>
       ))}
@@ -106,55 +89,28 @@ const [phoneDark, phoneLight] = await Promise.all([phone(notesDark), phone(notes
     <div class="hero-rig">
       <div class="hero-window">
         <div class="hero-frame">
-          <Clip name="hero" class="hero-clip" priority />
-          {nightPreloads.map(({ href, media: query }) => (
-            <link
-              rel="preload"
-              as="image"
-              type="image/webp"
-              href={href}
-              media={query}
-              fetchpriority="high"
-            />
-          ))}
-          <div class="hero-night" data-hero-night aria-hidden="true">
-            <video
-              class="hero-night-clip"
-              width={nightWide.width}
-              height={nightWide.height}
-              data-poster={nightWide.poster}
-              data-poster-media={nightPosters}
-              preload="none"
-              tabindex="-1"
-              muted
-              loop
-              playsinline
-            >
-              {nightSources.map(({ src, type, media: query }) => (
-                <source data-src={src} type={type} media={query} />
-              ))}
-            </video>
+          <Clip name="hero" scheme="dark" class="hero-clip" priority />
+          <div class="hero-day" data-hero-day hidden>
+            <Clip name="hero" scheme="light" as="hero-day" class="hero-clip" />
           </div>
         </div>
       </div>
     </div>
     <div class="hero-phone">
-      <picture>
-        <source srcset={phoneDark.src} media={DARK_MEDIA} />
-        <img
-          src={phoneLight.src}
-          width={phoneLight.attributes.width}
-          height={phoneLight.attributes.height}
-          alt={t.media.iphoneNotes}
-          decoding="async"
-        />
-      </picture>
       <img
-        class="hero-phone-night"
         src={phoneDark.src}
         width={phoneDark.attributes.width}
         height={phoneDark.attributes.height}
+        alt={t.media.iphoneNotes}
+        decoding="async"
+      />
+      <img
+        class="hero-phone-day"
+        src={phoneLight.src}
+        width={phoneLight.attributes.width}
+        height={phoneLight.attributes.height}
         alt=""
+        loading="lazy"
         decoding="async"
       />
     </div>
