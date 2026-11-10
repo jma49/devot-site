@@ -1,6 +1,6 @@
 import type { Messages } from '../i18n/en.ts'
 import { DOWNLOAD_URL, LICENCE_PRICE, REPO_URL, SITE_URL } from '../site.ts'
-import { FOOTER_GROUPS } from './links.ts'
+import { docPath, FOOTER_GROUPS } from './links.ts'
 
 type Run = string | { code: string }
 
@@ -69,6 +69,7 @@ export function llmsTxt(t: Messages): string {
     '',
     `## ${t.llms.docs}`,
     '',
+    ...t.docs.pages.map((page) => `${link(page.heading, docPath(page.slug))}: ${page.summary}`),
     ...docs,
     '',
   ].join('\n')

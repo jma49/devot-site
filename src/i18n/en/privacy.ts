@@ -79,6 +79,7 @@ export const privacyCopy = {
       resources: {
         title: 'Resources',
         links: {
+          docs: 'Docs',
           releases: 'Releases',
           install: 'Install steps',
           architecture: 'How Devot works',

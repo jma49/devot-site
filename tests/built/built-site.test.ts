@@ -192,6 +192,11 @@ describe('built CSS', () => {
   })
 })
 
+it('builds the docs index and a page for each guide', () => {
+  expect(pages).toContain('dist/docs.html')
+  for (const { slug } of en.docs.pages) expect(pages).toContain(`dist/docs/${slug}.html`)
+})
+
 describe('structured data', () => {
   const ldJson = (html: string) =>
     scripts(html)

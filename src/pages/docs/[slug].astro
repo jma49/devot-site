@@ -1,0 +1,16 @@
+---
+import type { GetStaticPaths } from 'astro'
+import DocPage from '../../components/DocPage.astro'
+import type { DocPage as Page } from '../../i18n/en/docs.ts'
+import { messages } from '../../i18n/index.ts'
+
+export const getStaticPaths = (() =>
+  messages().docs.pages.map((page) => ({
+    params: { slug: page.slug },
+    props: { page },
+  }))) satisfies GetStaticPaths
+
+const { page } = Astro.props as { page: Page }
+---
+
+<DocPage page={page} />
