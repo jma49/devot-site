@@ -84,6 +84,25 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sky).toHaveCSS('pointer-events', 'none')
       await expect(sky).toHaveAttribute('aria-hidden', 'true')
 
+      // Fixed under the scrolling page, the sky is put together again on every scrolled frame:
+      // an opacity on the whole of it or a filter inside it doubles that frame where no GPU
+      // draws it. A veil of the page colour dims it instead.
+      await expect(sky).toHaveCSS('opacity', '1')
+      const drawn = await sky.evaluate((element) => {
+        const parts = [element, ...element.querySelectorAll('*')]
+        const styles = parts.flatMap((part) => [
+          getComputedStyle(part),
+          getComputedStyle(part, '::before'),
+          getComputedStyle(part, '::after'),
+        ])
+        return {
+          filters: styles.map((style) => style.filter).filter((filter) => filter !== 'none'),
+          veil: getComputedStyle(element, '::after').backgroundColor,
+        }
+      })
+      expect(drawn.filters).toEqual([])
+      expect(drawn.veil).not.toBe('rgba(0, 0, 0, 0)')
+
       // Its bands thin out on both sides: the hero's tight lower edge would draw a line across
       // a section.
       const shape = (band: string) =>

@@ -6,16 +6,46 @@
  * rests with the reader's pause and slows down with reduced motion.
  */
 .page-sky {
+  /* The share of the page colour laid over the sky; what is left is the sky's strength. */
+  --sky-veil: 53%;
+
   position: fixed;
   inset: 0;
   z-index: -1;
-  opacity: 0.47;
   pointer-events: none;
 }
 
-.page-sky .aurora {
+/*
+ * A layer fixed under a scrolling page is put together again on every scrolled frame. Where no
+ * GPU does that, an opacity on the whole sky and the filters the hero's aurora wears made such a
+ * frame cost close to twice as much (61 to 68 ms against 38 without a sky, measured on a software
+ * renderer). So the sky is dimmed by a veil of the page colour over it, which blends to the same
+ * colours, and its CSS aurora goes without the filters: with both, a frame costs what it does
+ * without a sky.
+ */
+.page-sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--site-color-page) var(--sky-veil), transparent);
+}
+
+.page-sky .aurora[data-aurora] {
   --aurora-drift: 26s;
   --aurora-band-shape: var(--aurora-band-soft);
+  --aurora-filter: none;
+  --aurora-band-filter: none;
+}
+
+.page-sky .aurora-warm::before,
+.page-sky .aurora-warm::after {
+  filter: none;
+}
+
+/* Without the filters the bands take more of their pigment, to stand as bright as before. */
+.page-sky .aurora[data-aurora='dark'] {
+  --aurora-sage-pigment: color-mix(in oklab, var(--color-activity-level-4) 40%, transparent);
+  --aurora-tide-pigment: color-mix(in oklab, var(--color-accent-fill) 36%, transparent);
 }
 
 .page-sky .aurora-band-sage {
