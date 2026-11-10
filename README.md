@@ -198,3 +198,4 @@ Zone settings that matter to this site:
 - **Always Use HTTPS:** on.
 - **Bot Fight Mode, JavaScript Detections, Rocket Loader and Zaraz:** off. They inject inline scripts, which the policy blocks.
 - **www:** redirect `www.devot.online` to `https://devot.online` with a redirect rule and a proxied `www` DNS record; `_redirects` cannot redirect a host.
+- **Short paths:** `public/_redirects` sends `/download` to the latest release and `/pricing` to the pricing section; `pnpm test:dist` checks them against `src/site.ts` and `src/lib/links.ts`.
