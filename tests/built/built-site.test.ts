@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
 import { blogPosting, structuredData } from '../../src/lib/structured-data.ts'
-import { OG_IMAGE, SITE_URL } from '../../src/site.ts'
+import { PRICING_PATH } from '../../src/lib/links.ts'
+import { DOWNLOAD_URL, OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
@@ -228,6 +229,18 @@ describe('structured data', () => {
 })
 
 describe('files for Cloudflare and crawlers', () => {
+  it('redirects the short paths a post or a listing may use', () => {
+    const rules = readRepoFile('dist/_redirects')
+      .trim()
+      .split('\n')
+      .map((line) => line.split(/\s+/))
+    expect(rules).toEqual([
+      ['/download', DOWNLOAD_URL, '302'],
+      ['/pricing', PRICING_PATH, '301'],
+    ])
+    for (const [from] of rules) expect(pages).not.toContain(`dist${from}.html`)
+  })
+
   it('serves llms.txt at the site root', () => {
     expect(readRepoFile('dist/llms.txt')).toBe(llmsTxt(en))
   })
