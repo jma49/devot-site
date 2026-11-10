@@ -4,6 +4,7 @@ import { demoCopy } from './en/demo.ts'
 import { featuresCopy } from './en/features.ts'
 import { heroCopy } from './en/hero.ts'
 import { legalCopy } from './en/legal.ts'
+import { llmsCopy } from './en/llms.ts'
 import { mediaCopy } from './en/media.ts'
 import { pricingCopy } from './en/pricing.ts'
 import { privacyCopy } from './en/privacy.ts'
@@ -26,6 +27,7 @@ export const en = {
   ...supportCopy,
   ...mediaCopy,
   ...demoCopy,
+  ...llmsCopy,
 }
 
 export type Messages = typeof en
