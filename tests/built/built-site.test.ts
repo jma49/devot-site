@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
+import { llmsTxt } from '../../src/lib/llms-txt.ts'
+import { structuredData } from '../../src/lib/structured-data.ts'
 import { OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
@@ -190,7 +192,24 @@ describe('built CSS', () => {
   })
 })
 
+describe('structured data', () => {
+  const ldJson = (html: string) =>
+    scripts(html)
+      .filter(({ attrs }) => /\btype\s*=\s*["']?application\/ld\+json/.test(attrs))
+      .map(({ body }) => JSON.parse(body) as unknown)
+
+  it('describes the app once, on the home page only', () => {
+    expect(ldJson(readRepoFile('dist/index.html'))).toEqual([structuredData(en)])
+    const others = pages.filter((page) => page !== 'dist/index.html')
+    expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
+  })
+})
+
 describe('files for Cloudflare and crawlers', () => {
+  it('serves llms.txt at the site root', () => {
+    expect(readRepoFile('dist/llms.txt')).toBe(llmsTxt(en))
+  })
+
   it('ships public/_headers unchanged', () => {
     expect(readRepoFile('dist/_headers')).toBe(readRepoFile('public/_headers'))
   })

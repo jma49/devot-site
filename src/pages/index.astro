@@ -5,10 +5,12 @@ import Features from '../components/home/Features.astro'
 import Hero from '../components/home/Hero.astro'
 import Pricing from '../components/home/Pricing.astro'
 import Privacy from '../components/home/Privacy.astro'
+import { messages } from '../i18n/index.ts'
 import Base from '../layouts/Base.astro'
+import { structuredData } from '../lib/structured-data.ts'
 ---
 
-<Base>
+<Base structuredData={structuredData(messages())}>
   <Hero />
   <Features />
   <CardGrid />
