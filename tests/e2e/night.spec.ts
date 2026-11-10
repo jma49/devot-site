@@ -84,6 +84,17 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sky).toHaveCSS('pointer-events', 'none')
       await expect(sky).toHaveAttribute('aria-hidden', 'true')
 
+      // Its bands thin out on both sides: the hero's tight lower edge would draw a line across
+      // a section.
+      const shape = (band: string) =>
+        page
+          .locator(band)
+          .first()
+          .evaluate((element) => getComputedStyle(element).getPropertyValue('--aurora-band-shape'))
+      expect(await shape('.page-sky [data-aurora="dark"] .aurora-band')).not.toBe(
+        await shape('.hero [data-aurora="dark"] .aurora-band'),
+      )
+
       await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
       expect(await sky.boundingBox()).toEqual({
         x: 0,
