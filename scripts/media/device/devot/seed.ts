@@ -9,7 +9,7 @@ import { createClock, newNodeId } from '../src/core/hlc'
 import { createIdGenerator } from '../src/core/ids'
 import { createNoteService } from '../src/core/notes'
 import { createTagService } from '../src/core/tags'
-import { openSqliteAdapter } from '../src/mcp/sqlite'
+import { openSqliteAdapter } from './support/sqlite-adapter'
 
 interface DemoNote {
   key: string

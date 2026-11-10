@@ -321,9 +321,12 @@ const organise: Scene = {
     const notebook = page.getByRole('button', { name: /^Notebook: / }).first()
     const launch = page.getByRole('option', { name: 'Spring launch', exact: true })
     const tags = page.getByRole('combobox', { name: 'Add Tag' })
+    // Add Tag opens the Tag this note popup, which lists each tag with its count and stays open
+    // after a pick, until a click outside it.
     const planning = page
-      .getByRole('listbox', { name: /tag/i })
-      .getByRole('option', { name: /planning$/ })
+      .getByRole('dialog', { name: 'Tag this note' })
+      .getByRole('option')
+      .filter({ hasText: 'planning' })
     const rest = { x: 470, y: 300 }
     return new CursorScript(rest, actions)
       .wait(0.4)
@@ -352,6 +355,10 @@ const organise: Scene = {
       .move(at(planning, 0.3), 0.45)
       .wait(0.1)
       .click()
+      .wait(0.5)
+      .move(rest, 0.5)
+      .wait(0.08)
+      .click()
       .wait(0.3)
       .move(at(page.getByRole('group', { name: 'Tags' }).getByText('planning'), 0.5), 0.5)
       .wait(1.0)
@@ -379,7 +386,11 @@ const find: Scene = {
     const suggestion = page
       .locator('.cm-tooltip-autocomplete')
       .getByRole('option', { name: /Spring launch plan/ })
-    const backlink = preview(page).getByRole('button', { name: 'Release checklist' })
+    // The notes that link here are listed in Note Info, which the header's summary opens.
+    const summary = page.getByRole('button', { name: /^Note info: / })
+    const backlink = page
+      .getByRole('dialog', { name: 'Note info' })
+      .getByRole('button', { name: 'Release checklist' })
     const rest = { x: 470, y: 330 }
     return new CursorScript(rest, actions)
       .wait(0.3)
@@ -403,14 +414,20 @@ const find: Scene = {
       .wait(0.25)
       .press('Meta+KeyE')
       .wait(0.5)
-      .move(at(backlink, 0.3), 0.6)
+      .move(at(summary), 0.6)
+      .wait(0.08)
+      .click()
+      .wait(0.5)
+      .move(at(backlink, 0.3), 0.5)
       .wait(0.2)
       .poster()
       .wait(1.0)
       .build()
   },
   async check(page) {
-    const links = preview(page).getByRole('button', { name: 'Release checklist' })
+    const links = page
+      .getByRole('dialog', { name: 'Note info' })
+      .getByRole('button', { name: 'Release checklist' })
     if ((await links.count()) !== 1)
       throw new Error('E_MEDIA_FIND the new link is not among the notes linked to this one')
   },
