@@ -14,7 +14,8 @@ import { demoDataDir, recordScene, type DeviceContext } from './record.ts'
 // `pnpm media:encode` for the same slots. It takes over the screen, pointer and keyboard while it
 // runs. DEVOT_CHECKOUT names a Devot checkout whose demo build exists: build it once with
 // `pnpm tauri dev --config <demo config>` there (docs in README "Product media").
-// DEVOT_BINARY names that build's binary; MEDIA_SCHEMES limits the run to one scheme.
+// DEVOT_BINARY names that build's binary; MEDIA_SCHEMES limits the run to one scheme; MEDIA_SCREEN
+// counts the screen to record on when there are several (0, the one with the menu bar).
 // MEDIA_FULL_WINDOW=1 records the film's whole-window masters instead (film.ts): every shot of
 // film-scenes.ts in its own schemes, or the ones named; pack them with `pnpm media:film:pack`.
 
@@ -73,7 +74,7 @@ const server = spawn(
 const input = new Input(inputHelper(cache))
 try {
   await input.send('trusted')
-  const [, width, height, scale] = (await input.send('screen')).split(' ').map(Number)
+  const [, width, height, scale, x, y] = (await input.send('screen')).split(' ').map(Number)
   for (let i = 0; i < 60; i++) {
     try {
       await fetch('http://localhost:5173/')
@@ -90,7 +91,14 @@ try {
     devUrl: 'http://localhost:5173',
     fps: Number(process.env['MEDIA_FPS'] ?? 30),
     input,
-    screen: { width: width!, height: height!, scale: scale! },
+    screen: {
+      width: width!,
+      height: height!,
+      scale: scale!,
+      x: x!,
+      y: y!,
+      index: Number(process.env['MEDIA_SCREEN'] ?? 0),
+    },
     fullWindow,
     log,
   }

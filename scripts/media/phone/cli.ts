@@ -11,10 +11,10 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 import type { Scheme } from '../../../src/media.ts'
-import { bringToFront, Input, windows, type Rect } from '../device/device.ts'
+import { bringToFront, Input, windows } from '../device/device.ts'
 import { withEntry } from '../device/film.ts'
 import { inputHelper } from '../device/helper.ts'
-import { writeLibrary } from '../device/record.ts'
+import { firstFrameAt, writeLibrary } from '../device/record.ts'
 import { FFMPEG } from '../encode.ts'
 import { typingTimes } from '../timeline.ts'
 import { phoneCut, phoneEntry, phoneSettings, phoneShotsToRecord, type ShotNote } from './shots.ts'
@@ -27,8 +27,8 @@ import { phoneCut, phoneEntry, phoneSettings, phoneShotsToRecord, type ShotNote 
 //                         `empty`, a new install's own notes) and a clean status bar
 //   shot [id ...]         records shots of shots.ts into footage/iphone/, each with its still
 //   relay                 runs Devot's relay on this Mac, for the two devices to sync through
-//   sync <id> <take>      records the whole screen while one device changes a note (see below)
-// PHONE_SIMULATOR picks a simulator by UDID; MEDIA_SCHEMES limits `shot` to some schemes;
+//   sync <id> <take>      records both devices while one changes a note (see below)
+// PHONE_SIMULATOR picks a simulator by UDID; MEDIA_SCREEN counts the screen the Mac's window is on; MEDIA_SCHEMES limits `shot` to some schemes;
 // MEDIA_GRADIENT (0 to 100) sets the Gradient setting; FOOTAGE names another footage folder.
 
 const root = join(import.meta.dirname, '../../..')
@@ -205,29 +205,84 @@ function probe(file: string): Probe {
 const MAX_BYTES = 50 * 1024 * 1024
 
 /** High-bitrate H.264 at a constant frame rate, unscaled; a higher CRF only when over 50 MB. */
-function encode(input: string, out: string, fps: number, cut?: { from: number; length: number }) {
+function encode(input: string, out: string, fps: number) {
   for (const quality of [12, 14, 16]) {
     execFileSync(FFMPEG, [
-      ...['-y', '-v', 'error'],
-      ...(cut ? ['-ss', cut.from.toFixed(3)] : []),
-      ...['-i', input],
-      ...(cut ? ['-t', cut.length.toFixed(3)] : []),
-      ...[
-        '-an',
-        '-vf',
-        `fps=${fps}`,
-        '-c:v',
-        'libx264',
-        '-preset',
-        'slow',
-        '-crf',
-        String(quality),
-      ],
+      ...['-y', '-v', 'error', '-i', input, '-an', '-vf', `fps=${fps}`],
+      ...['-c:v', 'libx264', '-preset', 'slow', '-crf', String(quality)],
       ...['-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
     ])
     if (statSync(out).size <= MAX_BYTES) return
   }
   throw new Error(`E_PHONE_TOO_BIG ${out}`)
+}
+
+/**
+ * The stretch `cut` of a simulator recording, lossless at a constant frame rate, in `out`. The
+ * recording holds a frame only when the screen changes, and its frames come far out of order
+ * after a still stretch, so ffmpeg times some of them by decode order and a cut by time lands
+ * seconds off. Each frame is placed here by its own presentation time instead, and held until
+ * the next one.
+ */
+async function constantRate(
+  input: string,
+  out: string,
+  fps: number,
+  cut: { from: number; length: number },
+) {
+  const times = run(process.env['FFPROBE'] ?? 'ffprobe', [
+    ...['-v', 'error', '-select_streams', 'v:0'],
+    ...['-show_entries', 'frame=pts_time', '-of', 'csv=p=0', input],
+  ])
+    .split('\n')
+    .map((line) => parseFloat(line))
+  const [width, height] = probe(input).pixels
+  const size = (width * height * 3) / 2
+  const raw = ['-f', 'rawvideo', '-pix_fmt', 'yuv420p']
+  const decoder = spawn(
+    FFMPEG,
+    ['-v', 'error', '-i', input, '-an', '-fps_mode', 'passthrough', ...raw, '-'],
+    // It is stopped once the cut is full, and would say so at length.
+    { stdio: ['ignore', 'pipe', 'ignore'] },
+  )
+  const encoder = spawn(
+    FFMPEG,
+    [
+      ...['-y', '-v', 'error', ...raw, '-s', `${width}x${height}`, '-r', String(fps), '-i', '-'],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-qp', '0', out],
+    ],
+    { stdio: ['pipe', 'ignore', 'inherit'] },
+  )
+  const total = Math.round(cut.length * fps)
+  let written = 0
+  const hold = async (frame: Buffer, until: number) => {
+    while (written < total && cut.from + written / fps < until) {
+      if (!encoder.stdin!.write(frame)) {
+        await new Promise((resolve) => encoder.stdin!.once('drain', resolve))
+      }
+      written++
+    }
+  }
+  const frame = Buffer.alloc(size)
+  let filled = 0
+  let index = 0
+  for await (const chunk of decoder.stdout! as AsyncIterable<Buffer>) {
+    for (let at = 0; at < chunk.length;) {
+      if (written >= total) break
+      const taken = chunk.copy(frame, filled, at, at + size - filled)
+      at += taken
+      filled += taken
+      if (filled < size) continue
+      filled = 0
+      await hold(frame, times[++index] ?? Infinity)
+    }
+    if (written >= total) break
+  }
+  decoder.kill()
+  if (written === 0) throw new Error(`E_PHONE_SHORT_RECORDING ${input}`)
+  await hold(frame, Infinity)
+  encoder.stdin!.end()
+  await new Promise((resolve) => encoder.once('exit', resolve))
 }
 
 function record(entry: { file: string }) {
@@ -267,9 +322,11 @@ async function shots(ids: string[]) {
     const name = `${shot.id}-${scheme}`
     const raw = join(work, `${name}.mov`)
     rmSync(raw, { force: true })
+    // HEVC: the simulator's H.264 puts frames far out of order after a still stretch, and ffmpeg
+    // then times them by decode order, which moves the cut by seconds.
     const recorder = spawn(
       'xcrun',
-      ['simctl', 'io', udid, 'recordVideo', '--codec', 'h264', '--force', raw],
+      ['simctl', 'io', udid, 'recordVideo', '--codec', 'hevc', '--force', raw],
       { stdio: ['ignore', 'ignore', 'pipe'] },
     )
     // simctl says "Recording started" once it has its first frame.
@@ -290,11 +347,18 @@ async function shots(ids: string[]) {
     }
     const note = JSON.parse(readFileSync(join(work, `${name}.json`), 'utf8')) as ShotNote
     const file = `iphone/${name}.mp4`
-    encode(raw, join(footage, file), 60, phoneCut(note, started))
+    const steady = join(work, `${name}.mkv`)
+    await constantRate(raw, steady, 60, phoneCut(note, started))
+    encode(steady, join(footage, file), 60)
+    rmSync(steady, { force: true })
     const still = join(work, `${name}.png`)
-    if (existsSync(still)) renameSync(still, join(footage, 'iphone', 'stills', `${name}.png`))
+    const kept = `iphone/stills/${name}.png`
+    if (existsSync(still)) renameSync(still, join(footage, kept))
     const measured = probe(join(footage, file))
-    record(phoneEntry(note, { file, ...measured, fps: 60, source: source(udid) }))
+    record({
+      ...phoneEntry(note, { file, ...measured, fps: 60, source: source(udid) }),
+      ...(existsSync(join(footage, kept)) && { still: kept }),
+    })
     console.log(`${file} ${measured.duration.toFixed(2)} s, ${measured.pixels.join('x')}`)
   }
 }
@@ -311,60 +375,103 @@ function relay() {
   })
 }
 
-const pid = (pattern: string, exact: boolean) =>
-  Number(run('sh', ['-c', `pgrep ${exact ? '-x' : '-f'} "${pattern}" | head -n 1`]) || 0)
+const pid = (pattern: string) => Number(run('sh', ['-c', `pgrep -f "${pattern}" | head -n 1`]) || 0)
 
-// sync x1-mac-to-iphone <take>: the Mac's Devot (the demo build, frontmost, the caret in the note's
-// body) gets a line typed at the end of the note, and the recording runs on until SYNC_WAIT
-// seconds (12) later. sync x2-iphone-to-mac <take>: FilmShots' testX2TickATask ticks a task in the
-// note open on the iPhone. Both devices are paired through the relay and show the same note
-// before either runs; the windows stay where they are, and their places go into the manifest.
+// sync <id> <take>: one device changes a note and the other shows it. Xcode 27 has no Simulator
+// app whose window could stand beside the Mac's, so a take is two recordings made at once and cut
+// to the same stretch of the wall clock: `sync/<id>-take<n>-mac.mp4`, the demo build's main window
+// as it stands on the screen, and `sync/<id>-take<n>-iphone.mp4`, the simulator's screen. Played
+// from the same moment they show the same seconds. Both devices are paired through the relay and
+// show the same note before either runs.
+//   x1-mac-to-iphone  the Mac's Devot (frontmost, the caret in the note's body) gets a line typed
+//                     at the end of the note (SYNC_LINE)
+//   x2-iphone-to-mac  FilmShots' testX2TickATask ticks a task in the note open on the iPhone
+// Both run on until SYNC_WAIT seconds (12) after the change.
 async function sync(id: string, take: string) {
   if (!['x1-mac-to-iphone', 'x2-iphone-to-mac'].includes(id) || !/^\d+$/.test(take ?? '')) {
     fail('E_PHONE_ARGS sync <x1-mac-to-iphone|x2-iphone-to-mac> <take number>')
   }
   const binary = process.env['DEVOT_BINARY']
-  const mac = binary ? pid(binary, false) : 0
-  const phone = pid('Simulator', true)
-  if (!mac || !phone)
-    fail('E_PHONE_SYNC the demo build (DEVOT_BINARY) and the Simulator must be running')
+  const mac = binary ? pid(`${binary}$`) : 0
+  if (!mac) fail('E_PHONE_SYNC the demo build (DEVOT_BINARY) must be running')
   const input = new Input(inputHelper(cache))
   const udid = simulator()
   const wait = Number(process.env['SYNC_WAIT'] ?? 12) * 1000
   const work = join(cache, 'phone-shots')
   mkdirSync(work, { recursive: true })
   mkdirSync(join(footage, 'sync'), { recursive: true })
-  const raw = join(work, `${id}-take${take}.mkv`)
-  rmSync(raw, { force: true })
-  let recorder: ChildProcess | undefined
+  const name = `${id}-take${take}`
+  const macRaw = join(work, `${name}-mac.mkv`)
+  const phoneRaw = join(work, `${name}-iphone.mov`)
+  for (const file of [macRaw, phoneRaw]) rmSync(file, { force: true })
+  let screen: ChildProcess | undefined
+  let phone: ChildProcess | undefined
+  const stop = async (recorder: ChildProcess | undefined, quit: () => void) => {
+    if (!recorder || recorder.exitCode !== null) return
+    quit()
+    await new Promise((resolve) => recorder.once('exit', resolve))
+  }
   try {
-    const [, width, height, scale] = (await input.send('screen')).split(' ').map(Number)
+    const [, , , scale, left, top] = (await input.send('screen')).split(' ').map(Number)
     await input.send('backdrop light')
-    const pixels = (r: Rect) => [r.x, r.y, r.width, r.height].map((n) => Math.round(n * scale!))
-    const rects = { mac: pixels(windows(mac)[0]!), iphone: pixels(windows(phone)[0]!) }
-    recorder = spawn(
+    bringToFront(mac)
+    await sleep(600)
+    const window = windows(mac).find((w) => w.name === 'Devot')
+    if (!window) fail('E_PHONE_SYNC the demo build shows no main window')
+    const crop = [window.width, window.height, window.x - left!, window.y - top!]
+      .map((n) => Math.round(n * scale!))
+      .join(':')
+    phone = spawn(
+      'xcrun',
+      ['simctl', 'io', udid, 'recordVideo', '--codec', 'hevc', '--force', phoneRaw],
+      {
+        stdio: ['ignore', 'ignore', 'pipe'],
+      },
+    )
+    const phoneStarted = await new Promise<number>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`E_PHONE_RECORDING ${name}`)), 30_000)
+      phone!.stderr!.on('data', (chunk: Buffer) => {
+        if (chunk.toString().includes('Recording started')) {
+          clearTimeout(timer)
+          resolve(Date.now() / 1000)
+        }
+      })
+    })
+    screen = spawn(
       FFMPEG,
       [
         ...['-y', '-loglevel', 'error', '-f', 'avfoundation', '-capture_cursor', '1'],
-        ...['-framerate', '30', '-i', 'Capture screen 0:none'],
-        ...['-c:v', 'libx264', '-preset', 'ultrafast', '-qp', '0', raw],
+        ...['-framerate', '30', '-use_wallclock_as_timestamps', '1'],
+        ...['-i', `Capture screen ${process.env['MEDIA_SCREEN'] ?? 0}:none`],
+        ...['-vf', `crop=${crop}`, '-c:v', 'libx264', '-preset', 'ultrafast', '-qp', '0'],
+        ...['-copyts', macRaw],
       ],
       { stdio: ['pipe', 'ignore', 'inherit'] },
     )
-    // A still moment before the change; beats count from about the recording's first frame.
-    const lead = 2.5
-    await sleep(lead * 1000)
-    const began = Date.now()
+    for (let i = 0; ; i++) {
+      await sleep(250)
+      try {
+        if (Number.isFinite(firstFrameAt(macRaw))) break
+      } catch {
+        // No frame written yet.
+      }
+      if (i > 60) throw new Error(`E_MEDIA_RECORDING ${name}`)
+    }
+    await sleep(500)
+    // Both cuts begin here, two still seconds before the change.
+    let from = Date.now() / 1000
+    const round = (n: number) => Math.round(n * 100) / 100
+    const now = () => round(Date.now() / 1000 - from)
     const beats: { t: number; what: string }[] = []
-    const at = () => Math.round(((Date.now() - began) / 1000 + lead) * 100) / 100
+    await sleep(2000)
     if (id === 'x1-mac-to-iphone') {
       const line = process.env['SYNC_LINE'] ?? 'Book the train to the coast'
+      await input.send('layout')
+      await sleep(500)
       // Command-Down puts the caret at the end of the note.
-      bringToFront(mac)
-      await sleep(400)
       await input.send('key 125 cmd')
       await sleep(400)
-      beats.push({ t: at(), what: `type ${JSON.stringify(line)} on the Mac` })
+      beats.push({ t: now(), what: `type ${JSON.stringify(line)} on the Mac` })
       const text = `\n${line}`
       const times = typingTimes(text, 0, 12)
       const typing = Date.now()
@@ -372,37 +479,77 @@ async function sync(id: string, take: string) {
         await sleep(Math.max(0, times[i]! * 1000 - (Date.now() - typing)))
         await input.send(ch === '\n' ? 'key 36' : `text ${ch}`)
       }
-      beats.push({ t: at(), what: 'typing ends; waiting for the iPhone' })
+      beats.push({ t: now(), what: 'typing ends; waiting for the iPhone' })
     } else {
-      beats.push({ t: at(), what: 'tick a task on the iPhone (the test attaches first)' })
       film(udid, 'testX2TickATask', 'light', work)
-      beats.push({ t: at(), what: 'ticked; waiting for the Mac' })
+      const note = JSON.parse(readFileSync(join(work, `${id}-light.json`), 'utf8')) as ShotNote
+      // The test runner takes its time to start: the cut begins a second before the test's shot.
+      from = Math.max(from, note.start - 1)
+      for (const beat of note.beats) {
+        beats.push({ t: round(beat.t + note.start - from), what: `${beat.what} on the iPhone` })
+      }
+      beats.push({ t: now(), what: 'the test ends; waiting for the Mac' })
     }
     await sleep(wait)
-    recorder.stdin!.write('q')
-    recorder.stdin!.end()
-    await new Promise((resolve) => recorder!.once('exit', resolve))
-    recorder = undefined
-    const file = `sync/${id}-take${take}.mp4`
-    encode(raw, join(footage, file), 30)
-    const measured = probe(join(footage, file))
+    // A whole number of the Mac's frames, so both files are the same length to the frame.
+    const frames = Math.round((Date.now() / 1000 - from) * 30)
+    const length = frames / 30
+    await stop(phone, () => phone!.kill('SIGINT'))
+    await stop(screen, () => {
+      screen!.stdin!.write('q')
+      screen!.stdin!.end()
+    })
+
+    const macFile = `sync/${name}-mac.mp4`
+    const phoneFile = `sync/${name}-iphone.mp4`
+    execFileSync(FFMPEG, [
+      ...['-y', '-v', 'error', '-ss', (from - firstFrameAt(macRaw)).toFixed(3), '-i', macRaw],
+      ...['-t', (length + 1 / 30).toFixed(3), '-an', '-vf', 'fps=30'],
+      ...['-frames:v', String(frames)],
+      ...['-c:v', 'libx264', '-preset', 'slow', '-crf', '12'],
+      ...['-pix_fmt', 'yuv420p', '-movflags', '+faststart', join(footage, macFile)],
+    ])
+    const steady = join(work, `${name}-iphone.mkv`)
+    await constantRate(phoneRaw, steady, 60, { from: from - phoneStarted, length })
+    encode(steady, join(footage, phoneFile), 60)
+    rmSync(steady, { force: true })
+
     const sha = run('git', ['-C', devotDir!, 'rev-parse', '--short=7', 'HEAD'])
+    const through = 'synced through a relay on this Mac'
+    const macProbe = probe(join(footage, macFile))
+    const phoneProbe = probe(join(footage, phoneFile))
     record({
       id,
-      file,
+      file: macFile,
       scheme: 'light',
-      source: `demo build @ ${sha} and ${source(udid)}, synced through a relay on this Mac`,
-      pixels: measured.pixels,
-      points: [width, height],
+      source: `demo build @ ${sha}, ${through}`,
+      pixels: macProbe.pixels,
+      points: [window.width, window.height],
       fps: 30,
-      duration: Math.round(measured.duration * 100) / 100,
+      duration: round(macProbe.duration),
       cursor: true,
       beats,
-      windows: rects,
+      pair: phoneFile,
     } as { file: string })
-    console.log(`${file} ${measured.duration.toFixed(2)} s`)
+    record({
+      id,
+      file: phoneFile,
+      scheme: 'light',
+      source: `${source(udid)}, ${through}`,
+      pixels: phoneProbe.pixels,
+      points: phoneProbe.pixels.map((n) => Math.round(n / 3)),
+      fps: 60,
+      duration: round(phoneProbe.duration),
+      cursor: false,
+      beats,
+      pair: macFile,
+    } as { file: string })
+    console.log(
+      `${macFile} ${macProbe.duration.toFixed(2)} s, ${phoneFile} ${phoneProbe.duration.toFixed(2)} s`,
+    )
   } finally {
-    recorder?.kill('SIGINT')
+    phone?.kill('SIGINT')
+    screen?.kill('SIGINT')
     await input.send('backdrop off').catch(() => {})
     input.stop()
   }

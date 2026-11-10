@@ -149,37 +149,21 @@ final class FilmShots: XCTestCase {
         try finish()
     }
 
+    /// No line is typed here or in testP7NewNote: on the iOS 27.2 simulator the editor of v1.1.5
+    /// scrolls the typed line under the navigation bar at the first key, so the text cannot be read.
     func testP3Edit() throws {
         launch()
         tab(L10n.phoneTabNotes())
         open("Weekly review, week 43")
         start("p3-edit")
         tap(noteBar.buttons[L10n.phoneNoteEdit()], "switch to Edit")
-        pause(0.8)
-        // The last line of the note, where a tap leaves the caret.
-        let last = page.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Bake the focaccia")).firstMatch
-        if last.exists {
-            beat("tap the last task", at: last)
-            last.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
-        } else {
-            beat("tap the note", at: page)
-            page.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.55)).tap()
-        }
-        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the tap raises the keyboard")
-        pause(0.5)
-        beat("type a line")
-        for character in "\nBook the train to the coast" {
-            app.typeText(String(character))
-            pause(0.05)
-        }
-        pause(0.8)
+        pause(2.0)
         still()
-        tap(app.otherElements["devot.formatting"].buttons[L10n.phoneNoteHideKeyboard()], "hide the keyboard")
-        pause(0.6)
         tap(noteBar.buttons[L10n.phoneNotePreview()], "switch to Preview")
-        pause(0.8)
+        pause(1.2)
         let task = page.switches.firstMatch.exists ? page.switches.firstMatch : page.checkBoxes.firstMatch
         tap(task, "tick a task")
+        pause(1.2)
         try finish()
     }
 
@@ -248,26 +232,7 @@ final class FilmShots: XCTestCase {
         XCTAssertTrue(noteBar.waitForExistence(timeout: 10), "New Note pushes the editor")
         XCTAssertTrue(app.otherElements["editor.cover"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "the body takes the caret")
-        pause(0.6)
-        let title = app.textFields[L10n.phoneNoteTitle()]
-        if title.exists && title.isHittable {
-            tap(title, "tap the title")
-            beat("type the title")
-            for character in "Offsite ideas" {
-                app.typeText(String(character))
-                pause(0.06)
-            }
-            pause(0.4)
-            beat("tap the body", at: page)
-            page.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)).tap()
-            pause(0.4)
-        }
-        beat("type two lines")
-        for character in "A long walk before lunch\nOne talk each, ten minutes" {
-            app.typeText(String(character))
-            pause(0.05)
-        }
-        pause(0.8)
+        pause(2.0)
         still()
         try finish()
     }
@@ -311,6 +276,37 @@ final class FilmShots: XCTestCase {
         pause(1.0)
         still()
         try finish()
+    }
+
+    /// Setup by hand with no simulator window to touch: FILM_TOUCH lists steps for whatever the
+    /// simulator shows, `tap:x,y` and `swipe:x1,y1,x2,y2` in points, `type:text`, `wait:seconds`,
+    /// split by `;`. Pairing the simulator with the Mac for the sync shots goes through it.
+    func testSetupTouch() throws {
+        let board = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let devot = XCUIApplication(bundleIdentifier: "io.github.jma49.devot")
+        let point = { (x: Double, y: Double) in
+            board.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x, dy: y))
+        }
+        for step in (ProcessInfo.processInfo.environment["FILM_TOUCH"] ?? "").split(separator: ";") {
+            let parts = step.split(separator: ":", maxSplits: 1).map(String.init)
+            let value = parts.count > 1 ? parts[1] : ""
+            let numbers = value.split(separator: ",").compactMap { Double($0) }
+            switch parts[0] {
+            case "tap" where numbers.count == 2:
+                point(numbers[0], numbers[1]).tap()
+            case "swipe" where numbers.count == 4:
+                point(numbers[0], numbers[1]).press(
+                    forDuration: 0.05, thenDragTo: point(numbers[2], numbers[3]),
+                    withVelocity: XCUIGestureVelocity(rawValue: 500), thenHoldForDuration: 0.2)
+            case "type":
+                devot.typeText(value)
+            case "wait":
+                pause(numbers.first ?? 1)
+            default:
+                XCTFail("E_FILM_TOUCH \(step)")
+            }
+            pause(0.6)
+        }
     }
 
     /// For the shot of both devices: the app stays as it is, on the note already open, and one task

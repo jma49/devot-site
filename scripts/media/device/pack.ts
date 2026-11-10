@@ -70,7 +70,10 @@ for (const master of masters) {
   for (quality of QUALITIES) {
     execFileSync(FFMPEG, [
       ...['-y', '-v', 'error', '-ss', kept.from.toFixed(3), '-i', input],
-      ...['-t', kept.length.toFixed(3), '-an', '-vf', `fps=${master.fps}`],
+      // A frame more than the cut, then an exact count: the light and dark masters of a shot come
+      // out the same length to the frame.
+      ...['-t', (kept.length + 1 / master.fps).toFixed(3), '-an', '-vf', `fps=${master.fps}`],
+      ...['-frames:v', String(Math.round(kept.length * master.fps))],
       ...['-c:v', 'libx264', '-preset', 'slow', '-crf', String(quality)],
       ...['-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
     ])

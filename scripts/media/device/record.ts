@@ -36,7 +36,8 @@ export interface DeviceContext {
   devUrl: string
   fps: number
   input: Input
-  screen: { width: number; height: number; scale: number }
+  /** The screen recorded, in points; `x` and `y` place it among the screens, `index` names it to ffmpeg. */
+  screen: { width: number; height: number; scale: number; x: number; y: number; index: number }
   /** Records the whole window as a master for the film (film.ts) and leaves the clips alone. */
   fullWindow: boolean
   log: (line: string) => void
@@ -116,23 +117,23 @@ async function quit(app: ChildProcess) {
 /** The screen rectangle of the window, centred on the screen, for a page of `size`. */
 function windowRect(ctx: DeviceContext, size: { width: number; height: number }): Rect {
   return {
-    x: Math.round((ctx.screen.width - size.width) / 2),
-    y: Math.round((ctx.screen.height - size.height) / 2) + 12,
+    x: ctx.screen.x + Math.round((ctx.screen.width - size.width) / 2),
+    y: ctx.screen.y + Math.round((ctx.screen.height - size.height) / 2) + 12,
     width: size.width,
     height: size.height,
   }
 }
 
 function startRecording(ctx: DeviceContext, file: string, area: Rect): ChildProcess {
-  const s = ctx.screen.scale
-  const crop = `crop=${area.width * s}:${area.height * s}:${area.x * s}:${area.y * s}`
+  const { scale: s, x, y, index } = ctx.screen
+  const crop = `crop=${area.width * s}:${area.height * s}:${(area.x - x) * s}:${(area.y - y) * s}`
   return spawn(
     'ffmpeg',
     [
       ...['-y', '-loglevel', 'error'],
       ...['-f', 'avfoundation', '-capture_cursor', '1', '-framerate', String(ctx.fps)],
       ...['-use_wallclock_as_timestamps', '1'],
-      ...['-i', 'Capture screen 0:none'],
+      ...['-i', `Capture screen ${index}:none`],
       ...['-vf', crop, '-c:v', 'libx264', '-preset', 'ultrafast', '-qp', '0'],
       ...['-copyts', file],
     ],
@@ -146,7 +147,8 @@ async function stopRecording(rec: ChildProcess) {
   await new Promise((resolve) => rec.once('exit', resolve))
 }
 
-function firstFrameAt(file: string): number {
+/** Unix seconds of a recording's first frame; the recordings keep the wall clock's time. */
+export function firstFrameAt(file: string): number {
   const out = execFileSync(
     'ffprobe',
     [
@@ -228,6 +230,7 @@ export async function recordScene(ctx: DeviceContext, scene: Scene | FilmScene, 
       return settings
     }
     bringToFront(app.pid!)
+    await ctx.input.send('layout')
     await scene.prepare(page as never)
     const timeline = await scene.script(page as never, {
       down: () => page.mouse.down(),

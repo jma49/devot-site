@@ -123,8 +123,9 @@ const galleryBoard = film({
     await settle(page)
   },
   async script(page, actions) {
-    // The card moves with the board: found again when its move begins.
-    const moved = card(page, 'Landing page copy')
+    // No card is dragged to another column: in the Mac app of v1.1.5 a drag begun with the real
+    // pointer reaches the page as dragstart and dragend only, with no dragover or drop between
+    // them, so the card stays where it was.
     return new CursorScript(REST, actions)
       .wait(1.0)
       .move(at(layout(page, 'Gallery')), 0.8)
@@ -137,28 +138,17 @@ const galleryBoard = film({
       .beat('Board')
       .click()
       .wait(1.6)
-      .move(at(moved, 0.5, 0.4), 0.8)
-      .wait(0.2)
-      .beat('drag a card from On Hold to Active')
-      .down()
-      .wait(0.25)
-      .move(at(column(page, 'Active'), 0.5, 0.75), 1.1)
-      .wait(0.3)
+      .move(at(card(page, 'Landing page copy'), 0.5, 0.4), 0.8)
+      .wait(0.6)
       .poster()
-      .up()
-      .wait(1.0)
+      .wait(0.6)
       .move(REST, 0.8)
       .wait(1.0)
       .build()
   },
   async check(page) {
-    if (
-      (await column(page, 'Active')
-        .getByRole('option')
-        .filter({ hasText: 'Landing page copy' })
-        .count()) !== 1
-    ) {
-      throw new Error('E_MEDIA_BOARD the card did not move to Active')
+    if ((await column(page, 'On Hold').getByRole('option').count()) === 0) {
+      throw new Error('E_MEDIA_BOARD the list is not a board')
     }
   },
 })
