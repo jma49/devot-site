@@ -142,6 +142,43 @@ describe('CursorScript', () => {
     expect(log).toEqual(['press Meta+K'])
   })
 
+  it('lists its clicks, keys, typing and named steps as beats, in order', () => {
+    const { actions } = recorder()
+    const timeline = new CursorScript(start, actions)
+      .wait(0.5)
+      .beat('open the palette')
+      .press('Meta+K')
+      .wait(0.4)
+      .type('hi', { cps: 10 })
+      .click()
+      .build()
+    expect(timeline.beats.map((b) => b.what)).toEqual([
+      'open the palette',
+      'press Meta+K',
+      'type "hi"',
+      'click',
+    ])
+    expect(timeline.beats[0]!.t).toBeCloseTo(0.5)
+    expect(timeline.beats[2]!.t).toBeCloseTo(0.9)
+    expect(timeline.beats.every((b, i, all) => i === 0 || b.t >= all[i - 1]!.t)).toBe(true)
+  })
+
+  it('holds the button from down to up, so the moves between them drag', async () => {
+    const { log, actions } = recorder()
+    const timeline = new CursorScript(start, actions)
+      .wait(0.2)
+      .down()
+      .move({ x: 300, y: 200 }, 0.6)
+      .up()
+      .wait(0.3)
+      .build()
+    expect(timeline.events.map((e) => e.at)).toEqual([0.2, 0.8])
+    await runAll(timeline.events)
+    expect(log).toEqual(['down', 'up'])
+    expect(timeline.cursor(0.8)).toMatchObject({ x: 300, y: 200 })
+    expect(timeline.beats.map((b) => b.what)).toEqual(['press and hold', 'release'])
+  })
+
   it('reports the time steps end at, for scenes that schedule around them', () => {
     const { actions } = recorder()
     const script = new CursorScript(start, actions).wait(0.4)

@@ -6,6 +6,7 @@ import type { Scheme } from '../../../src/media.ts'
 import { framesDir, type Captured } from '../capture.ts'
 import { frameFile } from '../encode.ts'
 import { smallestText } from '../frames.ts'
+import type { FilmScene } from '../film-scenes.ts'
 import { frameRect, type Scene } from '../scenes.ts'
 import { VIEW } from '../seed.ts'
 import {
@@ -17,6 +18,7 @@ import {
   windows,
   type Rect,
 } from './device.ts'
+import { STILL, masterFile, masterNote, recordingArea, type Master } from './film.ts'
 
 // Records a scene from the real Devot app: a fresh library in the demo build's own data folder,
 // the window placed on a still wallpaper, the scene's script played in real time with the real
@@ -34,7 +36,10 @@ export interface DeviceContext {
   devUrl: string
   fps: number
   input: Input
-  screen: { width: number; height: number; scale: number }
+  /** The screen recorded, in points; `x` and `y` place it among the screens, `index` names it to ffmpeg. */
+  screen: { width: number; height: number; scale: number; x: number; y: number; index: number }
+  /** Records the whole window as a master for the film (film.ts) and leaves the clips alone. */
+  fullWindow: boolean
   log: (line: string) => void
 }
 
@@ -44,26 +49,19 @@ export const DEMO_IDENTIFIER = 'io.github.jma49.devot.demo'
 export const demoDataDir = () =>
   join(homedir(), 'Library/Application Support', `${DEMO_IDENTIFIER}.dev`)
 
-function seed(ctx: DeviceContext, scene: Scene, scheme: Scheme) {
-  rmSync(ctx.dataDir, { recursive: true, force: true })
-  mkdirSync(ctx.dataDir, { recursive: true })
-  const settings = {
-    appearance: scheme,
-    lightTheme: 'tide',
-    darkTheme: 'tide',
-    sidebarMaterial: true,
-    ...scene.settings,
-  }
-  writeFileSync(join(ctx.dataDir, 'editor-settings.json'), JSON.stringify(settings, null, 2))
-  const test = join(ctx.devotDir, 'tests', 'media-seed.demo.test.ts')
+/**
+ * Writes the demo library into a new database at `db` through Devot's own services (devot/seed.ts,
+ * run with Vitest in the checkout), and the note IDs by key to `ids`.
+ */
+export function writeLibrary(devotDir: string, db: string, ids: string) {
+  const test = join(devotDir, 'tests', 'media-seed.demo.test.ts')
   copyFileSync(join(import.meta.dirname, 'devot', 'seed.ts'), test)
-  const ids = join(ctx.cache, 'device-ids.json')
   try {
     execFileSync('pnpm', ['exec', 'vitest', 'run', test, '--reporter=dot'], {
-      cwd: ctx.devotDir,
+      cwd: devotDir,
       env: {
         ...process.env,
-        MEDIA_DB: join(ctx.dataDir, 'devot.sqlite'),
+        MEDIA_DB: db,
         MEDIA_LIBRARY: join(import.meta.dirname, '..', 'library.ts'),
         MEDIA_IDS: ids,
       },
@@ -72,6 +70,25 @@ function seed(ctx: DeviceContext, scene: Scene, scheme: Scheme) {
   } finally {
     rmSync(test, { force: true })
   }
+}
+
+function seed(ctx: DeviceContext, scene: Scene | FilmScene, scheme: Scheme) {
+  rmSync(ctx.dataDir, { recursive: true, force: true })
+  mkdirSync(ctx.dataDir, { recursive: true })
+  const settings = {
+    appearance: scheme,
+    lightTheme: 'tide',
+    darkTheme: 'tide',
+    sidebarMaterial: true,
+    // The gradient themes are solid until Settings > Appearance > Gradient is raised.
+    ...(process.env['MEDIA_GRADIENT'] && {
+      gradientStrength: Number(process.env['MEDIA_GRADIENT']),
+    }),
+    ...scene.settings,
+  }
+  writeFileSync(join(ctx.dataDir, 'editor-settings.json'), JSON.stringify(settings, null, 2))
+  const ids = join(ctx.cache, 'device-ids.json')
+  writeLibrary(ctx.devotDir, join(ctx.dataDir, 'devot.sqlite'), ids)
   // A backup from a moment ago, so the footer says the library is backed up.
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   mkdirSync(join(ctx.dataDir, 'backups'), { recursive: true })
@@ -100,23 +117,23 @@ async function quit(app: ChildProcess) {
 /** The screen rectangle of the window, centred on the screen, for a page of `size`. */
 function windowRect(ctx: DeviceContext, size: { width: number; height: number }): Rect {
   return {
-    x: Math.round((ctx.screen.width - size.width) / 2),
-    y: Math.round((ctx.screen.height - size.height) / 2) + 12,
+    x: ctx.screen.x + Math.round((ctx.screen.width - size.width) / 2),
+    y: ctx.screen.y + Math.round((ctx.screen.height - size.height) / 2) + 12,
     width: size.width,
     height: size.height,
   }
 }
 
 function startRecording(ctx: DeviceContext, file: string, area: Rect): ChildProcess {
-  const s = ctx.screen.scale
-  const crop = `crop=${area.width * s}:${area.height * s}:${area.x * s}:${area.y * s}`
+  const { scale: s, x, y, index } = ctx.screen
+  const crop = `crop=${area.width * s}:${area.height * s}:${(area.x - x) * s}:${(area.y - y) * s}`
   return spawn(
     'ffmpeg',
     [
       ...['-y', '-loglevel', 'error'],
       ...['-f', 'avfoundation', '-capture_cursor', '1', '-framerate', String(ctx.fps)],
       ...['-use_wallclock_as_timestamps', '1'],
-      ...['-i', 'Capture screen 0:none'],
+      ...['-i', `Capture screen ${index}:none`],
       ...['-vf', crop, '-c:v', 'libx264', '-preset', 'ultrafast', '-qp', '0'],
       ...['-copyts', file],
     ],
@@ -130,7 +147,8 @@ async function stopRecording(rec: ChildProcess) {
   await new Promise((resolve) => rec.once('exit', resolve))
 }
 
-function firstFrameAt(file: string): number {
+/** Unix seconds of a recording's first frame; the recordings keep the wall clock's time. */
+export function firstFrameAt(file: string): number {
   const out = execFileSync(
     'ffprobe',
     [
@@ -142,7 +160,7 @@ function firstFrameAt(file: string): number {
   return parseFloat(out.toString().trim())
 }
 
-export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Scheme) {
+export async function recordScene(ctx: DeviceContext, scene: Scene | FilmScene, scheme: Scheme) {
   const label = `${scene.slot} ${scheme}`
   seed(ctx, scene, scheme)
   const bridge = new Bridge(ctx.devUrl)
@@ -212,6 +230,7 @@ export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Sche
       return settings
     }
     bringToFront(app.pid!)
+    await ctx.input.send('layout')
     await scene.prepare(page as never)
     const timeline = await scene.script(page as never, {
       down: () => page.mouse.down(),
@@ -221,14 +240,14 @@ export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Sche
     })
     const start = timeline.cursor(0)
     await page.mouse.move(start.x, start.y)
-    const area = {
-      ...frameRect(scene),
-      x: placed.x + frameRect(scene).x,
-      y: placed.y + frameRect(scene).y,
-    }
-    const video = join(ctx.cache, 'device', `${scene.slot}-${scheme}.mkv`)
-    mkdirSync(join(ctx.cache, 'device'), { recursive: true })
+    const area = recordingArea(frameRect(scene), placed, ctx.fullWindow)
+    const video = ctx.fullWindow
+      ? masterFile(ctx.cache, scene.slot, scheme)
+      : join(ctx.cache, 'device', `${scene.slot}-${scheme}.mkv`)
+    mkdirSync(join(video, '..'), { recursive: true })
     rmSync(video, { force: true })
+    // A master keeps a still moment on either side of its script.
+    const rest = ctx.fullWindow ? (STILL + 0.4) * 1000 : 500
     rec = startRecording(ctx, video, area)
     // The script starts once the recording has its first frame, so the clip's start is in it.
     for (let i = 0; ; i++) {
@@ -240,7 +259,7 @@ export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Sche
       }
       if (i > 60) throw new Error(`E_MEDIA_RECORDING ${label}`)
     }
-    await sleep(500)
+    await sleep(rest)
     const events = [...timeline.events].sort((a, b) => a.at - b.at)
     const began = Date.now()
     let next = 0
@@ -255,7 +274,7 @@ export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Sche
       if (t >= timeline.duration) break
       const cursor = timeline.cursor(t)
       await page.mouse.move(cursor.x, cursor.y)
-      if (!measured && t >= timeline.posterTime) {
+      if (!ctx.fullWindow && !measured && t >= timeline.posterTime) {
         measured = true
         const rects = scene.phone ? [scene.clip, scene.phone.rect] : [scene.clip]
         minText = (await smallestText(page as never, rects)).map((s) => s.size)
@@ -263,15 +282,33 @@ export async function recordScene(ctx: DeviceContext, scene: Scene, scheme: Sche
       await sleep(8)
     }
     while (next < events.length) await events[next++]!.run()
-    await sleep(500)
+    await sleep(rest)
     await stopRecording(rec)
     rec = undefined
     await scene.check?.(page as never)
 
     const offset = began / 1000 - firstFrameAt(video)
     if (offset < 0) throw new Error(`E_MEDIA_LATE_RECORDING ${label} ${offset.toFixed(2)} s`)
+    if (ctx.fullWindow) {
+      const s = ctx.screen.scale
+      const master: Master = {
+        id: scene.slot,
+        scheme,
+        points: [area.width, area.height],
+        pixels: [area.width * s, area.height * s],
+        fps: ctx.fps,
+        start: offset,
+        duration: timeline.duration,
+        beats: timeline.beats,
+      }
+      writeFileSync(masterNote(ctx.cache, scene.slot, scheme), JSON.stringify(master, null, 2))
+      ctx.log(
+        `${label} master ${timeline.duration.toFixed(2)} s, script from ${offset.toFixed(2)} s`,
+      )
+      return
+    }
     const count = Math.round(timeline.duration * ctx.fps)
-    const dir = framesDir(ctx.cache, scene.slot, scheme)
+    const dir = framesDir(ctx.cache, (scene as Scene).slot, scheme)
     rmSync(dir, { recursive: true, force: true })
     mkdirSync(dir, { recursive: true })
     const out = scene.output
