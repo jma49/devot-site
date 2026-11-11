@@ -3,29 +3,47 @@ import { appendFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { SCHEMES, SLOTS, type Scheme, type SlotName } from '../../../src/media.ts'
+import { FILM_SCENES, FILM_SHOTS } from '../film-scenes.ts'
 import { SCENES } from '../scenes.ts'
 import { Input } from './device.ts'
+import { shotsToRecord } from './film.ts'
+import { inputHelper } from './helper.ts'
 import { demoDataDir, recordScene, type DeviceContext } from './record.ts'
 
 // pnpm media:device [slot ...]  records the clips from the real Devot app on this Mac, then run
 // `pnpm media:encode` for the same slots. It takes over the screen, pointer and keyboard while it
 // runs. DEVOT_CHECKOUT names a Devot checkout whose demo build exists: build it once with
 // `pnpm tauri dev --config <demo config>` there (docs in README "Product media").
-// DEVOT_BINARY names that build's binary; MEDIA_SCHEMES limits the run to one scheme.
+// DEVOT_BINARY names that build's binary; MEDIA_SCHEMES limits the run to one scheme; MEDIA_SCREEN
+// counts the screen to record on when there are several (0, the one with the menu bar).
+// MEDIA_FULL_WINDOW=1 records the film's whole-window masters instead (film.ts): every shot of
+// film-scenes.ts in its own schemes, or the ones named; pack them with `pnpm media:film:pack`.
 
 const root = join(import.meta.dirname, '../../..')
 const cache = process.env['MEDIA_CACHE'] ?? join(root, '.cache', 'media')
 const devotDir = process.env['DEVOT_CHECKOUT']
 const binary = process.env['DEVOT_BINARY']
-const slots = (process.argv.slice(2).length > 0 ? process.argv.slice(2) : [...SLOTS]) as SlotName[]
-const schemes = (process.env['MEDIA_SCHEMES']?.split(',') ?? [...SCHEMES]) as Scheme[]
+const fullWindow = process.env['MEDIA_FULL_WINDOW'] === '1'
+const asked = process.argv.slice(2)
+const slots = (asked.length > 0 ? asked : [...SLOTS]) as SlotName[]
+const named = process.env['MEDIA_SCHEMES']?.split(',') as Scheme[] | undefined
+const schemes = named ?? [...SCHEMES]
 if (!devotDir || !binary || !existsSync(binary)) {
   console.error('E_MEDIA_DEVICE_ARGS set DEVOT_CHECKOUT and DEVOT_BINARY to the demo build')
   process.exit(1)
 }
-if (slots.some((s) => !SCENES[s])) {
+if (!fullWindow && slots.some((s) => !SCENES[s])) {
   console.error(`E_MEDIA_ARGS slots from: ${SLOTS.join(' ')}`)
   process.exit(1)
+}
+let masters: { id: string; scheme: Scheme }[] = []
+if (fullWindow) {
+  try {
+    masters = shotsToRecord(FILM_SHOTS, asked, named)
+  } catch (error) {
+    console.error(`${(error as Error).message}; shots: ${FILM_SHOTS.map((s) => s.id).join(' ')}`)
+    process.exit(1)
+  }
 }
 mkdirSync(join(cache, 'logs'), { recursive: true })
 const log = (line: string) => {
@@ -53,10 +71,10 @@ const server = spawn(
   ],
   { cwd: devotDir, env: { ...process.env, DEVOT_DIR: devotDir }, stdio: 'ignore' },
 )
-const input = new Input(join(cache, 'bin', 'devot-input'))
+const input = new Input(inputHelper(cache))
 try {
   await input.send('trusted')
-  const [, width, height, scale] = (await input.send('screen')).split(' ').map(Number)
+  const [, width, height, scale, x, y] = (await input.send('screen')).split(' ').map(Number)
   for (let i = 0; i < 60; i++) {
     try {
       await fetch('http://localhost:5173/')
@@ -73,11 +91,23 @@ try {
     devUrl: 'http://localhost:5173',
     fps: Number(process.env['MEDIA_FPS'] ?? 30),
     input,
-    screen: { width: width!, height: height!, scale: scale! },
+    screen: {
+      width: width!,
+      height: height!,
+      scale: scale!,
+      x: x!,
+      y: y!,
+      index: Number(process.env['MEDIA_SCREEN'] ?? 0),
+    },
+    fullWindow,
     log,
   }
-  for (const slot of slots) {
-    for (const scheme of schemes) await recordScene(ctx, SCENES[slot]!, scheme)
+  if (fullWindow) {
+    for (const { id, scheme } of masters) await recordScene(ctx, FILM_SCENES[id]!, scheme)
+  } else {
+    for (const slot of slots) {
+      for (const scheme of schemes) await recordScene(ctx, SCENES[slot]!, scheme)
+    }
   }
 } finally {
   await input.send('backdrop off').catch(() => {})

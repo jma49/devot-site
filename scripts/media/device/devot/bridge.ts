@@ -36,6 +36,7 @@ const roleOf = (el) => {
     if (t === 'search') return el.getAttribute('list') ? 'combobox' : 'searchbox'
     if (t === 'checkbox') return 'checkbox'
     if (t === 'radio') return 'radio'
+    if (t === 'range') return 'slider'
     if (t === 'button' || t === 'submit') return 'button'
     return el.getAttribute('list') ? 'combobox' : 'textbox'
   }

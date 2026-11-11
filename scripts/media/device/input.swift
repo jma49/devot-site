@@ -7,11 +7,20 @@
 //   text <string>       types the string, one key per character
 //   backdrop <light|dark|off>
 //   trusted             "ok" when this process may post events (Accessibility)
-//   screen              "ok <width> <height> <scale>" of the main screen, in points
+//   screen              "ok <width> <height> <scale> <x> <y>" of the screen MEDIA_SCREEN counts
+//                       (0, the one with the menu bar, by default), in points, with its place
+//                       among the screens
+//   layout              selects the ABC keyboard layout: an input method would rewrite typed text
 import AppKit
 import ApplicationServices
+import Carbon
 
 let source = CGEventSource(stateID: .hidSystemState)
+let screenIndex = Int(ProcessInfo.processInfo.environment["MEDIA_SCREEN"] ?? "") ?? 0
+
+func targetScreen() -> NSScreen? {
+  NSScreen.screens.indices.contains(screenIndex) ? NSScreen.screens[screenIndex] : nil
+}
 var buttonDown = false
 
 func pointer() -> CGPoint { CGEvent(source: nil)?.location ?? .zero }
@@ -69,7 +78,7 @@ final class Backdrop {
   private var window: NSWindow?
 
   func show(dark: Bool) {
-    let frame = NSScreen.main?.frame ?? .zero
+    let frame = targetScreen()?.frame ?? .zero
     let window =
       self.window
       ?? NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
@@ -78,7 +87,7 @@ final class Backdrop {
     window.hasShadow = false
     window.ignoresMouseEvents = true
     window.collectionBehavior = [.canJoinAllSpaces, .stationary]
-    let view = NSView(frame: frame)
+    let view = NSView(frame: NSRect(origin: .zero, size: frame.size))
     view.wantsLayer = true
     let gradient = CAGradientLayer()
     gradient.frame = view.bounds
@@ -104,6 +113,20 @@ final class Backdrop {
 
 let backdrop = Backdrop()
 
+func selectABC() -> Bool {
+  let wanted = "com.apple.keylayout.ABC"
+  let filter = [kTISPropertyInputSourceID as String: wanted] as CFDictionary
+  guard
+    let list = TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource],
+    let abc = list.first
+  else { return false }
+  TISSelectInputSource(abc)
+  usleep(150_000)
+  let current = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+  guard let raw = TISGetInputSourceProperty(current, kTISPropertyInputSourceID) else { return false }
+  return Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue() as String == wanted
+}
+
 func run(_ line: String) -> String {
   let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
   let rest = parts.count > 1 ? parts[1] : ""
@@ -112,9 +135,13 @@ func run(_ line: String) -> String {
   case "trusted":
     return CGPreflightPostEventAccess() ? "ok" : "error untrusted"
   case "screen":
-    let screen = DispatchQueue.main.sync { NSScreen.main }
-    guard let screen else { return "error screen" }
-    return "ok \(Int(screen.frame.width)) \(Int(screen.frame.height)) \(screen.backingScaleFactor)"
+    let screens = DispatchQueue.main.sync { (targetScreen(), NSScreen.screens.first) }
+    guard let screen = screens.0, let first = screens.1 else { return "error screen" }
+    // Pointer and window positions count down from the top left of the first screen.
+    let frame = screen.frame
+    let top = Int(first.frame.maxY - frame.maxY)
+    return
+      "ok \(Int(frame.width)) \(Int(frame.height)) \(screen.backingScaleFactor) \(Int(frame.minX)) \(top)"
   case "move":
     guard args.count == 2, let x = Double(args[0]), let y = Double(args[1]) else {
       return "error args"
@@ -131,6 +158,8 @@ func run(_ line: String) -> String {
     key(code, flags(args.count > 1 ? args[1] : ""))
   case "text":
     type(rest.replacingOccurrences(of: "\\n", with: "\n"))
+  case "layout":
+    return DispatchQueue.main.sync { selectABC() } ? "ok" : "error layout"
   case "backdrop":
     DispatchQueue.main.sync {
       if rest == "off" { backdrop.hide() } else { backdrop.show(dark: rest == "dark") }
