@@ -57,6 +57,35 @@ const draws = (page: Page) =>
   page.evaluate(() => (window as unknown as { glDraws: Draw[] }).glDraws.slice())
 const contexts = (page: Page) =>
   page.evaluate(() => (window as unknown as { glContexts: number }).glContexts)
+/**
+ * Has the page find KHR_parallel_shader_compile, with every program reported as built: the sky
+ * behind the page builds its shader only beside the main thread, which the test browsers'
+ * software GL does not offer.
+ */
+async function buildBeside(page: Page) {
+  await page.addInitScript(() => {
+    const COMPLETION_STATUS_KHR = 0x91b1
+    const proto = WebGLRenderingContext.prototype
+    const getExtension = proto.getExtension as (
+      this: WebGLRenderingContext,
+      name: string,
+    ) => unknown
+    const getProgramParameter = proto.getProgramParameter
+    proto.getExtension = function (this: WebGLRenderingContext, name: string) {
+      return name === 'KHR_parallel_shader_compile'
+        ? { COMPLETION_STATUS_KHR }
+        : getExtension.call(this, name)
+    } as typeof proto.getExtension
+    proto.getProgramParameter = function (
+      this: WebGLRenderingContext,
+      program: WebGLProgram,
+      name: number,
+    ) {
+      return name === COMPLETION_STATUS_KHR ? true : getProgramParameter.call(this, program, name)
+    } as typeof getProgramParameter
+  })
+}
+
 const hero = (page: Page) => page.locator('[data-hero]')
 const sky = (page: Page) => page.locator('[data-page-sky]')
 const skyIs = (page: Page, kind: 'webgl' | 'css') => () =>
@@ -346,6 +375,7 @@ test.describe('WebGL sky behind the page', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.install()
     await watchWebgl(page, GPU)
+    await buildBeside(page)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
     await advanceUntil(page, backdropIs(page, 'webgl'))
@@ -447,14 +477,15 @@ test('keeps the CSS sky behind the page, and still, on a software renderer', asy
   expect(await draws(page)).toEqual([])
 })
 
-// A browser without KHR_parallel_shader_compile builds a shader on the main thread. Where the
-// hero's took long, a second build would freeze the page in the middle of a scroll.
-test('builds no second shader for the sky where the first held the page up', async ({ page }) => {
+// A browser without KHR_parallel_shader_compile builds a shader on the main thread, and a second
+// build there would hold the page in the middle of a scroll.
+test('builds no second shader for the sky where shaders are built on the main thread', async ({
+  page,
+}) => {
   await page.setViewportSize(DESKTOP)
   await watchWebgl(page, GPU)
   await page.addInitScript(() => {
     const proto = WebGLRenderingContext.prototype
-    const { linkProgram } = proto
     const getExtension = proto.getExtension as (
       this: WebGLRenderingContext,
       name: string,
@@ -462,11 +493,6 @@ test('builds no second shader for the sky where the first held the page up', asy
     proto.getExtension = function (this: WebGLRenderingContext, name: string) {
       return name === 'KHR_parallel_shader_compile' ? null : getExtension.call(this, name)
     } as typeof proto.getExtension
-    proto.linkProgram = function (this: WebGLRenderingContext, program: WebGLProgram) {
-      const until = performance.now() + 400
-      while (performance.now() < until);
-      linkProgram.call(this, program)
-    }
   })
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
@@ -476,6 +502,6 @@ test('builds no second shader for the sky where the first held the page up', asy
   await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'running')
   await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
   expect(await contexts(page)).toBe(1)
-  // The CSS sky goes on drifting: this is a slow build, not a missing GPU.
+  // The CSS sky goes on drifting: this is not a missing GPU.
   await expect(page.locator('html')).not.toHaveAttribute('data-aurora-still')
 })

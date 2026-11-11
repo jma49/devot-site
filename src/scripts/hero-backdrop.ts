@@ -395,19 +395,17 @@ interface Renderer {
   draw(seconds: number): void
   lost(): boolean
   release(): void
-  /** Milliseconds the main thread waited for the shaders to build; 0 where they build beside it. */
-  held: number
+  /** Whether the shaders were built beside the main thread (KHR_parallel_shader_compile). */
+  beside: boolean
 }
 
 /**
- * The longest the first shader may have held the main thread for a second one to be built on the
- * same page. A browser without KHR_parallel_shader_compile builds a shader on the main thread;
- * where that takes long (seconds on a software GL), a second build would freeze the page again,
- * in the middle of a scroll.
+ * Whether the first shader built on this page was built beside the main thread; null where there
+ * was none to build with. A browser without KHR_parallel_shader_compile builds a shader on the
+ * main thread, and a second build there would hold the page in the middle of a scroll, for
+ * seconds on a software GL.
  */
-export const BUILD_BUDGET = 250
-/** How long the first shader built on this page held the main thread. */
-let firstBuild: Promise<number> | null = null
+let firstBuild: Promise<boolean | null> | null = null
 
 /** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
 function rendererName(gl: WebGLRenderingContext): string {
@@ -460,7 +458,6 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     return created
   }
   const parallel = gl.getExtension('KHR_parallel_shader_compile')
-  const started = performance.now()
   const vertex = shader(gl.VERTEX_SHADER, VERTEX)
   const fragment = shader(gl.FRAGMENT_SHADER, FRAGMENT)
   const program = gl.createProgram()
@@ -468,9 +465,7 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
   await built(gl, program, parallel)
-  const linked: unknown = gl.getProgramParameter(program, gl.LINK_STATUS)
-  const held = parallel ? 0 : performance.now() - started
-  if (!linked) {
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     const compiled = [vertex, fragment].every((part) =>
       gl.getShaderParameter(part, gl.COMPILE_STATUS),
     )
@@ -527,7 +522,7 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     release: () => {
       if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
-    held,
+    beside: parallel !== null,
   }
 }
 
@@ -568,8 +563,8 @@ export interface BackdropParts {
   /** When the sky can be seen, if that is not simply when the stage is on screen. */
   inView?: Sight
   /**
-   * Builds no shader where the first one on the page held the main thread for longer than
-   * `BUILD_BUDGET`: the CSS layers stay.
+   * Builds no shader where the first one on the page was built on the main thread: the CSS layers
+   * stay.
    */
   thrifty?: boolean
 }
@@ -705,11 +700,11 @@ export function startBackdrop({
     sync()
   }
   const build = async () => {
-    if (thrifty && firstBuild !== null && (await firstBuild) > BUILD_BUDGET) return
+    if (thrifty && firstBuild !== null && (await firstBuild) === false) return
     const made = createRenderer(canvas, soft)
     firstBuild ??= made.then(
-      (created) => created?.held ?? 0,
-      () => 0,
+      (created) => created?.beside ?? null,
+      () => null,
     )
     made.then(begin, (error: unknown) => {
       console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
