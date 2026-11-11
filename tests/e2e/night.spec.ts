@@ -83,6 +83,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sky).toHaveCSS('position', 'fixed')
       await expect(sky).toHaveCSS('pointer-events', 'none')
       await expect(sky).toHaveAttribute('aria-hidden', 'true')
+      // The page's one canvas lies in it: the hero has none of its own.
+      await expect(page.locator('canvas')).toHaveCount(1)
+      await expect(sky.locator('canvas')).toHaveCount(1)
 
       // Fixed under the scrolling page, the sky is put together again on every scrolled frame:
       // an opacity on the whole of it or a filter inside it doubles that frame where no GPU

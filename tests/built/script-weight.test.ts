@@ -51,15 +51,16 @@ describe('the home page script weight', () => {
     expect(total(chunks)).toBeLessThanOrEqual(ALL_SCRIPTS)
   })
 
-  it('loads the WebGL backdrop as a chunk of its own, only when the hero or the sky asks for it', () => {
+  it('loads the WebGL backdrop as a chunk of its own, once, when the sky asks for it', () => {
     const webgl = chunks.filter((file) => WEBGL.test(readRepoFile(file)))
     expect(webgl).toHaveLength(1)
     const [backdrop = ''] = webgl
     const firstLoaded = new Set(entries.flatMap((entry) => [...firstLoad(entry)]))
     expect(firstLoaded).not.toContain(backdrop)
-    expect(imports(heroEntry ?? '', DYNAMIC_IMPORT)).toContain(backdrop)
-    const skyEntry = entries.find((file) => /\/PageSky\.astro_/.test(file))
-    expect(imports(skyEntry ?? '', DYNAMIC_IMPORT)).toContain(backdrop)
+    // The hero shows the sky's canvas, so only the sky's script starts the shader.
+    const asking = entries.filter((entry) => imports(entry, DYNAMIC_IMPORT).includes(backdrop))
+    expect(asking).toHaveLength(1)
+    expect(asking[0]).toMatch(/\/PageSky\.astro_/)
   })
 
   it('imports the backdrop without preloading what the page has already loaded', () => {

@@ -1,7 +1,7 @@
 /*
- * The hero: an aurora over Devot's Tide gradient, drawn by hero-backdrop.ts over the CSS aurora
- * that stands in without WebGL, and the app in a glass-set window that stands up as the page
- * scrolls. hero.ts writes the
+ * The hero: an aurora over Devot's Tide gradient and the app in a glass-set window that stands up
+ * as the page scrolls. The aurora is the CSS one here until hero-backdrop.ts draws the page's sky
+ * (sky.css) with its shader, and from then on that sky, seen through the hero. hero.ts writes the
  * scroll state into the --hero-* variables below; with reduced motion they keep their final values.
  */
 .hero {
@@ -70,7 +70,6 @@
 }
 
 .hero-sky,
-.hero-canvas,
 .hero-grain,
 .hero-sheen {
   position: absolute;
@@ -82,26 +81,32 @@
   transform: translate3d(0, calc(var(--hero-sky) * 1px), 0);
 }
 
-/* The CSS aurora (aurora.css) stands in until the canvas fades in over it, then stops moving;
-   it also holds still while the hero is off screen or in a hidden tab. */
+/* The CSS aurora (aurora.css) holds still while the hero is off screen or in a hidden tab. */
 .hero[data-backdrop-state='idle'] .aurora-band {
   animation-play-state: paused;
 }
 
-.hero[data-backdrop='webgl'] .hero-fallback .aurora-band {
-  visibility: hidden;
-  transition: visibility 0s linear var(--site-dur-media);
-  animation-play-state: paused;
+/*
+ * Once the shader draws the sky behind the page, that canvas is the hero's sky too: it lies under
+ * the whole page, so the hero's own CSS sky and the ground under it make way. So do the grain,
+ * since a blend cannot reach a layer outside the hero, and the dome, which thins out with the sky
+ * as one layer under the mask: the shader draws both with its sky. The sheen stays, over the
+ * shader's sky. hero-backdrop.ts lays that sky out in the CSS sky's box and follows its trail and
+ * its entrance, so it stands where the CSS one stood (HERO_SKY, HERO_DOME).
+ */
+.hero[data-backdrop='webgl'] .hero-backdrop {
+  background: none;
 }
 
-.hero-canvas {
-  width: 100%;
-  height: 100%;
+.hero[data-backdrop='webgl'] .hero-sky,
+.hero[data-backdrop='webgl'] .hero-grain,
+.hero[data-backdrop='webgl'] .hero-dome {
+  visibility: hidden;
   opacity: 0;
 }
 
-.hero[data-backdrop='webgl'] .hero-canvas {
-  opacity: 1;
+.hero[data-backdrop='webgl'] .aurora-band {
+  animation-play-state: paused;
 }
 
 /* Film grain over the light, so the gradient reads as a surface rather than a screen. */
@@ -354,10 +359,14 @@
    window and its poster paint at full opacity from the first frame, so the hero is never empty
    and the poster is the largest paint. */
 @media (prefers-reduced-motion: no-preference) {
-  /* The canvas fades in only: one that has given its context back is blank, and would show as
-     a flash of white if it faded out. */
-  .hero[data-backdrop='webgl'] .hero-canvas {
-    transition: opacity var(--site-dur-media) var(--site-ease-text);
+  /* The CSS sky fades out once the canvas under it has faded in (sky.css), and only out: a canvas
+     that has given its context back is blank, so the CSS sky is back over it at once. */
+  .hero[data-backdrop='webgl'] .hero-sky,
+  .hero[data-backdrop='webgl'] .hero-grain,
+  .hero[data-backdrop='webgl'] .hero-dome {
+    transition:
+      opacity var(--site-dur-media) var(--site-ease-text) var(--site-dur-media),
+      visibility 0s linear calc(2 * var(--site-dur-media));
   }
 
   .hero-sky {
@@ -502,7 +511,8 @@
 /*
  * The night. The home page wears the dark appearance whatever the reader's scheme (data-scope on
  * its root, see site-tokens.css): the hero's sky is the brightest part of it, and gives way to
- * the page's own fainter sky below (sky.css).
+ * the page's own fainter sky below (sky.css). The shader fades its hero sky over the same stretch
+ * (HERO_SKY in hero-backdrop.ts).
  */
 
 /* The sky stays whole down to where the window dissolves, so the window never fades out over a

@@ -235,8 +235,7 @@ test.describe('the glass bar over the page, dark, at 1440', () => {
 })
 
 // The sky behind the page is fixed to the viewport, so every line that lies on it passes its
-// brightest point as the page scrolls. The CSS sky is measured: the shader draws the same sky no
-// brighter.
+// brightest point as the page scrolls: the CSS sky's, and further down the shader's.
 
 /** The WCAG relative luminance of each colour as the browser resolves it. */
 const colourLuminance = (page: Page, colours: Record<string, string>) =>
@@ -246,6 +245,9 @@ const colourLuminance = (page: Page, colours: Record<string, string>) =>
     canvas.height = 1
     const context = canvas.getContext('2d', { willReadFrequently: true })!
     const probe = document.createElement('span')
+    // With reduced motion every element has a transition of a hundredth of a millisecond, and a
+    // colour read right after it is set would still be the one before it.
+    probe.style.setProperty('transition', 'none')
     document.body.append(probe)
     const out: Record<string, number> = {}
     for (const [name, value] of Object.entries(entries)) {
@@ -338,6 +340,72 @@ for (const viewport of [
     }
   })
 }
+
+// The shader lays the veil over its own sky behind the page, so its strength is measured too, as
+// drawn: the flow is set to moments spread over three minutes of it.
+test('the shader’s sky behind the page keeps text, muted text and links at 4.5:1 at its brightest', async ({
+  page,
+}) => {
+  test.slow()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.install()
+  // Names a GPU, since the test browsers draw on a software renderer the page refuses, and lets
+  // the test choose the flow time the shader draws.
+  await page.addInitScript(() => {
+    const state = window as unknown as { skyFlow?: number }
+    const proto = WebGLRenderingContext.prototype
+    const { getParameter, getUniformLocation, uniform1f } = proto
+    let time: WebGLUniformLocation | null = null
+    proto.getParameter = function (this: WebGLRenderingContext, parameter: number) {
+      // UNMASKED_RENDERER_WEBGL from WEBGL_debug_renderer_info.
+      return parameter === 0x9246 ? 'Test GPU' : getParameter.call(this, parameter)
+    }
+    proto.getUniformLocation = function (this: WebGLRenderingContext, program, name) {
+      const location = getUniformLocation.call(this, program, name)
+      if (name === 'uTime') time = location
+      return location
+    }
+    proto.uniform1f = function (this: WebGLRenderingContext, location, value) {
+      uniform1f.call(this, location, location === time ? (state.skyFlow ?? value) : value)
+    }
+  })
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
+  await page.goto('/')
+  const sky = page.locator('[data-page-sky]')
+  for (let ran = 0; (await sky.getAttribute('data-backdrop')) !== 'webgl'; ran += 100) {
+    if (ran > 20_000) throw new Error('E_NO_SHADER the sky never took the shader')
+    await page.clock.runFor(100)
+  }
+  const tiers = await colourLuminance(page, {
+    text: 'var(--site-color-text)',
+    muted: 'var(--site-color-text-muted)',
+    link: 'var(--site-color-link)',
+  })
+  // The sky alone, as it lies behind the sections: with the hero gone the whole of it is theirs.
+  await page.evaluate(() => {
+    for (const part of document.querySelectorAll<HTMLElement>(
+      'main > section, body > footer, body > header, [data-download-pill]',
+    )) {
+      part.style.setProperty('display', 'none', 'important')
+    }
+  })
+  await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '1')
+
+  let brightest = 0
+  for (let moment = 0; moment < 16; moment++) {
+    await page.evaluate((flow) => {
+      ;(window as unknown as { skyFlow: number }).skyFlow = flow
+    }, moment * 11.3)
+    await page.clock.runFor(200)
+    brightest = Math.max(brightest, await brightestPatch(page))
+  }
+  await expect(sky).toHaveAttribute('data-backdrop', 'webgl')
+  // A sky that was hidden with the rest would pass at any strength.
+  expect(brightest).toBeGreaterThan(0.015)
+  for (const [tier, luminance] of Object.entries(tiers)) {
+    expect((luminance + 0.05) / (brightest + 0.05), tier).toBeGreaterThanOrEqual(4.5)
+  }
+})
 
 // The footer's labels are the faintest tier, which the sky alone would not carry.
 test('the footer keeps every line at 4.5:1 on the ground the night comes down to', async ({

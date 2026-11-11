@@ -1,7 +1,5 @@
-import { afterFirstPaint } from '../lib/first-paint.ts'
 import { setVar } from '../lib/motion.ts'
 import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
-import { WEBGL_QUERY } from '../lib/webgl.ts'
 import { mirrorPlayback } from './hero-phone.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
@@ -73,34 +71,16 @@ function applyScroll(hero: HTMLElement, state: HeroScroll, written: Map<string, 
 
 /**
  * Starts the hero: the first-scroll choreography that hero.css draws from the `--hero-*`
- * variables, the iPhone's recording, which plays whenever the hero clip does, and the WebGL
- * backdrop, which loads once the page has painted with the CSS gradient standing in for it.
+ * variables, and the iPhone's recording, which plays whenever the hero clip does. Its sky is the
+ * page's (page-sky.ts), which reads how far it trails the page from `--hero-sky`.
  */
 export function startHero(root: ParentNode = document): void {
   const hero = root.querySelector<HTMLElement>('[data-hero]')
-  const canvas = hero?.querySelector<HTMLCanvasElement>('[data-hero-canvas]')
-  const light = hero?.querySelector<HTMLElement>('[data-backdrop-source="light"]')
-  const dark = hero?.querySelector<HTMLElement>('[data-backdrop-source="dark"]')
-  if (!hero || !canvas || !light || !dark) return
+  if (!hero) return
 
   const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
   const phone = hero.querySelector<HTMLVideoElement>('[data-hero-phone]')
   if (clip && phone) mirrorPlayback(clip, phone)
-
-  afterFirstPaint(() => {
-    import('./hero-backdrop.ts')
-      .then(({ startBackdrop }) =>
-        startBackdrop({
-          stage: hero,
-          canvas,
-          sources: { light, dark },
-          webgl: window.matchMedia(WEBGL_QUERY).matches,
-        }),
-      )
-      .catch((error: unknown) =>
-        console.warn('W_HERO_BACKDROP_LOAD', error instanceof Error ? error.name : 'unknown'),
-      )
-  })
 
   scrollEffects(() => {
     let height = hero.offsetHeight
