@@ -15,6 +15,8 @@ const SWAY = 12_000
 interface Draw {
   /** `performance.now()` at the draw. */
   at: number
+  /** Which frame the draw belongs to: a frame sets the flow time once, then draws once or twice. */
+  frame: number
   /** The flow time the shader drew. */
   flow: number
   /** 1 for the soft sky behind the page under its veil, 0 for the hero's. */
@@ -49,6 +51,7 @@ async function watchWebgl(page: Page, renderer: string) {
     const names = new WeakMap<WebGLUniformLocation, string>()
     const set: Record<string, number[]> = {}
     let rows: [number, number] = [0, 0]
+    let frame = 0
     HTMLCanvasElement.prototype.getContext = function (
       this: HTMLCanvasElement,
       ...args: Parameters<HTMLCanvasElement['getContext']>
@@ -68,6 +71,7 @@ async function watchWebgl(page: Page, renderer: string) {
     const keep = (location: WebGLUniformLocation | null, values: number[]) => {
       const uniform = location ? names.get(location) : undefined
       if (uniform) set[uniform] = values
+      if (uniform === 'uTime') frame += 1
     }
     proto.uniform1f = function (this: WebGLRenderingContext, location, x) {
       keep(location, [x])
@@ -90,6 +94,7 @@ async function watchWebgl(page: Page, renderer: string) {
       const one = (uniform: string, at = 0) => set[uniform]?.[at] ?? Number.NaN
       record.glDraws.push({
         at: performance.now(),
+        frame,
         flow: one('uTime'),
         soft: one('uSoft'),
         rows,
@@ -115,7 +120,7 @@ const contexts = (page: Page) =>
 const lastFrame = (page: Page) =>
   page.evaluate(() => {
     const seen = (window as unknown as { glDraws: Draw[] }).glDraws
-    return seen.slice(-2).filter(({ at }) => at === seen.at(-1)?.at)
+    return seen.slice(-2).filter(({ frame }) => frame === seen.at(-1)?.frame)
   })
 /** Whether the last frame drew only the hero's sky (`0`) or only the page's (`1`), whole. */
 const drawsOnly = (page: Page, soft: 0 | 1) => async () => {
