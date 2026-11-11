@@ -71,6 +71,7 @@ describe('the sky behind the page', () => {
 
   it('draws the soft sky, and only once a part under it is on screen', () => {
     expect(script).toMatch(/soft: true/)
+    expect(script).toMatch(/thrifty: true/)
     expect(script).toContain("'main > section:not([data-hero]), body > footer'")
     expect(script).toMatch(/import\('\.\/hero-backdrop\.ts'\)/)
     expect(script).not.toMatch(/^import .*hero-backdrop/m)

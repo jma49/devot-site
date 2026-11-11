@@ -390,7 +390,19 @@ interface Renderer {
   draw(seconds: number): void
   lost(): boolean
   release(): void
+  /** Milliseconds the main thread waited for the shaders to build; 0 where they build beside it. */
+  held: number
 }
+
+/**
+ * The longest the first shader may have held the main thread for a second one to be built on the
+ * same page. A browser without KHR_parallel_shader_compile builds a shader on the main thread;
+ * where that takes long (seconds on a software GL), a second build would freeze the page again,
+ * in the middle of a scroll.
+ */
+export const BUILD_BUDGET = 250
+/** How long the first shader built on this page held the main thread. */
+let firstBuild: Promise<number> | null = null
 
 /** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
 function rendererName(gl: WebGLRenderingContext): string {
@@ -405,8 +417,11 @@ function rendererName(gl: WebGLRenderingContext): string {
  * Resolves once the driver has finished building `program`. Where it can build in the background
  * (KHR_parallel_shader_compile), this waits a frame at a time instead of blocking the main thread.
  */
-function built(gl: WebGLRenderingContext, program: WebGLProgram): Promise<void> {
-  const parallel = gl.getExtension('KHR_parallel_shader_compile')
+function built(
+  gl: WebGLRenderingContext,
+  program: WebGLProgram,
+  parallel: KHR_parallel_shader_compile | null,
+): Promise<void> {
   if (!parallel) return Promise.resolve()
   return new Promise((resolve) => {
     const poll = () => {
@@ -439,14 +454,18 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     gl.compileShader(created)
     return created
   }
+  const parallel = gl.getExtension('KHR_parallel_shader_compile')
+  const started = performance.now()
   const vertex = shader(gl.VERTEX_SHADER, VERTEX)
   const fragment = shader(gl.FRAGMENT_SHADER, FRAGMENT)
   const program = gl.createProgram()
   gl.attachShader(program, vertex)
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
-  await built(gl, program)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+  await built(gl, program, parallel)
+  const linked: unknown = gl.getProgramParameter(program, gl.LINK_STATUS)
+  const held = parallel ? 0 : performance.now() - started
+  if (!linked) {
     const compiled = [vertex, fragment].every((part) =>
       gl.getShaderParameter(part, gl.COMPILE_STATUS),
     )
@@ -503,6 +522,7 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     release: () => {
       if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
+    held,
   }
 }
 
@@ -542,6 +562,11 @@ export interface BackdropParts {
   soft?: boolean
   /** When the sky can be seen, if that is not simply when the stage is on screen. */
   inView?: Sight
+  /**
+   * Builds no shader where the first one on the page held the main thread for longer than
+   * `BUILD_BUDGET`: the CSS layers stay.
+   */
+  thrifty?: boolean
 }
 
 export interface BackdropHandle {
@@ -566,6 +591,7 @@ export function startBackdrop({
   pause = browserPause(),
   soft = false,
   inView,
+  thrifty = false,
 }: BackdropParts): BackdropHandle {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
@@ -663,12 +689,19 @@ export function startBackdrop({
     }
     sync()
   }
-  if (webgl) {
-    createRenderer(canvas, soft).then(begin, (error: unknown) => {
+  const build = async () => {
+    if (thrifty && firstBuild !== null && (await firstBuild) > BUILD_BUDGET) return
+    const made = createRenderer(canvas, soft)
+    firstBuild ??= made.then(
+      (created) => created?.held ?? 0,
+      () => 0,
+    )
+    made.then(begin, (error: unknown) => {
       console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
       begin(null)
     })
   }
+  if (webgl) void build()
 
   const onScreen: Sight = (report) => {
     // Several changes can arrive at once; the last is where the stage stands now.

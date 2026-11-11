@@ -256,10 +256,11 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
   test('does not judge the GPU by frames the page scrolls in, or the ones just after', async ({
     page,
   }) => {
+    test.slow()
     await page.clock.install()
     await watchWebgl(page, GPU)
-    // Frames reach the page twice as far apart as the fake clock's 16 ms, and each one scrolls
-    // while `scrolling` is set.
+    // Frames reach the page twice as far apart as the fake clock's 16 ms, and the page scrolls
+    // in steps while `scrolling` is set.
     await page.addInitScript(() => {
       const state = window as unknown as { scrolling: boolean }
       state.scrolling = true
@@ -277,7 +278,8 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     await page.goto('/')
 
     await advanceUntil(page, backdropIs(page, 'webgl'))
-    await page.clock.runFor(4000)
+    // Twice the frames the check reads.
+    await page.clock.runFor(2500)
     await expect(hero(page)).toHaveAttribute('data-backdrop', 'webgl')
 
     // At rest the same frames show a GPU that cannot keep up.
@@ -423,4 +425,37 @@ test('keeps the CSS sky behind the page, and still, on a software renderer', asy
   await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
   await expect(page.locator('html')).toHaveAttribute('data-aurora-still', '')
   expect(await draws(page)).toEqual([])
+})
+
+// A browser without KHR_parallel_shader_compile builds a shader on the main thread. Where the
+// hero's took long, a second build would freeze the page in the middle of a scroll.
+test('builds no second shader for the sky where the first held the page up', async ({ page }) => {
+  await page.setViewportSize(DESKTOP)
+  await watchWebgl(page, GPU)
+  await page.addInitScript(() => {
+    const proto = WebGLRenderingContext.prototype
+    const { linkProgram } = proto
+    const getExtension = proto.getExtension as (
+      this: WebGLRenderingContext,
+      name: string,
+    ) => unknown
+    proto.getExtension = function (this: WebGLRenderingContext, name: string) {
+      return name === 'KHR_parallel_shader_compile' ? null : getExtension.call(this, name)
+    } as typeof proto.getExtension
+    proto.linkProgram = function (this: WebGLRenderingContext, program: WebGLProgram) {
+      const until = performance.now() + 400
+      while (performance.now() < until);
+      linkProgram.call(this, program)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/')
+  await expect(hero(page)).toHaveAttribute('data-backdrop', 'webgl')
+
+  await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+  await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'running')
+  await expect(sky(page)).toHaveAttribute('data-backdrop', 'css')
+  expect(await contexts(page)).toBe(1)
+  // The CSS sky goes on drifting: this is a slow build, not a missing GPU.
+  await expect(page.locator('html')).not.toHaveAttribute('data-aurora-still')
 })

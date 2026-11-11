@@ -51,7 +51,14 @@ export function startPageSky(root: ParentNode = document): void {
   const begin = () => {
     import('./hero-backdrop.ts')
       .then(({ startBackdrop }) =>
-        startBackdrop({ stage: sky, canvas, sources: { light, dark }, soft: true, inView }),
+        startBackdrop({
+          stage: sky,
+          canvas,
+          sources: { light, dark },
+          soft: true,
+          thrifty: true,
+          inView,
+        }),
       )
       .catch((error: unknown) =>
         console.warn('W_SKY_BACKDROP_LOAD', error instanceof Error ? error.name : 'unknown'),
