@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
-import { jsonLd, structuredData } from '../../src/lib/structured-data.ts'
+import { jsonLd, LOGO_PATH, structuredData } from '../../src/lib/structured-data.ts'
 import {
   DOWNLOAD_URL,
   LICENCE_AMOUNT,
@@ -8,6 +8,7 @@ import {
   LICENCE_PRICE,
   OG_IMAGE,
   PLATFORM,
+  REPO_URL,
   SITE_URL,
 } from '../../src/site.ts'
 
@@ -58,4 +59,18 @@ it('serialises to JSON that cannot close its script element', () => {
   const text = jsonLd({ note: '</script><script>alert(1)</script>' })
   expect(text).not.toContain('<')
   expect(JSON.parse(text)).toEqual({ note: '</script><script>alert(1)</script>' })
+})
+
+it('names Devot as the organisation behind the app and the site, tied to its repository', () => {
+  const organization = graph.find((node) => node['@type'] === 'Organization')
+  expect(organization).toMatchObject({
+    name: en.siteName,
+    url: SITE_URL,
+    logo: new URL(LOGO_PATH, SITE_URL).href,
+    sameAs: [REPO_URL],
+  })
+  const id = organization?.['@id']
+  expect(id).toBe(`${SITE_URL}#organization`)
+  expect(app).toMatchObject({ publisher: { '@id': id } })
+  expect(site).toMatchObject({ publisher: { '@id': id } })
 })
