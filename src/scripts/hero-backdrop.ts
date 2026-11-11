@@ -179,10 +179,7 @@ export const HERO_SKY = { overhang: 0.12, fade: 0.16, trail: '--hero-sky' } as c
  * the hero's fade, as one layer, so the shader draws it with the sky.
  */
 export const HERO_DOME = { reach: 0.3, height: 0.46, solid: 0.58, shown: '--hero-dome' } as const
-/**
- * The hero's box in the window, written to the sky behind the page for the film grain sky.css lays
- * over the hero's sky.
- */
+/** The hero's box in the page, written to the film grain sky.css lays over the hero's sky. */
 export const HERO_BOX = { top: '--sky-hero-top', height: '--sky-hero-height' } as const
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
@@ -720,6 +717,8 @@ export interface BackdropParts {
    */
   hero: HTMLElement
   heroSky: HTMLElement
+  /** The film grain that lies over the shader's sky where the hero is, in the hero's box. */
+  grain: HTMLElement
   /** False keeps the CSS layers and only tracks whether they should move. */
   webgl?: boolean
   /** The reader's pause: while it holds, the flow stops where it is. */
@@ -750,6 +749,7 @@ export function startBackdrop({
   sources,
   hero,
   heroSky,
+  grain,
   webgl = true,
   pause = browserPause(),
 }: BackdropParts): BackdropHandle {
@@ -823,6 +823,8 @@ export function startBackdrop({
   const measure = () => {
     const box = hero.getBoundingClientRect()
     place = { top: box.top + window.scrollY, height: box.height }
+    grain.style.setProperty(HERO_BOX.top, `${place.top}px`)
+    grain.style.setProperty(HERO_BOX.height, `${place.height}px`)
   }
 
   /** Where the hero stands now, and its sky and dome as hero.css would show them. */
@@ -845,18 +847,13 @@ export function startBackdrop({
 
   const layOut = () => {
     const size = renderSize(canvas.clientWidth, canvas.clientHeight)
-    const view = heroView()
-    const passes = skyPasses(size, canvas.clientWidth, view)
-    return { size, passes, view, key: JSON.stringify([size, passes]) }
+    const passes = skyPasses(size, canvas.clientWidth, heroView())
+    return { size, passes, key: JSON.stringify([size, passes]) }
   }
 
-  const draw = ({ size, passes, view, key } = layOut()) => {
+  const draw = ({ size, passes, key } = layOut()) => {
     if (!renderer) return
     if (renderer.lost()) return drop()
-    if (key !== drawn) {
-      stage.style.setProperty(HERO_BOX.top, `${view.top}px`)
-      stage.style.setProperty(HERO_BOX.height, `${view.height}px`)
-    }
     drawn = key
     const cost = renderer.draw(flow, size, passes, costs !== null)
     if (!costs) return

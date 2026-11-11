@@ -632,7 +632,7 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
         await expect(page.locator(part)).toHaveCSS('transition-duration', '0s')
         await expect(page.locator(part)).toHaveCSS('visibility', 'visible')
       }
-      await expect(page.locator('.page-sky__grain')).toHaveCSS('visibility', 'hidden')
+      await expect(page.locator('.sky-grain')).toHaveCSS('visibility', 'hidden')
       await expect(page.locator('.hero-sky')).toHaveCSS('opacity', '1')
       const held = await drawCount(page)
       await page.clock.runFor(1000)
@@ -691,10 +691,10 @@ for (const build of ['beside the main thread', 'on the main thread, as in Safari
     })
 
     // The canvas holds half the page's pixels or fewer, and a grain drawn on it is as coarse.
-    test('lays the hero’s film grain over the canvas at the display’s own pixels, and moves it with the hero', async ({
+    test('lays the hero’s film grain over the canvas at the display’s own pixels, and scrolls it with the hero', async ({
       page,
     }) => {
-      const grain = page.locator('.page-sky__grain')
+      const grain = page.locator('.sky-grain')
       await expect(grain).toHaveCSS('visibility', 'visible')
       await expect(grain).toHaveCSS('mix-blend-mode', 'soft-light')
       await expect(grain).toHaveCSS('background-size', '200px 200px')
@@ -708,16 +708,17 @@ for (const build of ['beside the main thread', 'on the main thread, as in Safari
           box !== null &&
           Math.abs(layer.y - box.y) < 1 &&
           Math.abs(layer.height - box.height) < 1 &&
-          layer.width === DESKTOP.width
+          layer.width === box.width
         )
       }
       await advanceUntil(page, over)
 
+      // It lies in the page, not in the sky fixed to the window: nothing has to move it.
+      await expect(grain).toHaveCSS('position', 'absolute')
+      await expect(grain).toHaveCSS('transform', 'none')
       await page.evaluate(() => window.scrollTo(0, 240))
-      await advanceUntil(
-        page,
-        async () => ((await hero(page).boundingBox())?.y ?? 0) === -240 && (await over()),
-      )
+      expect((await hero(page).boundingBox())?.y).toBe(-240)
+      expect(await over()).toBe(true)
     })
 
     test('flows soft behind every section, on the one context, and gives the hero its sky back', async ({

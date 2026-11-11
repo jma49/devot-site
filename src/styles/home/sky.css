@@ -9,9 +9,6 @@
 .page-sky {
   /* The share of the page colour laid over the sky; what is left is the sky's strength. */
   --sky-veil: 53%;
-  /* The hero's box in the window, which hero-backdrop.ts writes here once its shader draws. */
-  --sky-hero-top: 0px;
-  --sky-hero-height: 0px;
 
   position: fixed;
   inset: 0;
@@ -75,22 +72,26 @@
 }
 
 /*
- * The hero's film grain over the shader's sky: the hero's own cannot blend with a canvas outside
- * the hero. hero-backdrop.ts writes the hero's box in the window to the sky, and the grain thins
- * out across the hero's lower edge as the shader's hero sky does (HERO_SKY).
+ * The hero's film grain over the shader's sky. The hero's own cannot blend with a canvas outside
+ * the hero, so this one lies in the page's own layers, straight over the sky: it stands in the
+ * hero's box in the page, which hero-backdrop.ts writes to it, scrolls with the page as the hero
+ * does, and thins out across the hero's lower edge as the shader's hero sky does (HERO_SKY).
  */
-.page-sky__grain {
+.sky-grain {
+  --sky-hero-top: 0px;
+  --sky-hero-height: 0px;
+
   position: absolute;
-  inset-block-start: 0;
+  inset-block-start: var(--sky-hero-top);
   inset-inline: 0;
-  z-index: 2;
+  z-index: -1;
   height: var(--sky-hero-height);
-  transform: translate3d(0, var(--sky-hero-top), 0);
   visibility: hidden;
+  pointer-events: none;
   mask-image: linear-gradient(to bottom, var(--site-color-page) 84%, transparent 100%);
 }
 
-.page-sky[data-backdrop='webgl'] .page-sky__grain {
+.page-sky[data-backdrop='webgl'] + .sky-grain {
   visibility: visible;
 }
 

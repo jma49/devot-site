@@ -88,7 +88,7 @@
  * Once the shader draws the sky behind the page, that canvas is the hero's sky too: it lies under
  * the whole page, so the hero's own CSS sky and the ground under it make way. So do the grain,
  * since a blend cannot reach a layer outside the hero, and the dome, which thins out with the sky
- * as one layer under the mask: the sky behind the page lays a grain of its own over the canvas
+ * as one layer under the mask: a grain of the page's own lies over the canvas where the hero is
  * (sky.css) and the shader draws the dome with its sky. The sheen stays, over the shader's sky. hero-backdrop.ts lays that sky out in the CSS sky's box and follows its trail and
  * its entrance, so it stands where the CSS one stood (HERO_SKY, HERO_DOME).
  */
