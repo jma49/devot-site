@@ -354,7 +354,9 @@
    window and its poster paint at full opacity from the first frame, so the hero is never empty
    and the poster is the largest paint. */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-canvas {
+  /* The canvas fades in only: one that has given its context back is blank, and would show as
+     a flash of white if it faded out. */
+  .hero[data-backdrop='webgl'] .hero-canvas {
     transition: opacity var(--site-dur-media) var(--site-ease-text);
   }
 

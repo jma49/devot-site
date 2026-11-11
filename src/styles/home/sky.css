@@ -79,8 +79,9 @@
   animation-play-state: paused;
 }
 
+/* As the hero's, the canvas fades in only: one that has given its context back is blank. */
 @media (prefers-reduced-motion: no-preference) {
-  .page-sky__canvas {
+  .page-sky[data-backdrop='webgl'] .page-sky__canvas {
     transition: opacity var(--site-dur-media) var(--site-ease-text);
   }
 }

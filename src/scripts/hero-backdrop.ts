@@ -147,6 +147,13 @@ const FLOW_ORIGIN = 21 / FLOW_PACE
 export const REDUCED_FLOW = 1 / 3
 /** The first frames that decide whether the GPU keeps up, and the median interval it must keep. */
 export const FRAME_CHECK = { frames: 60, medianMs: 20 } as const
+/**
+ * Milliseconds after a scroll before frames count toward that check. A frame the page scrolls in,
+ * and the ones right after it, say how heavy the page is to scroll (clips starting, sections
+ * revealing), not whether the GPU keeps up with the shader: the sky behind the page starts in the
+ * middle of a scroll.
+ */
+export const SCROLL_REST = 500
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
 
@@ -547,7 +554,7 @@ export interface BackdropHandle {
  * Draws an aurora with WebGL at up to 30 frames a second while it can be seen and the tab is
  * shown, once its shaders are built; with reduced motion it drifts at a third of the pace. The
  * CSS layers underneath show until then, without WebGL, on a software renderer and when the first
- * frames run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
+ * frames at rest run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
  * `data-backdrop-state` whether it moves (`running`, or `idle` while out of sight, in a hidden tab
  * or paused).
  */
@@ -568,6 +575,8 @@ export function startBackdrop({
   let frame = 0
   let lastDraw = -1
   let lastTick = 0
+  let lastScroll = window.scrollY
+  let scrolledAt = Number.NEGATIVE_INFINITY
   let flow = FLOW_ORIGIN
   /** Frame intervals seen so far, until the GPU has shown it keeps up. */
   let intervals: number[] | null = []
@@ -618,10 +627,12 @@ export function startBackdrop({
 
   function loop(now: number) {
     frame = 0
+    if (window.scrollY !== lastScroll) scrolledAt = now
+    lastScroll = window.scrollY
     if (lastTick) {
       const interval = now - lastTick
       flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
-      if (!keepsUp(interval)) {
+      if (now - scrolledAt >= SCROLL_REST && !keepsUp(interval)) {
         fallBack()
         return sync()
       }
@@ -660,7 +671,10 @@ export function startBackdrop({
   }
 
   const onScreen: Sight = (report) => {
-    const observer = new IntersectionObserver(([entry]) => report(entry?.isIntersecting ?? true))
+    // Several changes can arrive at once; the last is where the stage stands now.
+    const observer = new IntersectionObserver((entries) =>
+      report(entries.at(-1)?.isIntersecting ?? true),
+    )
     observer.observe(stage)
     return () => observer.disconnect()
   }

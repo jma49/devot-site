@@ -253,6 +253,40 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     ).toBeGreaterThan(0)
   })
 
+  test('does not judge the GPU by frames the page scrolls in, or the ones just after', async ({
+    page,
+  }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    // Frames reach the page twice as far apart as the fake clock's 16 ms, and each one scrolls
+    // while `scrolling` is set.
+    await page.addInitScript(() => {
+      const state = window as unknown as { scrolling: boolean }
+      state.scrolling = true
+      const request = window.requestAnimationFrame.bind(window)
+      window.requestAnimationFrame = (callback) =>
+        request((now) => {
+          // Every tenth frame, as a wheel moves the page in steps.
+          if (state.scrolling && Math.round(now / 16) % 10 === 0) {
+            window.scrollBy(0, window.scrollY < 200 ? 20 : -200)
+          }
+          callback(now * 2)
+        })
+    })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+
+    await advanceUntil(page, backdropIs(page, 'webgl'))
+    await page.clock.runFor(4000)
+    await expect(hero(page)).toHaveAttribute('data-backdrop', 'webgl')
+
+    // At rest the same frames show a GPU that cannot keep up.
+    await page.evaluate(() => {
+      ;(window as unknown as { scrolling: boolean }).scrolling = false
+    })
+    await advanceUntil(page, backdropIs(page, 'css'))
+  })
+
   test('hands back to the CSS aurora when the GPU drops its context', async ({
     page,
     problems,
@@ -267,6 +301,9 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
       canvas.getContext('webgl')?.getExtension('WEBGL_lose_context')?.loseContext()
     })
     await advanceUntil(page, backdropIs(page, 'css'))
+    // A canvas without its context is blank: it goes at once and does not fade out.
+    await expect(page.locator('.hero-canvas')).toHaveCSS('transition-duration', '0s')
+    await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '0')
     const held = (await draws(page)).length
     await page.clock.runFor(1000)
     expect(await draws(page)).toHaveLength(held)
@@ -308,6 +345,7 @@ test.describe('WebGL sky behind the page', () => {
     await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'running')
     await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'idle')
     await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '1')
+    await expect(page.locator('.page-sky__canvas')).not.toHaveCSS('transition-duration', '0s')
     await expect(page.locator('.page-sky [data-aurora="dark"] .aurora-band').first()).toHaveCSS(
       'visibility',
       'hidden',
@@ -326,6 +364,23 @@ test.describe('WebGL sky behind the page', () => {
     await expect(sky(page)).toHaveAttribute('data-backdrop-state', 'idle')
     await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
     await expect(sky(page)).toHaveAttribute('data-backdrop', 'webgl')
+  })
+
+  test('goes at once, without fading, when the GPU drops its context', async ({
+    page,
+    problems,
+  }) => {
+    await page.locator('#pricing').evaluate((section) => section.scrollIntoView())
+    await advanceUntil(page, skyIs(page, 'webgl'))
+    await page.locator('.page-sky__canvas').evaluate((canvas: HTMLCanvasElement) => {
+      canvas.getContext('webgl')?.getExtension('WEBGL_lose_context')?.loseContext()
+    })
+    await advanceUntil(page, skyIs(page, 'css'))
+    await expect(page.locator('.page-sky__canvas')).toHaveCSS('transition-duration', '0s')
+    await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '0')
+    // WebKit logs every lost context, this deliberate one too.
+    const logged = problems.filter((text) => text !== 'WebGL: context lost.')
+    problems.splice(0, problems.length, ...logged)
   })
 
   test('stops with the pause', async ({ page }) => {
