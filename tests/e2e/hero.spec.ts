@@ -329,7 +329,7 @@ test.describe('hero at 390 x 844', () => {
 
     await expect(hero).toHaveAttribute('data-backdrop-state', 'running')
     await expect(hero).toHaveAttribute('data-backdrop', 'css')
-    await expect(page.locator('.hero-canvas')).toHaveCSS('opacity', '0')
+    await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '0')
     await scrollToId(page, 'cards')
     await expect(hero).toHaveAttribute('data-backdrop-state', 'idle')
   })

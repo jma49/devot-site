@@ -6,9 +6,12 @@ import {
   FRAME_CHECK,
   frameDue,
   framesTooSlow,
+  HERO_DOME,
+  HERO_SKY,
   parseBackdrop,
   parseColour,
   renderSize,
+  skyPasses,
   softwareRenderer,
   srgbToOklab,
   tuneStop,
@@ -302,6 +305,118 @@ describe('renderSize', () => {
   it('caps the width at 1100 pixels on very wide windows and never reaches zero', () => {
     expect(renderSize(3840, 2160)).toEqual({ width: 1100, height: 619 })
     expect(renderSize(0, 0)).toEqual({ width: 1, height: 1 })
+  })
+})
+
+describe('skyPasses', () => {
+  // A 1440 by 900 window: the canvas draws at half its CSS pixels.
+  const canvas = renderSize(1440, 900)
+  const hero = { top: 0, height: 1400, trail: 0, zoom: 1, dome: 0 }
+  const page = {
+    rows: [0, 450],
+    field: [720, 450],
+    rise: 0,
+    zoom: 1,
+    soft: 1,
+    hero: [0, 450],
+    dome: 0,
+    fade: null,
+  }
+
+  it('draws the hero’s sky alone at the top of the page, laid out as the CSS one is', () => {
+    expect(skyPasses(canvas, 1440, hero)).toEqual([
+      {
+        rows: [0, 450],
+        field: [720, 0.5 * 1400 * (1 + HERO_SKY.overhang)],
+        rise: expect.closeTo(0),
+        zoom: 1,
+        soft: 0,
+        hero: [0, 700],
+        dome: 0,
+        fade: null,
+      },
+    ])
+  })
+
+  it('lets that sky trail the page and carries its entrance', () => {
+    const [pass] = skyPasses(canvas, 1440, { ...hero, top: -200, trail: 80, zoom: 1.04 })
+    expect(pass).toMatchObject({ rise: 0.5 * (200 - 80), zoom: 1.04, soft: 0, fade: null })
+  })
+
+  it('fades the hero’s sky, with the dome over it, into the page’s over the last of the hero', () => {
+    const passes = skyPasses(canvas, 1440, { ...hero, top: -1000, trail: 400, dome: 1 })
+    const edge = 0.5 * 400
+    const start = edge - 0.5 * 1400 * HERO_SKY.fade
+    expect(passes).toEqual([
+      { ...page, rows: [Math.floor(start), 450] },
+      {
+        rows: [0, edge],
+        field: [720, 0.5 * 1400 * (1 + HERO_SKY.overhang)],
+        rise: 0.5 * (1000 - 400),
+        zoom: 1,
+        soft: 0,
+        hero: [-500, 700],
+        dome: 1,
+        fade: [start, edge],
+      },
+    ])
+  })
+
+  it('draws the soft sky alone, fixed to the window, once the hero has gone', () => {
+    const gone = { ...hero, trail: 560, dome: 1 }
+    expect(skyPasses(canvas, 1440, { ...gone, top: -1400 })).toEqual([page])
+    expect(skyPasses(canvas, 1440, { ...gone, top: -5000 })).toEqual([page])
+    expect(skyPasses(canvas, 1440, null)).toEqual([page])
+    expect(skyPasses(canvas, 1440, { ...hero, height: 0 })).toEqual([page])
+  })
+
+  it('covers every row at every scroll position, and never moves the sky behind the page', () => {
+    for (let scroll = 0; scroll <= 1500; scroll += 7.5) {
+      const passes = skyPasses(canvas, 1440, { ...hero, top: -scroll, trail: 0.4 * scroll })
+      const soft = passes.find((pass) => pass.soft === 1)
+      const full = passes.find((pass) => pass.soft === 0)
+      // Rows the hero's sky leaves, or draws thinned out, have the page's sky under them.
+      const opaqueTo = full ? Math.max(0, Math.floor(full.fade?.[0] ?? full.rows[1])) : 0
+      expect(full?.rows[0] ?? 0, `scroll ${scroll}`).toBe(0)
+      expect(soft?.rows[0] ?? 450, `scroll ${scroll}`).toBeLessThanOrEqual(opaqueTo)
+      expect(soft?.rows[1] ?? full?.rows[1], `scroll ${scroll}`).toBe(450)
+      expect(soft ?? page).toMatchObject({ field: [720, 450], rise: 0, zoom: 1, fade: null })
+      for (const { rows } of passes) {
+        expect(Number.isInteger(rows[0]) && Number.isInteger(rows[1])).toBe(true)
+        expect(rows[1]).toBeGreaterThan(rows[0])
+      }
+    }
+  })
+
+  it('lays the hero’s sky out as hero.css lays the CSS one', () => {
+    const css = readRepoFile('src/styles/home/hero.css')
+    expect(css).toMatch(
+      new RegExp(`\\.hero-sky \\{\\s+bottom: -${Math.round(HERO_SKY.overhang * 100)}%;`),
+    )
+    expect(css).toContain(
+      `var(--site-color-page) ${Math.round((1 - HERO_SKY.fade) * 100)}%, transparent 100%`,
+    )
+    expect(css).toContain(`translate3d(0, calc(var(${HERO_SKY.trail}) * 1px), 0)`)
+    expect(readRepoFile('src/scripts/hero.ts')).toContain(`sky: '${HERO_SKY.trail}'`)
+  })
+
+  it('raises the dome over that sky as hero.css raises the CSS one', () => {
+    const { reach, height, solid, shown } = HERO_DOME
+    const percent = (share: number) => `${Math.round(share * 100)}%`
+    expect(readRepoFile('src/styles/home/hero.css')).toContain(
+      [
+        '.hero-dome {',
+        '  position: absolute;',
+        `  right: -${percent(reach)};`,
+        '  bottom: 0;',
+        `  left: -${percent(reach)};`,
+        `  height: ${percent(height)};`,
+        `  background: radial-gradient(50% 100% at 50% 100%, var(--site-color-page) ${percent(solid)}, transparent 100%);`,
+        `  opacity: var(${shown});`,
+        '}',
+      ].join('\n'),
+    )
+    expect(readRepoFile('src/scripts/hero.ts')).toContain(`dome: '${shown}'`)
   })
 })
 

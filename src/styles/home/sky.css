@@ -1,7 +1,8 @@
 /*
  * The hero's sky goes on behind the rest of the page: the same aurora, fainter, fixed to the
  * viewport so every section and the margins beside it lie under one night. page-sky.ts draws it
- * with the hero's shader, flowing as the hero's does; the CSS aurora under the canvas stands in
+ * with the shader on the page's one canvas, which is the hero's sky as well: there the shader
+ * draws it at full strength, moving with the hero. The CSS aurora under the canvas stands in
  * until then, without WebGL and on phones, where its bands drift slowly on transforms only. Either
  * rests with the reader's pause and slows down with reduced motion.
  */
@@ -56,9 +57,11 @@
   height: 44%;
 }
 
+/* Over the veil: the shader lays the veil itself, so that it can lift it where the hero is. */
 .page-sky__canvas {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   opacity: 0;
@@ -68,10 +71,14 @@
   opacity: 1;
 }
 
-/* Under the canvas the CSS bands stop, as they do while the hero covers the sky. */
-.page-sky[data-backdrop='webgl'] .aurora-band {
+/* Under the canvas the CSS bands stop, and they and the veil go once it has faded in. */
+.page-sky[data-backdrop='webgl'] .aurora-band,
+.page-sky[data-backdrop='webgl']::after {
   visibility: hidden;
   transition: visibility 0s linear var(--site-dur-media);
+}
+
+.page-sky[data-backdrop='webgl'] .aurora-band {
   animation-play-state: paused;
 }
 
@@ -79,7 +86,8 @@
   animation-play-state: paused;
 }
 
-/* As the hero's, the canvas fades in only: one that has given its context back is blank. */
+/* The canvas fades in only: one that has given its context back is blank, and faded out as a
+   flash of white. */
 @media (prefers-reduced-motion: no-preference) {
   .page-sky[data-backdrop='webgl'] .page-sky__canvas {
     transition: opacity var(--site-dur-media) var(--site-ease-text);

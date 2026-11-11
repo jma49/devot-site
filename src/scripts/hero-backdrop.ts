@@ -130,6 +130,8 @@ export function auroraPalette(inputs: AuroraInputs, scheme: Scheme): AuroraPalet
 }
 
 const FPS = 30
+/** The most frames a second drawn to keep the hero's sky with a scroll or its entrance. */
+const FOLLOW_FPS = 60
 /** A part of the page that keeps the dark appearance in either scheme (site-tokens.css). */
 const NIGHT = "[data-scope='dark']"
 /**
@@ -149,13 +151,28 @@ export const REDUCED_FLOW = 1 / 3
  * The first frames that decide whether the GPU keeps up, and the median interval it must keep: at
  * rest, and while the page scrolls or has just scrolled. A frame the page scrolls in says how
  * heavy the page is to scroll (clips starting, sections revealing) as much as how the GPU does
- * with the shader, and the sky behind the page starts in the middle of a scroll, so those frames
- * are held to a looser mark. They are still held to one: a software GL draws on at a few frames a
- * second through a whole scroll and takes the page with it.
+ * with the shader, so those frames are held to a looser mark. They are still held to one: a
+ * software GL draws on at a few frames a second through a whole scroll and takes the page with it.
  */
 export const FRAME_CHECK = { frames: 60, medianMs: 20, scrollingMs: 50 } as const
 /** Milliseconds after a scroll for which frames still count as scrolling ones. */
 export const SCROLL_REST = 500
+
+/**
+ * The hero's sky as hero.css lays the CSS one out: it reaches past the hero's lower edge by
+ * `overhang` of the hero's height, thins out into the sky behind the page over the last `fade`
+ * of it, and trails the page by the pixels hero.ts writes to the hero as `trail`.
+ */
+export const HERO_SKY = { overhang: 0.12, fade: 0.16, trail: '--hero-sky' } as const
+/**
+ * The dome hero.css raises from the hero's lower edge, in the page colour: it reaches `reach` of
+ * the hero's width past either side and `height` of its height up, whole out to `solid` of its
+ * radius, at the opacity hero.ts writes to the hero as `shown`. It thins out with the sky under
+ * the hero's fade, as one layer, so the shader draws it with the sky.
+ */
+export const HERO_DOME = { reach: 0.3, height: 0.46, solid: 0.58, shown: '--hero-dome' } as const
+/** How far the film grain over the hero's sky swings around mid grey, to read as grain.svg does. */
+const GRAIN_SPREAD = 0.38
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
 
@@ -166,6 +183,76 @@ export function renderSize(width: number, height: number): { width: number; heig
     width: Math.max(1, drawn),
     height: Math.max(1, Math.round((drawn * height) / Math.max(1, width))),
   }
+}
+
+/** Where the hero lies in the window, in CSS pixels. */
+export interface HeroView {
+  /** Its top edge, from the top of the window. */
+  top: number
+  height: number
+  /** How far its sky trails the page (`--hero-sky`). */
+  trail: number
+  /** The scale its sky stands at while it enters; 1 afterwards. */
+  zoom: number
+  /** The opacity of the dome over its sky (`--hero-dome`). */
+  dome: number
+}
+
+/** One draw of the shader over some rows of the canvas. Lengths in canvas pixels, y downwards. */
+export interface SkyPass {
+  /** The rows drawn, from the first up to but not including the second. */
+  rows: readonly [number, number]
+  /** The box the sky is laid out in, and the row of it that lies at the canvas's top edge. */
+  field: readonly [number, number]
+  rise: number
+  zoom: number
+  /** 1 for the sky behind the page: soft bands under the veil. 0 for the hero's. */
+  soft: 0 | 1
+  /** The hero's top row and its height in rows, and the opacity of the dome over its sky. */
+  hero: readonly [number, number]
+  dome: number
+  /** The rows over which the pass thins out to nothing, top to bottom; null for a whole one. */
+  fade: readonly [number, number] | null
+}
+
+/**
+ * What one frame draws on a canvas fixed to the window, `cssWidth` CSS pixels wide: the soft sky
+ * wherever the page lies over it, always laid out in the window, so it never moves with the
+ * scroll; and over that the hero's sky, laid out in the hero and moving with it, thinning out
+ * across the hero's lower edge. Either is left out where none of it would show.
+ */
+export function skyPasses(
+  canvas: { width: number; height: number },
+  cssWidth: number,
+  hero: HeroView | null,
+): SkyPass[] {
+  const { width, height } = canvas
+  const page: SkyPass = {
+    rows: [0, height],
+    field: [width, height],
+    rise: 0,
+    zoom: 1,
+    soft: 1,
+    hero: [0, height],
+    dome: 0,
+    fade: null,
+  }
+  const scale = cssWidth > 0 ? width / cssWidth : 0
+  const edge = hero ? scale * (hero.top + hero.height) : 0
+  if (!hero || hero.height <= 0 || edge <= 0) return [page]
+  const start = edge - scale * hero.height * HERO_SKY.fade
+  const fades = start < height
+  const full: SkyPass = {
+    rows: [0, Math.min(height, Math.ceil(edge))],
+    field: [width, scale * hero.height * (1 + HERO_SKY.overhang)],
+    rise: -scale * (hero.top + hero.trail),
+    zoom: hero.zoom,
+    soft: 0,
+    hero: [scale * hero.top, scale * hero.height],
+    dome: hero.dome,
+    fade: fades ? [start, edge] : null,
+  }
+  return fades ? [{ ...page, rows: [Math.max(0, Math.floor(start)), height] }, full] : [full]
 }
 
 /** Whether a WebGL renderer name is a CPU rasteriser, which `failIfMajorPerformanceCaveat` misses. */
@@ -257,8 +344,16 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`
 // Tide's gradient line under a slow warp is the sky. Two aurora bands, Sage and Tide, hang across
 // it: a bright lower edge, a long glow above fringed with Ember violet, faint curtain rays, and
 // a caustic shimmer where they are brightest. Ember peach warms the side edges. Colours mix in
-// OKLab and the result is dithered so the soft ramps do not band. uSoft, 0 to 1, takes the bands'
-// tight lower edge and bright core away and most of the shimmer, for a sky that lies behind text.
+// OKLab and the result is dithered so the soft ramps do not band.
+//
+// One canvas fixed to the window draws the whole page's sky, in one pass or two (skyPasses). The
+// sky is laid out in the box uField, whose row uRise lies at the top of the canvas, scaled by
+// uZoom about its centre: the window for the sky behind the page, the hero's own box for the
+// hero's. uSoft 1 is the sky behind the page: no tight lower edge or bright core to a band, a
+// fifth of the shimmer, and the veil of the page colour (uVeil) that keeps text readable on it.
+// uSoft 0 is the hero's, under its film grain (uGrain) and the dome that rises from the hero's
+// lower edge (uDome: the hero's top row, its height in rows, the dome's opacity), and uFade the
+// rows over which all of that thins out as one to let the page's sky through.
 const FRAGMENT = `precision highp float;
 uniform vec2 uRes;
 uniform float uTime;
@@ -271,6 +366,13 @@ uniform vec3 uStrength;
 uniform float uGlow;
 uniform float uSoft;
 uniform vec2 uDir;
+uniform vec2 uField;
+uniform float uRise;
+uniform float uZoom;
+uniform vec4 uVeil;
+uniform float uGrain;
+uniform vec3 uDome;
+uniform vec2 uFade;
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -337,17 +439,26 @@ vec3 toSrgb(vec3 c) {
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
 }
 
+// The soft-light blend of a grey over a colour, as CSS compositing defines it.
+vec3 softLight(vec3 under, float grey) {
+  vec3 lifted = mix(((16.0 * under - 12.0) * under + 4.0) * under, sqrt(under), step(0.25, under));
+  return grey <= 0.5
+    ? under - (1.0 - 2.0 * grey) * under * (1.0 - under)
+    : under + (2.0 * grey - 1.0) * (lifted - under);
+}
+
 void main() {
-  vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
-  vec2 uv = px / uRes;
-  vec2 p = px / uRes.y;
-  float aspect = uRes.x / uRes.y;
+  vec2 view = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
+  vec2 at = vec2(view.x, view.y + uRise);
+  vec2 px = (at - 0.5 * uField) / uZoom + 0.5 * uField;
+  vec2 p = px / uField.y;
+  float aspect = uField.x / uField.y;
   float t = uTime * ${FLOW_PACE.toFixed(2)};
   float reach = ${FLOW_REACH.toFixed(2)};
 
   vec2 q = vec2(fbm(p * 1.2 + vec2(0.0, 0.02 * t)), fbm(p * 1.2 + vec2(5.2, 1.3) - vec2(0.017 * t, 0.0)));
-  float len = abs(uRes.x * uDir.x) + abs(uRes.y * uDir.y);
-  float g = dot(px - 0.5 * uRes, uDir) / len + 0.5 + (q.x - 0.5) * 1.4 * reach;
+  float len = abs(uField.x * uDir.x) + abs(uField.y * uDir.y);
+  float g = dot(px - 0.5 * uField, uDir) / len + 0.5 + (q.x - 0.5) * 1.4 * reach;
   vec3 lab = ramp(g);
   lab.x += (q.y - 0.5) * 2.0 * uGlow;
 
@@ -386,26 +497,31 @@ void main() {
   lab.x += (shimmer * (1.0 - 0.8 * uSoft) + (coreA * 0.8 + coreB * 0.5) * rays * (1.0 - uSoft)) * uStrength.y;
 
   vec3 colour = toSrgb(oklabToLinear(lab));
+  float grain = 0.5 + (hash(floor(at)) - 0.5) * ${GRAIN_SPREAD.toFixed(2)};
+  colour = mix(colour, softLight(colour, grain), uGrain * (1.0 - uSoft));
+  vec2 fromFoot = vec2(view.x / uRes.x - 0.5, (view.y - uDome.x) / uDome.y - 1.0);
+  float dome = (1.0 - length(fromFoot / vec2(${(0.5 + HERO_DOME.reach).toFixed(2)}, ${HERO_DOME.height.toFixed(2)}))) / ${(1 - HERO_DOME.solid).toFixed(2)};
+  colour = mix(colour, uVeil.rgb, clamp(dome, 0.0, 1.0) * uDome.z * (1.0 - uSoft));
+  colour = mix(colour, uVeil.rgb, uVeil.a * uSoft);
   colour += (hash(gl_FragCoord.xy + fract(t)) - 0.5) / 255.0;
-  gl_FragColor = vec4(colour, 1.0);
+  gl_FragColor = vec4(colour, 1.0 - clamp((view.y - uFade.x) / (uFade.y - uFade.x), 0.0, 1.0));
 }`
 
-interface Renderer {
-  setPalette(palette: AuroraPalette): void
-  draw(seconds: number): void
-  lost(): boolean
-  release(): void
-  /** Whether the shaders were built beside the main thread (KHR_parallel_shader_compile). */
-  beside: boolean
+/** What lies over the sky: the page colour and how much of it veils the sky behind the page. */
+interface Ground {
+  page: Rgb
+  /** 0 to 1. */
+  veil: number
+  /** The opacity of the film grain over the hero's sky. */
+  grain: number
 }
 
-/**
- * Whether the first shader built on this page was built beside the main thread; null where there
- * was none to build with. A browser without KHR_parallel_shader_compile builds a shader on the
- * main thread, and a second build there would hold the page in the middle of a scroll, for
- * seconds on a software GL.
- */
-let firstBuild: Promise<boolean | null> | null = null
+interface Renderer {
+  setPalette(palette: AuroraPalette, ground: Ground): void
+  draw(seconds: number, size: { width: number; height: number }, passes: readonly SkyPass[]): void
+  lost(): boolean
+  release(): void
+}
 
 /** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
 function rendererName(gl: WebGLRenderingContext): string {
@@ -435,7 +551,7 @@ function built(
   })
 }
 
-async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise<Renderer | null> {
+async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | null> {
   const gl = canvas.getContext('webgl', {
     alpha: false,
     antialias: false,
@@ -477,6 +593,10 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
   const position = gl.getAttribLocation(program, 'aPos')
   gl.enableVertexAttribArray(position)
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
+  // The hero's sky is drawn over the page's where the two meet, as thin as its fade leaves it.
+  gl.enable(gl.SCISSOR_TEST)
+  gl.enable(gl.BLEND)
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
   const uniform = (name: string) => gl.getUniformLocation(program, name)
   const u = {
     res: uniform('uRes'),
@@ -489,19 +609,18 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     strength: uniform('uStrength'),
     glow: uniform('uGlow'),
     dir: uniform('uDir'),
-  }
-  gl.uniform1f(uniform('uSoft'), soft ? 1 : 0)
-
-  const resize = () => {
-    const { width, height } = renderSize(canvas.clientWidth, canvas.clientHeight)
-    if (canvas.width === width && canvas.height === height) return
-    canvas.width = width
-    canvas.height = height
-    gl.viewport(0, 0, width, height)
+    veil: uniform('uVeil'),
+    grain: uniform('uGrain'),
+    dome: uniform('uDome'),
+    field: uniform('uField'),
+    rise: uniform('uRise'),
+    zoom: uniform('uZoom'),
+    soft: uniform('uSoft'),
+    fade: uniform('uFade'),
   }
 
   return {
-    setPalette(palette) {
+    setPalette(palette, { page, veil, grain }) {
       const radians = (palette.angle * Math.PI) / 180
       gl.uniform2f(u.dir, Math.sin(radians), -Math.cos(radians))
       gl.uniform3fv(u.sky, palette.sky.flat())
@@ -511,24 +630,41 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
       gl.uniform3fv(u.warm, palette.warm)
       gl.uniform3fv(u.strength, palette.strength)
       gl.uniform1f(u.glow, palette.glow)
+      gl.uniform4f(u.veil, page[0] / 255, page[1] / 255, page[2] / 255, veil)
+      gl.uniform1f(u.grain, grain)
     },
-    draw(seconds) {
-      resize()
-      gl.uniform2f(u.res, canvas.width, canvas.height)
+    draw(seconds, { width, height }, passes) {
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width
+        canvas.height = height
+        gl.viewport(0, 0, width, height)
+      }
+      gl.uniform2f(u.res, width, height)
       gl.uniform1f(u.time, seconds)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      for (const { rows, field, rise, zoom, soft, hero, dome, fade } of passes) {
+        // A whole pass fades over rows the canvas does not have.
+        const [from, to] = fade ?? [height, height + 1]
+        gl.scissor(0, height - rows[1], width, rows[1] - rows[0])
+        gl.uniform2f(u.field, field[0], field[1])
+        gl.uniform1f(u.rise, rise)
+        gl.uniform1f(u.zoom, zoom)
+        gl.uniform1f(u.soft, soft)
+        gl.uniform3f(u.dome, hero[0], hero[1], dome)
+        gl.uniform2f(u.fade, from, to)
+        gl.drawArrays(gl.TRIANGLES, 0, 3)
+      }
     },
     lost: () => gl.isContextLost(),
     release: () => {
       if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
-    beside: parallel !== null,
   }
 }
 
+const read = (element: Element | null, name: string) =>
+  element ? getComputedStyle(element).getPropertyValue(name) : ''
+
 function readAurora(root: HTMLElement): AuroraInputs | null {
-  const read = (element: Element | null, name: string) =>
-    element ? getComputedStyle(element).getPropertyValue(name) : ''
   const theme = (name: string) =>
     parseBackdrop(read(root.querySelector(`[data-aurora-source="${name}"]`), '--backdrop'))
   const tide = parseBackdrop(read(root, '--backdrop'))
@@ -542,11 +678,19 @@ function readAurora(root: HTMLElement): AuroraInputs | null {
     : null
 }
 
-/** Calls `report` with whether the sky can be seen, now and on each change; returns its stop. */
-export type Sight = (report: (shown: boolean) => void) => () => void
+/** The veil sky.css lays over its CSS sky and the grain hero.css lays over the hero's. */
+function readGround(stage: HTMLElement, hero: HTMLElement): Ground | null {
+  const page = parseColour(read(stage, '--site-color-page'))
+  const veil = Number.parseFloat(read(stage, '--sky-veil')) / 100
+  const grain = Number.parseFloat(read(hero, '--hero-grain-opacity'))
+  return page && Number.isFinite(veil) && Number.isFinite(grain) ? { page, veil, grain } : null
+}
 
 export interface BackdropParts {
-  /** The element the sky belongs to: it carries `data-backdrop` and `data-backdrop-state`. */
+  /**
+   * The sky fixed behind the page, which holds the canvas. It carries `data-backdrop` and
+   * `data-backdrop-state`.
+   */
   stage: HTMLElement
   canvas: HTMLCanvasElement
   /**
@@ -554,19 +698,17 @@ export interface BackdropParts {
    * `[data-aurora-source]` elements carry Sage's and Ember's.
    */
   sources: Record<Scheme, HTMLElement>
+  /**
+   * The hero, which shows the same sky at full strength, and its CSS sky, whose place the
+   * shader's takes. The hero carries the two attributes as well; its state is `idle` while it is
+   * off screen too, which rests its CSS sky.
+   */
+  hero: HTMLElement
+  heroSky: HTMLElement
   /** False keeps the CSS layers and only tracks whether they should move. */
   webgl?: boolean
   /** The reader's pause: while it holds, the flow stops where it is. */
   pause?: Pause
-  /** Bands without a tight edge, for a sky behind text. */
-  soft?: boolean
-  /** When the sky can be seen, if that is not simply when the stage is on screen. */
-  inView?: Sight
-  /**
-   * Builds no shader where the first one on the page was built on the main thread: the CSS layers
-   * stay.
-   */
-  thrifty?: boolean
 }
 
 export interface BackdropHandle {
@@ -576,28 +718,29 @@ export interface BackdropHandle {
 }
 
 /**
- * Draws an aurora with WebGL at up to 30 frames a second while it can be seen and the tab is
- * shown, once its shaders are built; with reduced motion it drifts at a third of the pace. The
- * CSS layers underneath show until then, without WebGL, on a software renderer and when the first
- * frames at rest run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
- * `data-backdrop-state` whether it moves (`running`, or `idle` while out of sight, in a hidden tab
- * or paused).
+ * Draws the whole page's aurora with WebGL on one canvas fixed to the window: the hero's sky
+ * where the hero is, moving with it, and its soft form under the veil behind everything after
+ * (`skyPasses`). It draws at up to 30 frames a second while the tab is shown, and on every frame
+ * that moves the hero; with reduced motion it drifts at a third of the pace. The CSS layers show
+ * until the shaders are built, without WebGL, on a software renderer and when the first frames
+ * run slow. `data-backdrop` on the sky and the hero says which one shows (`webgl` or `css`) and
+ * `data-backdrop-state` whether it moves (`running`, or `idle` in a hidden tab or paused, and
+ * for the hero while it is off screen).
  */
 export function startBackdrop({
   stage,
   canvas,
   sources,
+  hero,
+  heroSky,
   webgl = true,
   pause = browserPause(),
-  soft = false,
-  inView,
-  thrifty = false,
 }: BackdropParts): BackdropHandle {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
   let renderer: Renderer | null = null
   let stopped = false
-  let visible = true
+  let heroShown = true
   let frame = 0
   let lastDraw = -1
   let lastTick = 0
@@ -608,13 +751,32 @@ export function startBackdrop({
   let rested: number[] | null = []
   /** The same while the page scrolls, until those have shown it is not far behind. */
   let scrolling: number[] | null = []
+  /** The hero's place in the page, in CSS pixels: measured when it changes, not on every frame. */
+  let place = { top: 0, height: 0 }
+  /** The hero's entrance, which its sky takes part in until it has run. */
+  let entrance = heroSky.getAnimations()
+  /** What the last draw laid out. */
+  let drawn = ''
+  /**
+   * Whether the sky is keeping up with a scroll or the hero's entrance: while it is, a frame that
+   * lays out differently is drawn at once, not at its turn among the 30 a second. Such frames go
+   * on until one finds the layout unchanged, even while the flow itself is stopped, since the sky
+   * must not keep the hero's strength under a section scrolled over it.
+   */
+  let following = true
+
+  const show = (kind: 'webgl' | 'css') => {
+    stage.dataset['backdrop'] = kind
+    hero.dataset['backdrop'] = kind
+  }
 
   const palette = () => {
     // A page that wears the night draws the dark palette whatever the reader's scheme.
     const scheme: Scheme = dark.matches || stage.closest(NIGHT) !== null ? 'dark' : 'light'
     const inputs = readAurora(sources[scheme])
-    if (!inputs || !renderer) return false
-    renderer.setPalette(auroraPalette(inputs, scheme))
+    const ground = readGround(stage, hero)
+    if (!inputs || !ground || !renderer) return false
+    renderer.setPalette(auroraPalette(inputs, scheme), ground)
     return true
   }
 
@@ -622,19 +784,49 @@ export function startBackdrop({
     const released = renderer
     renderer = null
     released?.release()
-    stage.dataset['backdrop'] = 'css'
+    show('css')
   }
 
-  const draw = () => {
+  const measure = () => {
+    const box = hero.getBoundingClientRect()
+    place = { top: box.top + window.scrollY, height: box.height }
+  }
+
+  /** Where the hero stands now, and its sky and dome as hero.css would show them. */
+  const heroView = (): HeroView => {
+    const written = (name: string) => Number.parseFloat(hero.style.getPropertyValue(name)) || 0
+    let zoom = 1
+    if (entrance.some((animation) => animation.playState === 'running')) {
+      zoom = Number.parseFloat(getComputedStyle(heroSky).scale) || 1
+    } else {
+      entrance = []
+    }
+    return {
+      top: place.top - window.scrollY,
+      height: place.height,
+      trail: written(HERO_SKY.trail),
+      zoom,
+      dome: written(HERO_DOME.shown),
+    }
+  }
+
+  const layOut = () => {
+    const size = renderSize(canvas.clientWidth, canvas.clientHeight)
+    const passes = skyPasses(size, canvas.clientWidth, heroView())
+    return { size, passes, key: JSON.stringify([size, passes]) }
+  }
+
+  const draw = ({ size, passes, key } = layOut()) => {
     if (!renderer) return
     if (renderer.lost()) return fallBack()
-    renderer.draw(flow)
+    drawn = key
+    renderer.draw(flow, size, passes)
   }
 
-  const sync = () => {
-    const moving = visible && !document.hidden && !pause.paused
-    stage.dataset['backdropState'] = moving ? 'running' : 'idle'
-    const animate = moving && renderer !== null
+  const flows = () => !document.hidden && !pause.paused
+
+  const run = () => {
+    const animate = renderer !== null && (flows() || following)
     if (animate && !frame) {
       lastTick = 0
       frame = requestAnimationFrame(loop)
@@ -642,6 +834,13 @@ export function startBackdrop({
       cancelAnimationFrame(frame)
       frame = 0
     }
+  }
+
+  const sync = () => {
+    const moving = flows()
+    stage.dataset['backdropState'] = moving ? 'running' : 'idle'
+    hero.dataset['backdropState'] = moving && heroShown ? 'running' : 'idle'
+    run()
   }
 
   const keepsUp = (interval: number, atRest: boolean) => {
@@ -663,9 +862,10 @@ export function startBackdrop({
 
   function loop(now: number) {
     frame = 0
+    const moving = flows()
     if (window.scrollY !== lastScroll) scrolledAt = now
     lastScroll = window.scrollY
-    if (lastTick) {
+    if (moving && lastTick) {
       const interval = now - lastTick
       flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
       if (!keepsUp(interval, now - scrolledAt >= SCROLL_REST)) {
@@ -673,17 +873,28 @@ export function startBackdrop({
         return sync()
       }
     }
-    lastTick = now
-    if (frameDue(now, lastDraw)) {
+    lastTick = moving ? now : 0
+    const next = layOut()
+    const changed = next.key !== drawn
+    following &&= changed || entrance.length > 0
+    const due =
+      following && changed ? frameDue(now, lastDraw, FOLLOW_FPS) : moving && frameDue(now, lastDraw)
+    if (due) {
       lastDraw = now
-      draw()
+      draw(next)
     }
-    if (renderer) frame = requestAnimationFrame(loop)
+    if (renderer && (moving || following)) frame = requestAnimationFrame(loop)
+  }
+
+  const follow = () => {
+    following = true
+    run()
   }
 
   const repaint = () => {
     palette()
-    if (!frame) draw()
+    drawn = ''
+    follow()
   }
 
   const begin = (created: Renderer | null) => {
@@ -692,49 +903,41 @@ export function startBackdrop({
     if (created === null) document.documentElement.dataset['auroraStill'] = ''
     renderer = created
     if (renderer && palette()) {
+      measure()
       draw()
-      stage.dataset['backdrop'] = 'webgl'
+      show('webgl')
     } else {
       fallBack()
     }
     sync()
   }
-  const build = async () => {
-    if (thrifty && firstBuild !== null && (await firstBuild) === false) return
-    const made = createRenderer(canvas, soft)
-    firstBuild ??= made.then(
-      (created) => created?.beside ?? null,
-      () => null,
-    )
-    made.then(begin, (error: unknown) => {
+  if (webgl) {
+    createRenderer(canvas).then(begin, (error: unknown) => {
       console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
       begin(null)
     })
   }
-  if (webgl) void build()
 
-  const onScreen: Sight = (report) => {
-    // Several changes can arrive at once; the last is where the stage stands now.
-    const observer = new IntersectionObserver((entries) =>
-      report(entries.at(-1)?.isIntersecting ?? true),
-    )
-    observer.observe(stage)
-    return () => observer.disconnect()
-  }
-  const stopWatching = (inView ?? onScreen)((shown) => {
-    visible = shown
+  // Several changes can arrive at once; the last is where the hero stands now.
+  const onScreen = new IntersectionObserver((entries) => {
+    heroShown = entries.at(-1)?.isIntersecting ?? true
     sync()
   })
-  const resize = new ResizeObserver(() => {
-    if (!frame) draw()
+  onScreen.observe(hero)
+  // A new size is drawn at the next frame's turn, or at once while no frames are due.
+  const sizes = new ResizeObserver(() => {
+    measure()
+    if (!flows()) follow()
   })
-  resize.observe(canvas)
+  sizes.observe(canvas)
+  sizes.observe(hero)
   const onLost = (event: Event) => {
     event.preventDefault()
     fallBack()
     sync()
   }
   canvas.addEventListener('webglcontextlost', onLost)
+  window.addEventListener('scroll', follow, { passive: true })
   document.addEventListener('visibilitychange', sync)
   dark.addEventListener('change', repaint)
   const stopPause = pause.subscribe(sync)
@@ -746,9 +949,10 @@ export function startBackdrop({
       stopped = true
       if (frame) cancelAnimationFrame(frame)
       frame = 0
-      stopWatching()
-      resize.disconnect()
+      onScreen.disconnect()
+      sizes.disconnect()
       canvas.removeEventListener('webglcontextlost', onLost)
+      window.removeEventListener('scroll', follow)
       document.removeEventListener('visibilitychange', sync)
       dark.removeEventListener('change', repaint)
       stopPause()
