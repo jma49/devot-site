@@ -585,7 +585,8 @@ for (const build of ['beside the main thread', 'on the main thread, as in Safari
       })
       const edge = scale * box.bottom
       const start = edge - scale * box.height * HERO_SKY.fade
-      expect(box.bottom).toBeCloseTo(DESKTOP.height / 2, 0)
+      // WebKit scrolls by whole pixels, so the edge may stand a fraction off the middle.
+      expect(Math.abs(box.bottom - DESKTOP.height / 2)).toBeLessThan(1)
       // The page's sky first, from where the hero's begins to thin out; the hero's over it.
       expect(behind).toMatchObject({ soft: 1, rise: 0, rows: [Math.floor(start), behind?.height] })
       expect(over).toMatchObject({ soft: 0, rows: [0, Math.ceil(edge)] })
