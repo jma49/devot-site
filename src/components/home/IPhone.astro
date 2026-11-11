@@ -75,9 +75,11 @@ const screens = [
         ))}
       </ul>
       <div class="iphone__action" data-reveal data-reveal-index="6">
-        <a class="brand-button" href={APP_STORE_URL} aria-describedby="iphone-requirements">
-          {t.download.appStore}
-        </a>
+        {APP_STORE_URL && (
+          <a class="brand-button" href={APP_STORE_URL} aria-describedby="iphone-requirements">
+            {t.download.appStore}
+          </a>
+        )}
         <p class="iphone__requirements" id="iphone-requirements">
           {t.download.iphoneRequirements}
         </p>

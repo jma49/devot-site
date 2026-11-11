@@ -55,9 +55,11 @@ const links = [
           </svg>
           {t.download.label}
         </a>
-        <a class="quiet-button closing__store" href={APP_STORE_URL}>
-          {t.download.appStore}
-        </a>
+        {APP_STORE_URL && (
+          <a class="quiet-button closing__store" href={APP_STORE_URL}>
+            {t.download.appStore}
+          </a>
+        )}
       </div>
       <p class="closing__requirements" id="closing-requirements">
         {t.download.requirements}

@@ -1,8 +1,11 @@
 export const SITE_URL = 'https://devot.online/'
 export const REPO_URL = 'https://github.com/jma49/devot'
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
-/** The App Store page of Devot for iPhone. */
-export const APP_STORE_URL = 'https://apps.apple.com/app/devot'
+/**
+ * The App Store page of Devot for iPhone, once it has one. Until then the page shows no link to
+ * the App Store: a guessed address is a dead end for the reader.
+ */
+export const APP_STORE_URL: string | undefined = undefined
 export const ISSUES_URL = `${REPO_URL}/issues`
 export const BUILD_URL = `${REPO_URL}/blob/main/docs/development.md`
 /** The link-preview image `src/pages/og.png.ts` renders at build time. */
