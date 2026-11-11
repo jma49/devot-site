@@ -68,7 +68,7 @@ test.describe('hero at 1440 x 900', () => {
     expect(shown).toBeLessThan(1)
 
     const clip = page.locator('.hero-frame video[data-clip="hero"]')
-    await expect(clip).toHaveAttribute('poster', /hero-poster\.webp$/)
+    await expect(clip).toHaveAttribute('poster', /hero-dark-poster\.webp$/)
   })
 
   test('paints the backdrop at full strength with the first frame, before any script', async ({

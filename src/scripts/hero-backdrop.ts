@@ -1,4 +1,5 @@
 import { REDUCED_MOTION_QUERY } from '../lib/dom-env.ts'
+import { parseGradient } from '../lib/gradient.ts'
 import { browserPause, type Pause } from './pause.ts'
 
 export type Rgb = readonly [number, number, number]
@@ -129,6 +130,8 @@ export function auroraPalette(inputs: AuroraInputs, scheme: Scheme): AuroraPalet
 }
 
 const FPS = 30
+/** A part of the page that keeps the dark appearance in either scheme (site-tokens.css). */
+const NIGHT = "[data-scope='dark']"
 /**
  * The shader draws at this share of CSS pixels, so device pixels never count: the aurora is soft,
  * and upscaling hides nothing.
@@ -142,8 +145,17 @@ const FLOW_REACH = 2
 const FLOW_ORIGIN = 21 / FLOW_PACE
 /** With reduced motion the aurora still drifts, at this share of its pace. */
 export const REDUCED_FLOW = 1 / 3
-/** The first frames that decide whether the GPU keeps up, and the median interval it must keep. */
-export const FRAME_CHECK = { frames: 60, medianMs: 20 } as const
+/**
+ * The first frames that decide whether the GPU keeps up, and the median interval it must keep: at
+ * rest, and while the page scrolls or has just scrolled. A frame the page scrolls in says how
+ * heavy the page is to scroll (clips starting, sections revealing) as much as how the GPU does
+ * with the shader, and the sky behind the page starts in the middle of a scroll, so those frames
+ * are held to a looser mark. They are still held to one: a software GL draws on at a few frames a
+ * second through a whole scroll and takes the page with it.
+ */
+export const FRAME_CHECK = { frames: 60, medianMs: 20, scrollingMs: 50 } as const
+/** Milliseconds after a scroll for which frames still count as scrolling ones. */
+export const SCROLL_REST = 500
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
 
@@ -165,15 +177,17 @@ export function softwareRenderer(name: string): boolean {
  * Whether the frame intervals (milliseconds) seen while drawing say the GPU cannot keep up; null
  * until there are enough of them.
  */
-export function framesTooSlow(intervals: readonly number[]): boolean | null {
+export function framesTooSlow(
+  intervals: readonly number[],
+  medianMs: number = FRAME_CHECK.medianMs,
+): boolean | null {
   if (intervals.length < FRAME_CHECK.frames) return null
   const sorted = intervals.slice(0, FRAME_CHECK.frames).toSorted((a, b) => a - b)
   const middle = sorted.length / 2
   const median = ((sorted[Math.floor(middle - 0.5)] ?? 0) + (sorted[Math.floor(middle)] ?? 0)) / 2
-  return median > FRAME_CHECK.medianMs
+  return median > medianMs
 }
 
-const GRADIENT = /^\s*linear-gradient\(\s*(-?[\d.]+)deg\s*,/
 // A stop in functional notation with spaces or commas, or in hex, which minified stylesheets carry.
 const COLOUR = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)|#([\da-f]{3,8})\b/gi
 
@@ -191,11 +205,17 @@ const channels = (match: RegExpMatchArray): Rgb | null =>
 
 /** The angle and the opaque stop colours of a token gradient such as `--backdrop`. */
 export function parseBackdrop(value: string): Backdrop | null {
-  const gradient = GRADIENT.exec(value)
-  if (!gradient) return null
-  const stops = [...value.matchAll(COLOUR)].map(channels)
-  if (stops.length !== 3 || stops.some((stop) => stop === null)) return null
-  return { angle: Number(gradient[1]), stops: stops as Rgb[] }
+  const gradient = parseGradient(value)
+  if (gradient?.stops.length !== 3) return null
+  const stops = gradient.stops.map(({ colours, share }): Rgb | null => {
+    const first = parseColour(colours[0])
+    const second = colours[1] === undefined ? first : parseColour(colours[1])
+    if (!first || !second) return null
+    const mix = (at: 0 | 1 | 2) => Math.round(first[at] * share + second[at] * (1 - share))
+    return [mix(0), mix(1), mix(2)]
+  })
+  if (stops.some((stop) => stop === null)) return null
+  return { angle: gradient.angle, stops: stops as Rgb[] }
 }
 
 /** The opaque channels of a single token colour, in hex or functional notation. */
@@ -237,7 +257,8 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`
 // Tide's gradient line under a slow warp is the sky. Two aurora bands, Sage and Tide, hang across
 // it: a bright lower edge, a long glow above fringed with Ember violet, faint curtain rays, and
 // a caustic shimmer where they are brightest. Ember peach warms the side edges. Colours mix in
-// OKLab and the result is dithered so the soft ramps do not band.
+// OKLab and the result is dithered so the soft ramps do not band. uSoft, 0 to 1, takes the bands'
+// tight lower edge and bright core away and most of the shimmer, for a sky that lies behind text.
 const FRAGMENT = `precision highp float;
 uniform vec2 uRes;
 uniform float uTime;
@@ -248,6 +269,7 @@ uniform vec3 uFringe;
 uniform vec3 uWarm;
 uniform vec3 uStrength;
 uniform float uGlow;
+uniform float uSoft;
 uniform vec2 uDir;
 
 float hash(vec2 p) {
@@ -282,7 +304,7 @@ vec3 ramp(float t) {
 
 // A band's profile across its centre line: tight below, a long glow above (screen y grows down).
 float band(float d, float width) {
-  float w = d > 0.0 ? width * 0.4 : width * 1.7;
+  float w = d > 0.0 ? width * mix(0.4, 1.5, uSoft) : width * 1.7;
   return exp(-d * d / (w * w));
 }
 
@@ -361,7 +383,7 @@ void main() {
   float coreB = exp(-pow((dB - 0.014) / 0.016, 2.0)) * presB;
   coreA += exp(-pow((dC - 0.006) / 0.008, 2.0)) * 0.4;
   float shimmer = caustic(p * vec2(5.0, 7.0), t) * (a * a + b * b * 0.8) * 0.3;
-  lab.x += (shimmer + (coreA * 0.8 + coreB * 0.5) * rays) * uStrength.y;
+  lab.x += (shimmer * (1.0 - 0.8 * uSoft) + (coreA * 0.8 + coreB * 0.5) * rays * (1.0 - uSoft)) * uStrength.y;
 
   vec3 colour = toSrgb(oklabToLinear(lab));
   colour += (hash(gl_FragCoord.xy + fract(t)) - 0.5) / 255.0;
@@ -373,7 +395,17 @@ interface Renderer {
   draw(seconds: number): void
   lost(): boolean
   release(): void
+  /** Whether the shaders were built beside the main thread (KHR_parallel_shader_compile). */
+  beside: boolean
 }
+
+/**
+ * Whether the first shader built on this page was built beside the main thread; null where there
+ * was none to build with. A browser without KHR_parallel_shader_compile builds a shader on the
+ * main thread, and a second build there would hold the page in the middle of a scroll, for
+ * seconds on a software GL.
+ */
+let firstBuild: Promise<boolean | null> | null = null
 
 /** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
 function rendererName(gl: WebGLRenderingContext): string {
@@ -388,8 +420,11 @@ function rendererName(gl: WebGLRenderingContext): string {
  * Resolves once the driver has finished building `program`. Where it can build in the background
  * (KHR_parallel_shader_compile), this waits a frame at a time instead of blocking the main thread.
  */
-function built(gl: WebGLRenderingContext, program: WebGLProgram): Promise<void> {
-  const parallel = gl.getExtension('KHR_parallel_shader_compile')
+function built(
+  gl: WebGLRenderingContext,
+  program: WebGLProgram,
+  parallel: KHR_parallel_shader_compile | null,
+): Promise<void> {
   if (!parallel) return Promise.resolve()
   return new Promise((resolve) => {
     const poll = () => {
@@ -400,7 +435,7 @@ function built(gl: WebGLRenderingContext, program: WebGLProgram): Promise<void> 
   })
 }
 
-async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | null> {
+async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise<Renderer | null> {
   const gl = canvas.getContext('webgl', {
     alpha: false,
     antialias: false,
@@ -422,13 +457,14 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     gl.compileShader(created)
     return created
   }
+  const parallel = gl.getExtension('KHR_parallel_shader_compile')
   const vertex = shader(gl.VERTEX_SHADER, VERTEX)
   const fragment = shader(gl.FRAGMENT_SHADER, FRAGMENT)
   const program = gl.createProgram()
   gl.attachShader(program, vertex)
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
-  await built(gl, program)
+  await built(gl, program, parallel)
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     const compiled = [vertex, fragment].every((part) =>
       gl.getShaderParameter(part, gl.COMPILE_STATUS),
@@ -454,6 +490,7 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     glow: uniform('uGlow'),
     dir: uniform('uDir'),
   }
+  gl.uniform1f(uniform('uSoft'), soft ? 1 : 0)
 
   const resize = () => {
     const { width, height } = renderSize(canvas.clientWidth, canvas.clientHeight)
@@ -485,6 +522,7 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     release: () => {
       if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
+    beside: parallel !== null,
   }
 }
 
@@ -504,8 +542,12 @@ function readAurora(root: HTMLElement): AuroraInputs | null {
     : null
 }
 
+/** Calls `report` with whether the sky can be seen, now and on each change; returns its stop. */
+export type Sight = (report: (shown: boolean) => void) => () => void
+
 export interface BackdropParts {
-  hero: HTMLElement
+  /** The element the sky belongs to: it carries `data-backdrop` and `data-backdrop-state`. */
+  stage: HTMLElement
   canvas: HTMLCanvasElement
   /**
    * Per appearance, the element whose computed `--backdrop` is the Tide gradient; inside it,
@@ -516,23 +558,41 @@ export interface BackdropParts {
   webgl?: boolean
   /** The reader's pause: while it holds, the flow stops where it is. */
   pause?: Pause
+  /** Bands without a tight edge, for a sky behind text. */
+  soft?: boolean
+  /** When the sky can be seen, if that is not simply when the stage is on screen. */
+  inView?: Sight
+  /**
+   * Builds no shader where the first one on the page was built on the main thread: the CSS layers
+   * stay.
+   */
+  thrifty?: boolean
+}
+
+export interface BackdropHandle {
+  /** Reads the palette again and draws a frame with it. */
+  repaint(): void
+  stop(): void
 }
 
 /**
- * Draws the hero's aurora with WebGL at up to 30 frames a second while the hero is on screen and
- * the tab is shown, once its shaders are built; with reduced motion it drifts at a third of the
- * pace. The CSS layers underneath show until then, without WebGL, on a software renderer and when
- * the first frames run slow. `data-backdrop` on the hero says which one shows (`webgl` or `css`)
- * and `data-backdrop-state` whether it moves (`running`, or `idle` while off screen, in a hidden
- * tab or paused).
+ * Draws an aurora with WebGL at up to 30 frames a second while it can be seen and the tab is
+ * shown, once its shaders are built; with reduced motion it drifts at a third of the pace. The
+ * CSS layers underneath show until then, without WebGL, on a software renderer and when the first
+ * frames at rest run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
+ * `data-backdrop-state` whether it moves (`running`, or `idle` while out of sight, in a hidden tab
+ * or paused).
  */
 export function startBackdrop({
-  hero,
+  stage,
   canvas,
   sources,
   webgl = true,
   pause = browserPause(),
-}: BackdropParts): () => void {
+  soft = false,
+  inView,
+  thrifty = false,
+}: BackdropParts): BackdropHandle {
   const reduced = matchMedia(REDUCED_MOTION_QUERY)
   const dark = matchMedia('(prefers-color-scheme: dark)')
   let renderer: Renderer | null = null
@@ -541,12 +601,17 @@ export function startBackdrop({
   let frame = 0
   let lastDraw = -1
   let lastTick = 0
+  let lastScroll = window.scrollY
+  let scrolledAt = Number.NEGATIVE_INFINITY
   let flow = FLOW_ORIGIN
-  /** Frame intervals seen so far, until the GPU has shown it keeps up. */
-  let intervals: number[] | null = []
+  /** Frame intervals seen at rest so far, until the GPU has shown it keeps up. */
+  let rested: number[] | null = []
+  /** The same while the page scrolls, until those have shown it is not far behind. */
+  let scrolling: number[] | null = []
 
   const palette = () => {
-    const scheme: Scheme = dark.matches ? 'dark' : 'light'
+    // A page that wears the night draws the dark palette whatever the reader's scheme.
+    const scheme: Scheme = dark.matches || stage.closest(NIGHT) !== null ? 'dark' : 'light'
     const inputs = readAurora(sources[scheme])
     if (!inputs || !renderer) return false
     renderer.setPalette(auroraPalette(inputs, scheme))
@@ -557,7 +622,7 @@ export function startBackdrop({
     const released = renderer
     renderer = null
     released?.release()
-    hero.dataset['backdrop'] = 'css'
+    stage.dataset['backdrop'] = 'css'
   }
 
   const draw = () => {
@@ -568,7 +633,7 @@ export function startBackdrop({
 
   const sync = () => {
     const moving = visible && !document.hidden && !pause.paused
-    hero.dataset['backdropState'] = moving ? 'running' : 'idle'
+    stage.dataset['backdropState'] = moving ? 'running' : 'idle'
     const animate = moving && renderer !== null
     if (animate && !frame) {
       lastTick = 0
@@ -579,21 +644,31 @@ export function startBackdrop({
     }
   }
 
-  const keepsUp = (interval: number) => {
-    if (!intervals) return true
-    intervals.push(interval)
-    const slow = framesTooSlow(intervals)
+  const keepsUp = (interval: number, atRest: boolean) => {
+    if (!rested) return true
+    if (atRest) {
+      rested.push(interval)
+      const slow = framesTooSlow(rested)
+      if (slow === null) return true
+      rested = null
+      return !slow
+    }
+    if (!scrolling) return true
+    scrolling.push(interval)
+    const slow = framesTooSlow(scrolling, FRAME_CHECK.scrollingMs)
     if (slow === null) return true
-    intervals = null
+    scrolling = null
     return !slow
   }
 
   function loop(now: number) {
     frame = 0
+    if (window.scrollY !== lastScroll) scrolledAt = now
+    lastScroll = window.scrollY
     if (lastTick) {
       const interval = now - lastTick
       flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
-      if (!keepsUp(interval)) {
+      if (!keepsUp(interval, now - scrolledAt >= SCROLL_REST)) {
         fallBack()
         return sync()
       }
@@ -618,24 +693,38 @@ export function startBackdrop({
     renderer = created
     if (renderer && palette()) {
       draw()
-      hero.dataset['backdrop'] = 'webgl'
+      stage.dataset['backdrop'] = 'webgl'
     } else {
       fallBack()
     }
     sync()
   }
-  if (webgl) {
-    createRenderer(canvas).then(begin, (error: unknown) => {
+  const build = async () => {
+    if (thrifty && firstBuild !== null && (await firstBuild) === false) return
+    const made = createRenderer(canvas, soft)
+    firstBuild ??= made.then(
+      (created) => created?.beside ?? null,
+      () => null,
+    )
+    made.then(begin, (error: unknown) => {
       console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
       begin(null)
     })
   }
+  if (webgl) void build()
 
-  const observer = new IntersectionObserver(([entry]) => {
-    visible = entry?.isIntersecting ?? true
+  const onScreen: Sight = (report) => {
+    // Several changes can arrive at once; the last is where the stage stands now.
+    const observer = new IntersectionObserver((entries) =>
+      report(entries.at(-1)?.isIntersecting ?? true),
+    )
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }
+  const stopWatching = (inView ?? onScreen)((shown) => {
+    visible = shown
     sync()
   })
-  observer.observe(hero)
   const resize = new ResizeObserver(() => {
     if (!frame) draw()
   })
@@ -651,15 +740,18 @@ export function startBackdrop({
   const stopPause = pause.subscribe(sync)
   sync()
 
-  return () => {
-    stopped = true
-    if (frame) cancelAnimationFrame(frame)
-    frame = 0
-    observer.disconnect()
-    resize.disconnect()
-    canvas.removeEventListener('webglcontextlost', onLost)
-    document.removeEventListener('visibilitychange', sync)
-    dark.removeEventListener('change', repaint)
-    stopPause()
+  return {
+    repaint,
+    stop() {
+      stopped = true
+      if (frame) cancelAnimationFrame(frame)
+      frame = 0
+      stopWatching()
+      resize.disconnect()
+      canvas.removeEventListener('webglcontextlost', onLost)
+      document.removeEventListener('visibilitychange', sync)
+      dark.removeEventListener('change', repaint)
+      stopPause()
+    },
   }
 }

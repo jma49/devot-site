@@ -114,8 +114,10 @@ test.describe('scroll-linked CSS', () => {
     )
 
     await scrollToElement(page, '#d', -600)
-    await expect.poll(() => shift(page)).toBeLessThan(-10)
-    const early = await shift(page)
+    // A view timeline follows the scroll a frame later: read at once, the shift is still the one
+    // from before the scroll.
+    const early = await steady(page, () => shift(page))
+    expect(early).toBeLessThan(-10)
     await scrollToElement(page, '#d', 200)
     await expect.poll(() => shift(page)).toBeGreaterThan(early + 50)
     await scrollToElement(page, '#d', -600)

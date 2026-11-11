@@ -32,7 +32,20 @@ describe('cssColor', () => {
   })
 })
 
+const MIXED = `:root[data-theme='tide'][data-appearance='light'] {
+  --backdrop: linear-gradient(160deg, color-mix(in srgb, rgb(196 216 247 / 0.7) calc(var(--gradient-strength, 100) * 1%), rgb(216 227 248 / 0.7)) 0%, rgb(216 227 248 / 0.7) 50%, color-mix(in srgb, rgb(198 229 242 / 0.7) calc(var(--gradient-strength, 100) * 1%), rgb(216 227 248 / 0.7)) 100%);
+}
+`
+
 describe('backdrop', () => {
+  it('draws the full gradient where the outer stops follow the Gradient setting', () => {
+    expect(backdrop(MIXED, 'tide').stops).toEqual([
+      { offset: 0, hex: '#c4d8f7', alpha: 0.7 },
+      { offset: 0.5, hex: '#d8e3f8', alpha: 0.7 },
+      { offset: 1, hex: '#c6e5f2', alpha: 0.7 },
+    ])
+  })
+
   it("reads a theme's light gradient: its angle and its stops", () => {
     expect(backdrop(SAMPLE, 'tide')).toEqual({
       angle: 160,
@@ -45,7 +58,7 @@ describe('backdrop', () => {
   })
 
   it("finds Tide in Devot's tokens", () => {
-    expect(backdrop(tokensCss, 'tide').stops.length).toBeGreaterThanOrEqual(2)
+    expect(backdrop(tokensCss, 'tide').stops.length).toBe(3)
   })
 
   it('fails the build with E_OG_BACKDROP for a theme the tokens lack', () => {

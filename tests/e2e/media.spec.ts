@@ -93,9 +93,11 @@ async function scrollThrough(page: Page) {
       page
         .locator('video[data-clip]')
         .evaluateAll((videos) =>
-          videos.every(
-            (video) => (video as HTMLVideoElement).currentSrc && video.getAttribute('poster'),
-          ),
+          videos
+            .filter((video) => (video as HTMLElement).offsetParent !== null)
+            .every(
+              (video) => (video as HTMLVideoElement).currentSrc && video.getAttribute('poster'),
+            ),
         ),
     )
     .toBe(true)
@@ -120,7 +122,7 @@ for (const scheme of ['light', 'dark'] as const) {
     ['desktop', desktop, 1500, 4000],
     ['phone', phone, 1000, 3000],
   ] as const) {
-    test(`loads only the ${scheme} ${label} files, within ${firstBudget} KB first and ${wholeBudget} KB in all`, async ({
+    test(`loads only the dark ${label} files on a ${scheme} system, within ${firstBudget} KB first and ${wholeBudget} KB in all`, async ({
       page,
       browserName,
     }) => {
@@ -138,7 +140,8 @@ for (const scheme of ['light', 'dark'] as const) {
       const dark = (file: string) => /-dark[.-]/.test(file)
       const cut = (file: string) => /-phone[.-]/.test(file)
       expect(log.files.length).toBeGreaterThan(SLOTS.length)
-      expect(log.files.filter((file) => dark(file) !== (scheme === 'dark'))).toEqual([])
+      // The page wears the night in either scheme, so no light file is ever asked for.
+      expect(log.files.filter((file) => !dark(file))).toEqual([])
       const wrongCut = log.files.filter((file) => {
         const slot = file.split('/')[2] as (typeof SLOTS)[number]
         return cut(file) !== (label === 'phone' && media[slot].phone !== undefined)

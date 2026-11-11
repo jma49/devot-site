@@ -198,6 +198,11 @@
   }
 }
 
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .card-swatches > span {
+  filter: saturate(2.4);
+}
+
 .card-body {
   max-width: 40ch;
   margin: 0.5rem 0 0;
@@ -247,6 +252,15 @@
   .card-well[data-appearance-preview='dark'] {
     display: block;
   }
+}
+
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .card-well[data-appearance-preview='light'] {
+  display: none;
+}
+
+[data-scope='dark'] .card-well[data-appearance-preview='dark'] {
+  display: block;
 }
 
 .card-crop {

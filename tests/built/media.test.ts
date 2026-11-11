@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { media, SLOTS } from '../../src/media.ts'
+import { media, pinned, SLOTS } from '../../src/media.ts'
 import { SITE_URL } from '../../src/site.ts'
 import { builtClips } from '../support/clip-policy.ts'
 import { allows, directives, siteCsp } from '../support/headers.ts'
@@ -50,12 +50,15 @@ describe.each(pages)('%s', (page) => {
 
 it('offers every variant of every clip on the home page, with its posters', () => {
   const clips = builtClips(readRepoFile('dist/index.html'))
-  expect(clips).toHaveLength(SLOTS.length)
-  for (const name of SLOTS) {
-    const clip = clips.find(({ sources }) => sources.includes(media[name].sources.at(-1)!.src))
-    expect(clip?.sources, name).toEqual(media[name].sources.map(({ src }) => src))
-    expect(clip?.posters, name).toEqual(
-      media[name].variants.filter((variant) => variant.media).map((variant) => variant.poster),
+  // The home page wears the night in either scheme, so it carries the dark recordings only.
+  const shown = SLOTS.map((name) => pinned(media[name], 'dark'))
+  expect(clips).toHaveLength(shown.length)
+  for (const slot of shown) {
+    const last = slot.sources.at(-1)!.src
+    const clip = clips.find(({ sources }) => sources.at(-1) === last)
+    expect(clip?.sources, last).toEqual(slot.sources.map(({ src }) => src))
+    expect(clip?.posters, last).toEqual(
+      slot.variants.filter((variant) => variant.media).map((variant) => variant.poster),
     )
   }
 })
@@ -66,7 +69,7 @@ it('preloads the hero poster once per variant, each for a query no other matches
     media: attrs.get('media'),
   }))
   expect(links).toEqual(
-    media.hero.variants.map(({ poster, only }) => ({ href: poster, media: only })),
+    pinned(media.hero, 'dark').variants.map(({ poster, only }) => ({ href: poster, media: only })),
   )
 })
 
@@ -75,7 +78,7 @@ it('styles the hero poster from the built stylesheet', () => {
     .filter((file) => file.endsWith('.css'))
     .map(readRepoFile)
     .join('\n')
-  for (const { poster } of media.hero.variants) expect(css).toContain(poster)
+  for (const { poster } of pinned(media.hero, 'dark').variants) expect(css).toContain(poster)
 })
 
 it('shows each poster as a picture of its variants when scripts do not run', () => {
@@ -90,11 +93,15 @@ it('shows each poster as a picture of its variants when scripts do not run', () 
       }
     },
   )
+  const shown = SLOTS.filter((name) => media[name].clip).map((name) => ({
+    slot: pinned(media[name], 'dark'),
+    loading: name === 'hero' ? 'eager' : 'lazy',
+  }))
   expect(pictures).toEqual(
-    SLOTS.filter((name) => media[name].clip).map((name) => ({
-      sources: media[name].variants.filter((v) => v.media).map((v) => v.poster),
-      img: media[name].poster,
-      loading: name === 'hero' ? 'eager' : 'lazy',
+    shown.map(({ slot, loading }) => ({
+      sources: slot.variants.filter((v) => v.media).map((v) => v.poster),
+      img: slot.poster,
+      loading,
     })),
   )
 })

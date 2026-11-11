@@ -91,9 +91,11 @@ describe.each(pages)('%s', (page) => {
     expect(meta(html, 'description')).toBeTruthy()
     expect(meta(html, 'og:title')).toBeTruthy()
     expect(meta(html, 'twitter:card')).toBe('summary_large_image')
+    // One per scheme, or the night's alone on a page that wears it in either.
+    const night = tags(html, 'html')[0]?.attrs.get('data-scope') === 'dark'
     expect(
       tags(html, 'meta').filter(({ attrs }) => attrs.get('name') === 'theme-color'),
-    ).toHaveLength(2)
+    ).toHaveLength(night ? 1 : 2)
     expect(tags(html, 'h1')).toHaveLength(1)
   })
 

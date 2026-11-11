@@ -6,6 +6,7 @@ const t = messages()
 const sections = [
   { id: 'write', label: t.chrome.nav.write },
   { id: 'cards', label: t.chrome.nav.cards },
+  { id: 'iphone', label: t.chrome.nav.iphone },
   { id: 'local-first', label: t.chrome.nav.localFirst },
   { id: 'pricing', label: t.chrome.nav.pricing },
   { id: 'download', label: t.chrome.nav.download },
@@ -118,12 +119,13 @@ const sections = [
 
 <style>
   /* The transparent borders on the bar and the pill become edges in forced colours. */
-  :global(:root) {
+  :global(:root),
+  :global([data-scope]) {
     --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 58%, transparent);
     --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 82%, transparent);
     --chrome-glass-filter: var(--site-glass-blur);
     --chrome-glass-light: linear-gradient(to bottom, var(--site-glass-rim-faint), transparent 70%);
-    --chrome-edge: var(--color-line-float-bar);
+    --chrome-edge: var(--color-line-separator);
     --chrome-shadow:
       0 1px 2px var(--color-shadow-popover-key),
       0 var(--shadow-float-bar-y) var(--shadow-float-bar-blur) var(--color-shadow-float-bar);
@@ -142,6 +144,12 @@ const sections = [
       --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 62%, transparent);
       --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 91%, transparent);
     }
+  }
+
+  /* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+  :global([data-scope='dark']) {
+    --chrome-glass: color-mix(in oklab, var(--color-surface-float-bar) 62%, transparent);
+    --chrome-glass-strong: color-mix(in oklab, var(--color-surface-float-bar) 91%, transparent);
   }
 
   :global(html[data-menu-open]) {
@@ -260,6 +268,12 @@ const sections = [
     .pill-mark {
       background-image: url('../assets/dove-small-dark.svg');
     }
+  }
+
+  /* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+  :global([data-scope='dark']) .brand-mark,
+  :global([data-scope='dark']) .pill-mark {
+    background-image: url('../assets/dove-small-dark.svg');
   }
 
   .nav-list {

@@ -1,0 +1,124 @@
+/*
+ * The hero's sky goes on behind the rest of the page: the same aurora, fainter, fixed to the
+ * viewport so every section and the margins beside it lie under one night. page-sky.ts draws it
+ * with the hero's shader, flowing as the hero's does; the CSS aurora under the canvas stands in
+ * until then, without WebGL and on phones, where its bands drift slowly on transforms only. Either
+ * rests with the reader's pause and slows down with reduced motion.
+ */
+.page-sky {
+  /* The share of the page colour laid over the sky; what is left is the sky's strength. */
+  --sky-veil: 53%;
+
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/*
+ * A layer fixed under a scrolling page is put together again on every scrolled frame. Where no
+ * GPU does that, an opacity on the whole sky and the filters the hero's aurora wears made such a
+ * frame cost close to twice as much (61 to 68 ms against 38 without a sky, measured on a software
+ * renderer). So the sky is dimmed by a veil of the page colour over it, which blends to the same
+ * colours, and its CSS aurora goes without the filters: with both, a frame costs what it does
+ * without a sky.
+ */
+.page-sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--site-color-page) var(--sky-veil), transparent);
+}
+
+.page-sky .aurora[data-aurora] {
+  --aurora-drift: 26s;
+  --aurora-band-shape: var(--aurora-band-soft);
+  --aurora-filter: none;
+  --aurora-band-filter: none;
+}
+
+.page-sky .aurora-warm::before,
+.page-sky .aurora-warm::after {
+  filter: none;
+}
+
+/* Without the filters the bands take more of their pigment, to stand as bright as before. */
+.page-sky .aurora[data-aurora='dark'] {
+  --aurora-sage-pigment: color-mix(in oklab, var(--color-activity-level-4) 40%, transparent);
+  --aurora-tide-pigment: color-mix(in oklab, var(--color-accent-fill) 36%, transparent);
+}
+
+.page-sky .aurora-band-sage {
+  height: 38%;
+}
+
+.page-sky .aurora-band-tide {
+  height: 44%;
+}
+
+.page-sky__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.page-sky[data-backdrop='webgl'] .page-sky__canvas {
+  opacity: 1;
+}
+
+/* Under the canvas the CSS bands stop, as they do while the hero covers the sky. */
+.page-sky[data-backdrop='webgl'] .aurora-band {
+  visibility: hidden;
+  transition: visibility 0s linear var(--site-dur-media);
+  animation-play-state: paused;
+}
+
+.page-sky[data-backdrop-state='idle'] .aurora-band {
+  animation-play-state: paused;
+}
+
+/* As the hero's, the canvas fades in only: one that has given its context back is blank. */
+@media (prefers-reduced-motion: no-preference) {
+  .page-sky[data-backdrop='webgl'] .page-sky__canvas {
+    transition: opacity var(--site-dur-media) var(--site-ease-text);
+  }
+}
+
+/*
+ * At its brightest the sky keeps the page's text, its muted tier and its links at 4.5:1 (the
+ * opacity above). The faintest tier needs darker ground than that, and lies on the sky only in the
+ * footer: there the night comes down to the ground, a shade of the page colour that rises under
+ * the footer from edge to edge of the page. border-image paints beside the box without widening
+ * the page.
+ */
+.site-footer {
+  position: relative;
+}
+
+.site-footer::before {
+  --sky-ground: color-mix(in oklab, var(--site-color-page) 62%, transparent);
+  --sky-ground-rise: 9rem;
+
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--sky-ground-rise)) 0 0;
+  z-index: -1;
+  border-image: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--sky-ground) 12%, transparent) calc(var(--sky-ground-rise) * 0.3),
+      color-mix(in srgb, var(--sky-ground) 50%, transparent) calc(var(--sky-ground-rise) * 0.6),
+      color-mix(in srgb, var(--sky-ground) 88%, transparent) calc(var(--sky-ground-rise) * 0.85),
+      var(--sky-ground) var(--sky-ground-rise)
+    )
+    fill 0 / 0 / 0 100vw;
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .page-sky {
+    display: none;
+  }
+}

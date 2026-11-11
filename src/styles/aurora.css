@@ -11,6 +11,27 @@
   --aurora-sage-pigment: color-mix(in oklab, var(--color-activity-level-4) 20%, transparent);
   --aurora-tide-pigment: color-mix(in oklab, var(--color-accent-fill) 16%, transparent);
   --aurora-drift: 12s;
+  /* A band from top to bottom: tight at its lower edge under a long glow, as over the hero, or
+     soft on both sides where it lies behind a section and must not draw a line across it. */
+  --aurora-band-tight: linear-gradient(
+    to bottom,
+    transparent,
+    var(--aurora-opaque) 74%,
+    transparent
+  );
+  --aurora-band-soft: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--aurora-opaque) 10%, transparent) 14%,
+    color-mix(in srgb, var(--aurora-opaque) 40%, transparent) 30%,
+    color-mix(in srgb, var(--aurora-opaque) 82%, transparent) 44%,
+    var(--aurora-opaque) 54%,
+    color-mix(in srgb, var(--aurora-opaque) 82%, transparent) 64%,
+    color-mix(in srgb, var(--aurora-opaque) 40%, transparent) 78%,
+    color-mix(in srgb, var(--aurora-opaque) 10%, transparent) 91%,
+    transparent
+  );
+  --aurora-band-shape: var(--aurora-band-tight);
 
   position: absolute;
   inset: 0;
@@ -38,7 +59,16 @@
   }
 }
 
-/* A band: tight at its lower edge, a long glow above, fading out at both ends. */
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .aurora[data-aurora='light'] {
+  display: none;
+}
+
+[data-scope='dark'] .aurora[data-aurora='dark'] {
+  display: block;
+}
+
+/* A band: its shape from top to bottom, fading out at both ends. */
 .aurora-band {
   position: absolute;
   left: -20%;
@@ -46,7 +76,7 @@
   background: linear-gradient(var(--aurora-pigment), var(--aurora-pigment)), var(--backdrop);
   filter: var(--aurora-band-filter);
   mask-image:
-    linear-gradient(to bottom, transparent, var(--aurora-opaque) 74%, transparent),
+    var(--aurora-band-shape),
     linear-gradient(
       to right,
       transparent 4%,

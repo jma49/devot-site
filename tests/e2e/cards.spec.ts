@@ -296,7 +296,7 @@ test.describe('feature cards at 1440', () => {
   })
 
   for (const colorScheme of ['light', 'dark'] as const) {
-    test(`passes an accessibility scan in the ${colorScheme} appearance`, async ({ page }) => {
+    test(`passes an accessibility scan on a ${colorScheme} system`, async ({ page }) => {
       await page.emulateMedia({ colorScheme, reducedMotion: 'no-preference' })
       await page.goto('/')
       await revealAll(page)
@@ -308,7 +308,8 @@ test.describe('feature cards at 1440', () => {
             .filter((well) => getComputedStyle(well).display !== 'none')
             .map((well) => well.getAttribute('data-appearance-preview')),
         )
-      expect(new Set(visibleWells)).toEqual(new Set([colorScheme]))
+      // The page wears the night in either scheme.
+      expect(new Set(visibleWells)).toEqual(new Set(['dark']))
 
       const scan = await new AxeBuilder({ page })
         .include('#cards')

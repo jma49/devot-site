@@ -1,5 +1,8 @@
 ---
 import '../../styles/home/hero.css'
+import { getImage } from 'astro:assets'
+import notesDark from '../../assets/iphone/p1-notes-dark.png'
+import reading from '../../assets/iphone/p2-read-dark.mp4?url'
 import { messages } from '../../i18n/index.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
@@ -7,6 +10,17 @@ import Clip from '../Clip.astro'
 import InstallNote from '../InstallNote.astro'
 
 const t = messages()
+
+// The widest the phone is drawn is 216 px; twice that covers a 2x screen. Its recording opens on
+// the Notes tab, which this still shows, and is 440 by 956 too.
+const phoneStill = await getImage({
+  src: notesDark,
+  width: 440,
+  height: 956,
+  format: 'webp',
+  quality: 82,
+})
+const phoneSize = { width: phoneStill.attributes.width, height: phoneStill.attributes.height }
 ---
 
 <section id="hero" class="hero" aria-labelledby="hero-title" data-hero data-backdrop="css">
@@ -25,10 +39,14 @@ const t = messages()
       {t.hero.titleLines.map((line, index) => (
         <>
           {index > 0 && ' '}
-          <span
-            class:list={['hero-line', { 'site-accent': index === t.hero.titleLines.length - 1 }]}
-          >
+          <span class="hero-line">
             {line}
+            {index === t.hero.titleLines.length - 1 && (
+              <>
+                {' '}
+                <span class="site-accent hero-accent">{t.hero.titleAccent}</span>
+              </>
+            )}
           </span>
         </>
       ))}
@@ -38,22 +56,27 @@ const t = messages()
 
   <div class="hero-cta" data-hero-cta>
     <div class="hero-cta-inner">
-      <a
-        class="brand-button hero-download"
-        href={DOWNLOAD_URL}
-        aria-describedby="download-requirements"
-      >
-        <svg
-          class="brand-button-glyph"
-          viewBox="0 0 16 16"
-          width="16"
-          height="16"
-          aria-hidden="true"
+      <div class="action-row">
+        <a
+          class="brand-button hero-download"
+          href={DOWNLOAD_URL}
+          aria-describedby="download-requirements"
         >
-          <path d="M8 2.5v7.25M4.75 6.75 8 10l3.25-3.25M3 13h10"></path>
-        </svg>
-        {t.download.label}
-      </a>
+          <svg
+            class="brand-button-glyph"
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          >
+            <path d="M8 2.5v7.25M4.75 6.75 8 10l3.25-3.25M3 13h10"></path>
+          </svg>
+          {t.download.label}
+        </a>
+        <a class="quiet-button" href="#iphone">
+          {t.download.iphone}
+        </a>
+      </div>
       <p class="hero-requirements" id="download-requirements">
         {t.download.requirements}
       </p>
@@ -65,9 +88,36 @@ const t = messages()
     <div class="hero-rig">
       <div class="hero-window">
         <div class="hero-frame">
-          <Clip name="hero" class="hero-clip" priority />
+          <Clip name="hero" scheme="dark" class="hero-clip" priority />
         </div>
       </div>
+    </div>
+    <div class="hero-phone">
+      <video
+        class="hero-phone-screen"
+        data-hero-phone
+        width={phoneSize.width}
+        height={phoneSize.height}
+        poster={phoneStill.src}
+        aria-label={t.media.iphoneReading}
+        preload="none"
+        tabindex="-1"
+        muted
+        loop
+        playsinline
+      >
+        <source data-src={reading} type="video/mp4" />
+      </video>
+      <noscript>
+        <img
+          class="hero-phone-screen"
+          src={phoneStill.src}
+          width={phoneSize.width}
+          height={phoneSize.height}
+          alt={t.media.iphoneNotes}
+          decoding="async"
+        />
+      </noscript>
     </div>
   </div>
 </section>

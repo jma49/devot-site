@@ -44,11 +44,13 @@ for (const [name, section] of Object.entries(SECTIONS)) {
           'underline',
         )
 
+        // The download button shares a row with the iPhone action; the note is centred under it.
         const cta = await button(page, section).boundingBox()
+        const row = await page.locator(`${section} .action-row`).boundingBox()
         const box = await text.boundingBox()
-        expect(cta && box).toBeTruthy()
+        expect(cta && row && box).toBeTruthy()
         expect(box!.y).toBeGreaterThan(cta!.y + cta!.height)
-        expect(Math.abs(box!.x + box!.width / 2 - (cta!.x + cta!.width / 2))).toBeLessThan(2)
+        expect(Math.abs(box!.x + box!.width / 2 - (row!.x + row!.width / 2))).toBeLessThan(2)
         expect(box!.x).toBeGreaterThanOrEqual(0)
         expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width)
       })

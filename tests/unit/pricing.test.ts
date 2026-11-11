@@ -5,11 +5,13 @@ import { LEGAL_LINKS, REFUNDS_PATH, TERMS_PATH, footerLinks } from '../../src/li
 import {
   BUILD_URL,
   BUY_URL,
+  IPHONE_OS,
+  IPHONE_PRICE,
   ISSUES_URL,
   LICENCE_PRICE,
+  PRIVACY_EMAIL,
   REFUND_DAYS,
   REPO_URL,
-  PRIVACY_EMAIL,
   RESEND_URL,
   TRIAL_DAYS,
 } from '../../src/site.ts'
@@ -62,7 +64,7 @@ describe('the pricing section', () => {
     expect(copy.trial.terms).toMatch(/first time you open Devot/)
     const trial = copy.trial.items.join(' ')
     expect(trial).toMatch(/writing/i)
-    expect(trial).toMatch(/end-to-end encrypted sync, through a relay you deploy/i)
+    expect(trial).toMatch(/end-to-end encrypted sync, through your iCloud or a relay you deploy/i)
     expect(trial).toMatch(/AI with keys from your own provider/)
   })
 
@@ -220,11 +222,17 @@ it('gives no email address in the copy but the privacy contact, which links to a
   expect(addresses).toEqual([PRIVACY_EMAIL])
 })
 
-// The privacy policy and the support page serve the iPhone app's App Store listing.
 it('promises nothing Devot has not shipped', () => {
-  const { privacyPolicy: _privacy, support: _support, ...rest } = en
-  const claims = [...catalogStrings(rest, [2026])].filter((text) =>
-    /\biPhone\b|\biPad\b|\biOS\b|semantic search/i.test(text),
+  const claims = [...catalogStrings(en, [2026])].filter(
+    (text) => /\biPad(OS)?\b|\bAndroid\b|\bWindows\b/.test(text) || /semantic search/i.test(text),
   )
   expect(claims).toEqual([])
+})
+
+it('names the iPhone app by what it needs and what it costs', () => {
+  expect(en.download.iphoneRequirements).toContain(IPHONE_OS)
+  expect(en.download.requirements).toContain(IPHONE_OS)
+  expect(en.pricing.iphone.body).toContain(IPHONE_PRICE)
+  expect(en.pricing.iphone.body).toMatch(/A Mac licence unlocks the iPhone/)
+  expect(en.pricing.iphone.body).toMatch(/an iPhone purchase brings a Mac licence key/)
 })

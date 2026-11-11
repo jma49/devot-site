@@ -64,7 +64,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
       { id: 'install', href: INSTALL_URL },
       { id: 'architecture', href: blob('docs/architecture.md') },
       { id: 'development', href: blob('docs/development.md') },
-      { id: 'mcp', href: `${REPO_URL}#claude-and-other-mcp-clients-devot-mcp` },
+      { id: 'mcp', href: `${REPO_URL}#claude-and-other-mcp-clients` },
     ],
   },
   {

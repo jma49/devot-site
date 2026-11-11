@@ -1,7 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import type { Locator, Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
-import { media, type SlotName } from '../../src/media.ts'
+import { media, SLOTS, type SlotName } from '../../src/media.ts'
 import { PAUSE_KEY } from '../../src/scripts/pause.ts'
 import { expect, test } from './fixtures.ts'
 
@@ -51,12 +51,16 @@ for (const viewport of [DESKTOP, PHONE]) {
     test('gives every clip a play button of at least 24 px, named for its clip', async ({
       page,
     }) => {
+      // The hero's light recording is not drawn while the page is paused, nor is its button.
       const slots = await page
         .locator('video[data-clip]')
         .evaluateAll((videos) =>
-          videos.map((v) => (v as HTMLVideoElement).dataset.clip as SlotName),
+          videos
+            .filter((v) => (v as HTMLElement).offsetParent !== null)
+            .map((v) => (v as HTMLVideoElement).dataset.clip as SlotName),
         )
-      await expect(controls(page)).toHaveCount(slots.length)
+      expect(slots).toHaveLength(SLOTS.length)
+      await expect(controls(page).and(page.locator(':visible'))).toHaveCount(slots.length)
       const names = new Set<string>()
       for (const slot of slots) {
         const button = control(page, slot)
@@ -243,41 +247,21 @@ test.describe('with animations paused', () => {
     await expect(page.locator('[data-features-ready]')).toHaveCount(1)
   })
 
-  test('plays the files for the scheme in use when the scheme changed since the last play', async ({
+  // The page wears the night in either scheme, so its clips are the dark recordings.
+  test('plays the dark files on a light system, and keeps them when the scheme changes', async ({
     page,
   }) => {
     const video = clip(page, 'card-2')
     const button = control(page, 'card-2')
     await centre(button)
     await button.click()
-    await expect.poll(() => isPlaying(video), { timeout: 10_000 }).toBe(true)
-    expect(filesFor('card-2', 'light')).toContain(await playingFile(video))
-    await button.click()
-    await expect(button).toHaveAttribute('aria-pressed', 'false')
-
-    await page.emulateMedia({ colorScheme: 'dark' })
-    await button.click()
-
-    await expect(button).toHaveAttribute('aria-pressed', 'true')
     await expect.poll(() => isPlaying(video), { timeout: 10_000 }).toBe(true)
     expect(filesFor('card-2', 'dark')).toContain(await playingFile(video))
-  })
-
-  test('moves a playing clip to the files for a new scheme and keeps it playing', async ({
-    page,
-  }) => {
-    const video = clip(page, 'card-2')
-    const button = control(page, 'card-2')
-    await centre(button)
-    await button.click()
-    await expect.poll(() => isPlaying(video), { timeout: 10_000 }).toBe(true)
 
     await page.emulateMedia({ colorScheme: 'dark' })
 
-    await expect
-      .poll(async () => filesFor('card-2', 'dark').includes(await playingFile(video)))
-      .toBe(true)
     await expect.poll(() => isPlaying(video), { timeout: 10_000 }).toBe(true)
+    expect(filesFor('card-2', 'dark')).toContain(await playingFile(video))
     await expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 })

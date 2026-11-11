@@ -3,6 +3,8 @@ import CardGrid from '../components/home/CardGrid.astro'
 import ClosingCta from '../components/home/ClosingCta.astro'
 import Features from '../components/home/Features.astro'
 import Hero from '../components/home/Hero.astro'
+import IPhone from '../components/home/IPhone.astro'
+import PageSky from '../components/home/PageSky.astro'
 import Pricing from '../components/home/Pricing.astro'
 import Privacy from '../components/home/Privacy.astro'
 import { messages } from '../i18n/index.ts'
@@ -10,10 +12,12 @@ import Base from '../layouts/Base.astro'
 import { structuredData } from '../lib/structured-data.ts'
 ---
 
-<Base structuredData={structuredData(messages())}>
+<Base night structuredData={structuredData(messages())}>
+  <PageSky />
   <Hero />
   <Features />
   <CardGrid />
+  <IPhone />
   <Privacy />
   <Pricing />
   <ClosingCta />

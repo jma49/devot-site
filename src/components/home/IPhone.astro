@@ -1,0 +1,107 @@
+---
+import '../../styles/home/iphone.css'
+import { getImage } from 'astro:assets'
+import notesDark from '../../assets/iphone/p1-notes-dark.png'
+import readDark from '../../assets/iphone/p2-read-dark.png'
+import { messages } from '../../i18n/index.ts'
+import { APP_STORE_URL } from '../../site.ts'
+import Aurora from '../Aurora.astro'
+
+const t = messages()
+const copy = t.iphone
+const news = t.whatsNew
+
+// The widest a phone is drawn is 224 px; a 2x screen gets nearly two pixels for each.
+const screen = (src: ImageMetadata) => getImage({ src, width: 440, format: 'webp', quality: 82 })
+const screens = [
+  { name: 'back', still: await screen(notesDark), alt: t.media.iphoneNotes },
+  { name: 'front', still: await screen(readDark), alt: t.media.iphoneRead },
+]
+---
+
+<section id="new" class="news" aria-label={news.label}>
+  <div class="news__inner">
+    <h2 class="news__title">
+      {news.title.map((line, index) => (
+        <Fragment>
+          {index > 0 && ' '}
+          <span
+            class:list={['news__line', { 'site-accent': index === news.title.length - 1 }]}
+            data-reveal
+            data-reveal-index={index}
+          >
+            {line}
+          </span>
+        </Fragment>
+      ))}
+    </h2>
+    <ul class="news__list" role="list">
+      {news.items.map((item, index) => (
+        <li class="news__item" data-reveal data-reveal-index={index + 2}>
+          <h3>{item.name}</h3>
+          <p>{item.text}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<section id="iphone" class="iphone" aria-label={copy.label}>
+  <div class="iphone__inner">
+    <div class="iphone__copy">
+      <h2 class="iphone__title">
+        {copy.title.map((line, index) => (
+          <Fragment>
+            {index > 0 && ' '}
+            <span
+              class:list={['iphone__line', { 'site-accent': index === copy.title.length - 1 }]}
+              data-reveal
+              data-reveal-index={index}
+            >
+              {line}
+            </span>
+          </Fragment>
+        ))}
+      </h2>
+      <p class="iphone__lead" data-reveal data-reveal-index="2">
+        {copy.lead}
+      </p>
+      <ul class="iphone__facts" role="list">
+        {copy.facts.map((fact, index) => (
+          <li data-reveal data-reveal-index={index + 3}>
+            <h3>{fact.name}</h3>
+            <p>{fact.text}</p>
+          </li>
+        ))}
+      </ul>
+      <div class="iphone__action" data-reveal data-reveal-index="6">
+        {APP_STORE_URL && (
+          <a class="brand-button" href={APP_STORE_URL} aria-describedby="iphone-requirements">
+            {t.download.appStore}
+          </a>
+        )}
+        <p class="iphone__requirements" id="iphone-requirements">
+          {t.download.iphoneRequirements}
+        </p>
+      </div>
+    </div>
+    <figure class="iphone__stage" data-reveal="scale">
+      <Aurora class="iphone__aurora" />
+      <div class="iphone__devices">
+        {screens.map(({ name, still, alt }) => (
+          <div class:list={['iphone__device', `iphone__device--${name}`]}>
+            <img
+              src={still.src}
+              width={still.attributes.width}
+              height={still.attributes.height}
+              alt={alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ))}
+      </div>
+      <figcaption class="visually-hidden">{copy.caption}</figcaption>
+    </figure>
+  </div>
+</section>

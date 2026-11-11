@@ -1,5 +1,8 @@
+import { afterFirstPaint } from '../lib/first-paint.ts'
 import { setVar } from '../lib/motion.ts'
 import { scrollEffects, scrubScroll } from '../lib/scroll.ts'
+import { WEBGL_QUERY } from '../lib/webgl.ts'
+import { mirrorPlayback } from './hero-phone.ts'
 
 /** The first scroll through the hero, in viewport heights and pixels. */
 export const HERO_SCROLL = {
@@ -17,12 +20,6 @@ export const HERO_SCROLL = {
   /** Seconds the layers trail the scroll by. */
   lag: 0.45,
 } as const
-
-/**
- * Phones keep the CSS gradient: building the shader holds a phone's main thread for longer than a
- * frame, and at that size the CSS layers look the same.
- */
-export const WEBGL_QUERY = '(min-width: 640px)'
 
 export interface HeroScroll {
   /** 0 tilted, 1 upright. */
@@ -75,26 +72,9 @@ function applyScroll(hero: HTMLElement, state: HeroScroll, written: Map<string, 
 }
 
 /**
- * Runs `task` once the page has loaded and painted a frame, when the main thread has a moment to
- * spare.
- */
-function afterFirstPaint(task: () => void): void {
-  const idle = () => {
-    if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(task, { timeout: 1000 })
-    } else {
-      setTimeout(task, 0)
-    }
-  }
-  const painted = () => requestAnimationFrame(() => requestAnimationFrame(idle))
-  if (document.readyState === 'complete') painted()
-  else window.addEventListener('load', painted, { once: true })
-}
-
-/**
  * Starts the hero: the first-scroll choreography that hero.css draws from the `--hero-*`
- * variables, and the WebGL backdrop, which loads once the page has painted with the CSS gradient
- * standing in for it.
+ * variables, the iPhone's recording, which plays whenever the hero clip does, and the WebGL
+ * backdrop, which loads once the page has painted with the CSS gradient standing in for it.
  */
 export function startHero(root: ParentNode = document): void {
   const hero = root.querySelector<HTMLElement>('[data-hero]')
@@ -103,11 +83,15 @@ export function startHero(root: ParentNode = document): void {
   const dark = hero?.querySelector<HTMLElement>('[data-backdrop-source="dark"]')
   if (!hero || !canvas || !light || !dark) return
 
+  const clip = hero.querySelector<HTMLVideoElement>('video[data-clip="hero"]')
+  const phone = hero.querySelector<HTMLVideoElement>('[data-hero-phone]')
+  if (clip && phone) mirrorPlayback(clip, phone)
+
   afterFirstPaint(() => {
     import('./hero-backdrop.ts')
       .then(({ startBackdrop }) =>
         startBackdrop({
-          hero,
+          stage: hero,
           canvas,
           sources: { light, dark },
           webgl: window.matchMedia(WEBGL_QUERY).matches,

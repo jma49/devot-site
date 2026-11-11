@@ -1,10 +1,14 @@
 ---
 import { messages } from '../i18n/index.ts'
-import { media, type SlotName } from '../media.ts'
+import { media, pinned, type Scheme, type SlotName } from '../media.ts'
 
 interface Props {
   name: SlotName
   class?: string
+  /** Shows one appearance's recordings whatever the reader's scheme. */
+  scheme?: Scheme
+  /** The clip's name on the page (`data-clip`) when it is not the slot's, as for a slot shown twice. */
+  as?: string
   /**
    * For a clip on the first screen: its poster loads with the page. A poster attribute cannot vary
    * by colour scheme or width, so this one comes from the stylesheet below and a preload per
@@ -14,8 +18,8 @@ interface Props {
   priority?: boolean
 }
 
-const { name, class: className, priority = false } = Astro.props
-const slot = media[name]
+const { name, class: className, scheme, as: clipName = name, priority = false } = Astro.props
+const slot = scheme ? pinned(media[name], scheme) : media[name]
 const t = messages()
 const posterMedia = JSON.stringify(
   slot.variants.flatMap((variant) => (variant.media ? [[variant.media, variant.poster]] : [])),
@@ -37,7 +41,7 @@ const posterMedia = JSON.stringify(
       ))}
     <video
       class:list={['clip', className]}
-      data-clip={name}
+      data-clip={clipName}
       width={slot.width}
       height={slot.height}
       data-poster={slot.poster}
@@ -104,26 +108,14 @@ const posterMedia = JSON.stringify(
     }
   }
 
-  /* The hero's poster, the first screen's largest paint (see `priority`): the last rule that
-     matches wins, so only one file is fetched. tests/unit/media-posters.test.ts keeps these paths
-     in step with src/media.ts. */
+  /* The hero's poster, the first screen's largest paint (see `priority`). The hero opens on its
+     dark recording in either scheme (Hero.astro), so its posters differ by width alone.
+     tests/unit/media-posters.test.ts keeps these paths in step with src/media.ts. */
   video[data-clip='hero'] {
-    background: left top / cover no-repeat url('/media/hero/hero-poster.webp');
-  }
-
-  @media (prefers-color-scheme: dark) {
-    video[data-clip='hero'] {
-      background-image: url('/media/hero/hero-dark-poster.webp');
-    }
+    background: left top / cover no-repeat url('/media/hero/hero-dark-poster.webp');
   }
 
   @media (max-width: 639.98px) {
-    video[data-clip='hero'] {
-      background-image: url('/media/hero/hero-phone-poster.webp');
-    }
-  }
-
-  @media (max-width: 639.98px) and (prefers-color-scheme: dark) {
     video[data-clip='hero'] {
       background-image: url('/media/hero/hero-phone-dark-poster.webp');
     }

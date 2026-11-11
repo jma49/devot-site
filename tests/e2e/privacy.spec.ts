@@ -383,7 +383,7 @@ test.describe('closing call to action', () => {
     expect(await type('#download h2')).toEqual(await type('#hero h1'))
   })
 
-  test('brings the aurora back, in the scheme of the page', async ({ page }) => {
+  test('brings the aurora back, in the night the page wears in either scheme', async ({ page }) => {
     for (const colorScheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme })
       await page.goto('/')
@@ -399,7 +399,7 @@ test.describe('closing call to action', () => {
           })),
       )
       expect(shown).toHaveLength(1)
-      expect(shown[0]?.appearance).toBe(colorScheme)
+      expect(shown[0]?.appearance).toBe('dark')
       expect(shown[0]?.image.match(/linear-gradient/g)).toHaveLength(3)
       expect(shown[0]?.themes).toEqual(['sage', 'ember'])
     }
@@ -413,7 +413,8 @@ test.describe('closing call to action', () => {
     test('moves the gradient against the scroll, both ways', async ({ page }) => {
       await page.goto('/')
       test.skip(!(await timelines(page)), 'no view timelines')
-      const glow = '.closing__glow'
+      // The aurora moves under its mask, which stays with the section.
+      const glow = '.closing__aurora[data-aurora="dark"]'
       const top = await docTop(page, '#download')
 
       await scrollSettled(page, top - DESKTOP.height + 50)
@@ -424,6 +425,31 @@ test.describe('closing call to action', () => {
 
       expect(early).toBeLessThan(late - 40)
       expect(await shiftY(page, glow)).toBeCloseTo(early, 0)
+      await expect(page.locator('.closing__glow')).toHaveCSS('transform', 'none')
+    })
+
+    // A light the section's edge cut off would show as a line across the page.
+    test('lets its light fade out before the section’s edges, wherever the scroll is', async ({
+      page,
+    }) => {
+      await page.goto('/')
+      const top = await docTop(page, '#download')
+      for (const y of [top - DESKTOP.height + 50, top - 300, top + 100]) {
+        await scrollSettled(page, y)
+        const reach = await page.locator('.closing__glow').evaluate((glow) => {
+          const stops = [...getComputedStyle(glow).maskImage.matchAll(/([\d.]+)%/g)].map(
+            ([, percent]) => Number(percent) / 100,
+          )
+          const box = glow.getBoundingClientRect()
+          const section = glow.closest('section')!.getBoundingClientRect()
+          return {
+            starts: box.top + box.height * stops[0]! - section.top,
+            ends: section.bottom - (box.top + box.height * stops.at(-1)!),
+          }
+        })
+        expect(reach.starts, `from the top edge at ${y}`).toBeGreaterThanOrEqual(0)
+        expect(reach.ends, `from the bottom edge at ${y}`).toBeGreaterThanOrEqual(0)
+      }
     })
 
     test('reveals the lines, the lead, the button, the links and the note in order', async ({
@@ -491,9 +517,8 @@ test.describe('closing call to action', () => {
     }
     expect(
       await page
-        .locator('.closing__glow')
-        .first()
-        .evaluate((element) => element.getAnimations().length),
+        .locator('.closing__aurora')
+        .evaluateAll((auroras) => auroras.flatMap((aurora) => aurora.getAnimations()).length),
     ).toBe(0)
   })
 

@@ -9,19 +9,33 @@
 }
 
 /* The hero's aurora returns behind the mark and the heading, so the page ends in the light it
-   opened with; the text below it stays on the page colour. */
+   opened with; the text below it stays on the page colour. The mask stays put while the aurora
+   under it moves with the scroll, and is clear at the section's own edges (10 % and 90 % of this
+   box), so the section never cuts the light off in a line. Its stops ease in and out. */
 .closing__glow {
+  --glow-ink: var(--site-color-page);
+
   position: absolute;
   inset: -12% 0;
   z-index: -1;
   mask-image: linear-gradient(
     to bottom,
-    transparent 6%,
-    var(--site-color-page) 26%,
-    var(--site-color-page) 56%,
-    transparent 66%
+    transparent 10%,
+    color-mix(in srgb, var(--glow-ink) 8%, transparent) 15%,
+    color-mix(in srgb, var(--glow-ink) 32%, transparent) 21%,
+    color-mix(in srgb, var(--glow-ink) 72%, transparent) 28%,
+    var(--glow-ink) 35%,
+    var(--glow-ink) 52%,
+    color-mix(in srgb, var(--glow-ink) 72%, transparent) 58%,
+    color-mix(in srgb, var(--glow-ink) 32%, transparent) 63%,
+    color-mix(in srgb, var(--glow-ink) 8%, transparent) 67%,
+    transparent 71%
   );
   pointer-events: none;
+}
+
+.closing__aurora {
+  --aurora-band-shape: var(--aurora-band-soft);
 }
 
 .closing__aurora .aurora-band-sage {
@@ -34,30 +48,32 @@
   rotate: -3deg;
 }
 
-.closing::after {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  z-index: -1;
-  height: clamp(5rem, 14vh, 9rem);
-  background: linear-gradient(to bottom, transparent, var(--site-color-page));
-  pointer-events: none;
-}
-
 @media (prefers-color-scheme: dark) {
   .closing {
     --closing-veil: color-mix(in oklab, var(--site-color-page) 80%, transparent);
   }
 }
 
-/* A pool of the page colour under the copy keeps every line at AA over the bands. */
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .closing {
+  --closing-veil: color-mix(in oklab, var(--site-color-page) 80%, transparent);
+}
+
+/* A pool of the page colour under the copy keeps every line at AA over the bands; it thins out
+   gradually, so it reads as shade and not as a shape. */
 .closing__content::before {
   content: '';
   position: absolute;
   inset: -6rem -18rem;
   z-index: -1;
-  background: radial-gradient(closest-side, var(--closing-veil) 40%, transparent);
+  background: radial-gradient(
+    closest-side,
+    var(--closing-veil) 34%,
+    color-mix(in srgb, var(--closing-veil) 74%, transparent) 50%,
+    color-mix(in srgb, var(--closing-veil) 38%, transparent) 66%,
+    color-mix(in srgb, var(--closing-veil) 12%, transparent) 82%,
+    transparent
+  );
   pointer-events: none;
 }
 
@@ -81,6 +97,11 @@
   .closing__mark {
     background-image: url('../../assets/dove-dark.svg');
   }
+}
+
+/* The same for a page that wears the night in either scheme (tests/policy/night.test.ts). */
+[data-scope='dark'] .closing__mark {
+  background-image: url('../../assets/dove-dark.svg');
 }
 
 .closing__title {
@@ -187,7 +208,7 @@
 /* Longhands only, as in privacy.css: the minifier would fold a shorthand browsers reject. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .closing__glow {
+    .closing__aurora {
       animation-name: closing-glow;
       animation-timing-function: linear;
       animation-fill-mode: both;
@@ -195,4 +216,8 @@
       animation-range: entry 0% entry 100%;
     }
   }
+}
+
+.closing__store {
+  min-height: 3.25rem;
 }
