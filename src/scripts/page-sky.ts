@@ -16,7 +16,8 @@ export function startPageSky(root: ParentNode = document): void {
   const dark = sky?.querySelector<HTMLElement>('[data-backdrop-source="dark"]')
   const hero = root.querySelector<HTMLElement>('[data-hero]')
   const heroSky = hero?.querySelector<HTMLElement>('[data-hero-sky]')
-  if (!sky || !canvas || !light || !dark || !hero || !heroSky) return
+  const grain = root.querySelector<HTMLElement>('[data-sky-grain]')
+  if (!sky || !canvas || !light || !dark || !hero || !heroSky || !grain) return
 
   afterFirstPaint(() => {
     import('./hero-backdrop.ts')
@@ -27,6 +28,7 @@ export function startPageSky(root: ParentNode = document): void {
           sources: { light, dark },
           hero,
           heroSky,
+          grain,
           webgl: window.matchMedia(WEBGL_QUERY).matches && !window.matchMedia(NO_SKY_QUERY).matches,
         }),
       )

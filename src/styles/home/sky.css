@@ -71,6 +71,30 @@
   opacity: 1;
 }
 
+/*
+ * The hero's film grain over the shader's sky. The hero's own cannot blend with a canvas outside
+ * the hero, so this one lies in the page's own layers, straight over the sky: it stands in the
+ * hero's box in the page, which hero-backdrop.ts writes to it, scrolls with the page as the hero
+ * does, and thins out across the hero's lower edge as the shader's hero sky does (HERO_SKY).
+ */
+.sky-grain {
+  --sky-hero-top: 0px;
+  --sky-hero-height: 0px;
+
+  position: absolute;
+  inset-block-start: var(--sky-hero-top);
+  inset-inline: 0;
+  z-index: -1;
+  height: var(--sky-hero-height);
+  visibility: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, var(--site-color-page) 84%, transparent 100%);
+}
+
+.page-sky[data-backdrop='webgl'] + .sky-grain {
+  visibility: visible;
+}
+
 /* Under the canvas the CSS bands stop, and they and the veil go once it has faded in. */
 .page-sky[data-backdrop='webgl'] .aurora-band,
 .page-sky[data-backdrop='webgl']::after {

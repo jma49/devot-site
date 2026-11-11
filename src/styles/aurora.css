@@ -171,3 +171,12 @@
 :root[data-aurora-still] .aurora-band {
   animation-play-state: paused;
 }
+
+/* Film grain over the light, so the gradient reads as a surface rather than a screen. It is an
+   image at the display's own pixels: the shader's canvas holds half as many or fewer, and a grain
+   drawn there comes out in blocks. */
+.aurora-grain {
+  background: url('../assets/grain.svg') 0 0 / 200px 200px;
+  opacity: 0.22;
+  mix-blend-mode: soft-light;
+}

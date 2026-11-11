@@ -350,12 +350,38 @@ test('the shader’s sky behind the page keeps text, muted text and links at 4.5
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.install()
   // Names a GPU, since the test browsers draw on a software renderer the page refuses, and lets
-  // the test choose the flow time the shader draws.
+  // the test choose the flow time the shader draws. A GPU draws in no time and keeps its frames:
+  // the time the software GL takes over a draw is kept from the page's clock, and frames reach
+  // the page 16 ms apart however late they run, or the page would hand the sky back to CSS.
   await page.addInitScript(() => {
     const state = window as unknown as { skyFlow?: number }
     const proto = WebGLRenderingContext.prototype
-    const { getParameter, getUniformLocation, uniform1f } = proto
+    const { getParameter, getUniformLocation, uniform1f, drawArrays, readPixels } = proto
     let time: WebGLUniformLocation | null = null
+    const clock = performance.now.bind(performance)
+    let hidden = 0
+    performance.now = () => clock() - hidden
+    proto.drawArrays = function (this: WebGLRenderingContext, ...args) {
+      const began = clock()
+      drawArrays.apply(this, args)
+      hidden += clock() - began
+    }
+    proto.readPixels = function (this: WebGLRenderingContext, ...args) {
+      const began = clock()
+      readPixels.apply(this, args)
+      hidden += clock() - began
+    } as typeof readPixels
+    const request = window.requestAnimationFrame.bind(window)
+    let at = 0
+    let frame = Number.NaN
+    window.requestAnimationFrame = (callback) =>
+      request((now) => {
+        if (now !== frame) {
+          frame = now
+          at += 16
+        }
+        callback(at)
+      })
     proto.getParameter = function (this: WebGLRenderingContext, parameter: number) {
       // UNMASKED_RENDERER_WEBGL from WEBGL_debug_renderer_info.
       return parameter === 0x9246 ? 'Test GPU' : getParameter.call(this, parameter)

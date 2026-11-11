@@ -28,8 +28,6 @@
   --hero-drift-distance: -4.5rem;
   --hero-entrance-rise: 20px;
   --hero-sheen-color: color-mix(in oklab, var(--site-color-page) 18%, transparent);
-  --hero-grain-opacity: 0.22;
-
   --hero-settle: 0;
   --hero-drift: 0;
   --hero-lift: 0;
@@ -90,8 +88,8 @@
  * Once the shader draws the sky behind the page, that canvas is the hero's sky too: it lies under
  * the whole page, so the hero's own CSS sky and the ground under it make way. So do the grain,
  * since a blend cannot reach a layer outside the hero, and the dome, which thins out with the sky
- * as one layer under the mask: the shader draws both with its sky. The sheen stays, over the
- * shader's sky. hero-backdrop.ts lays that sky out in the CSS sky's box and follows its trail and
+ * as one layer under the mask: a grain of the page's own lies over the canvas where the hero is
+ * (sky.css) and the shader draws the dome with its sky. The sheen stays, over the shader's sky. hero-backdrop.ts lays that sky out in the CSS sky's box and follows its trail and
  * its entrance, so it stands where the CSS one stood (HERO_SKY, HERO_DOME).
  */
 .hero[data-backdrop='webgl'] .hero-backdrop {
@@ -107,13 +105,6 @@
 
 .hero[data-backdrop='webgl'] .aurora-band {
   animation-play-state: paused;
-}
-
-/* Film grain over the light, so the gradient reads as a surface rather than a screen. */
-.hero-grain {
-  background: url('../../assets/grain.svg') 0 0 / 200px 200px;
-  opacity: var(--hero-grain-opacity);
-  mix-blend-mode: soft-light;
 }
 
 .hero-sheen {
