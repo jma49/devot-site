@@ -146,14 +146,22 @@ const FLOW_ORIGIN = 21 / FLOW_PACE
 /** With reduced motion the aurora still drifts, at this share of its pace. */
 export const REDUCED_FLOW = 1 / 3
 /**
- * The first frames that decide whether the GPU keeps up, and the median interval it must keep: at
- * rest, and while the page scrolls or has just scrolled. A frame the page scrolls in says how
- * heavy the page is to scroll (clips starting, sections revealing) as much as how the GPU does
- * with the shader, and the sky behind the page starts in the middle of a scroll, so those frames
- * are held to a looser mark. They are still held to one: a software GL draws on at a few frames a
+ * The first draws that decide whether the GPU keeps up, and the milliseconds the quickest of them
+ * may take, read back from the GPU. Frame intervals say as much about the page as about the GPU:
+ * clips starting hold frames up on any machine, and a browser saving energy runs every frame
+ * 33 ms apart. What a draw costs is the GPU's own, and the quickest draw is the one nothing else
+ * was in the way of.
+ */
+export const DRAW_CHECK = { draws: 8, ms: 10 } as const
+/**
+ * The first frames that back that up, and the median interval they must keep: at rest, where the
+ * shader's own 30 frames a second have to fit, and while the page scrolls or has just scrolled.
+ * A frame the page scrolls in says how heavy the page is to scroll (clips starting, sections
+ * revealing), and the sky behind the page starts in the middle of a scroll, so those frames are
+ * held to a looser mark. They are still held to one: a software GL draws on at a few frames a
  * second through a whole scroll and takes the page with it.
  */
-export const FRAME_CHECK = { frames: 60, medianMs: 20, scrollingMs: 50 } as const
+export const FRAME_CHECK = { frames: 60, restingMs: 36, scrollingMs: 50 } as const
 /** Milliseconds after a scroll for which frames still count as scrolling ones. */
 export const SCROLL_REST = 500
 
@@ -175,17 +183,23 @@ export function softwareRenderer(name: string): boolean {
 
 /**
  * Whether the frame intervals (milliseconds) seen while drawing say the GPU cannot keep up; null
- * until there are enough of them.
+ * until there are enough of them. `scrolling` holds them to the looser mark.
  */
-export function framesTooSlow(
-  intervals: readonly number[],
-  medianMs: number = FRAME_CHECK.medianMs,
-): boolean | null {
+export function framesTooSlow(intervals: readonly number[], scrolling = false): boolean | null {
   if (intervals.length < FRAME_CHECK.frames) return null
   const sorted = intervals.slice(0, FRAME_CHECK.frames).toSorted((a, b) => a - b)
   const middle = sorted.length / 2
   const median = ((sorted[Math.floor(middle - 0.5)] ?? 0) + (sorted[Math.floor(middle)] ?? 0)) / 2
-  return median > medianMs
+  return median > (scrolling ? FRAME_CHECK.scrollingMs : FRAME_CHECK.restingMs)
+}
+
+/**
+ * Whether what the first draws cost (milliseconds each) says the GPU cannot keep up; null until
+ * there are enough of them.
+ */
+export function drawsTooSlow(costs: readonly number[]): boolean | null {
+  if (costs.length < DRAW_CHECK.draws) return null
+  return Math.min(...costs.slice(0, DRAW_CHECK.draws)) > DRAW_CHECK.ms
 }
 
 // A stop in functional notation with spaces or commas, or in hex, which minified stylesheets carry.
@@ -392,20 +406,22 @@ void main() {
 
 interface Renderer {
   setPalette(palette: AuroraPalette): void
-  draw(seconds: number): void
+  /** Draws a frame; `timed` waits for the GPU to finish it and returns the milliseconds it took. */
+  draw(seconds: number, timed: boolean): number
   lost(): boolean
   release(): void
-  /** Whether the shaders were built beside the main thread (KHR_parallel_shader_compile). */
-  beside: boolean
+  /** Milliseconds the main thread was held while the shaders were built and drew a first pixel. */
+  held: number
 }
 
 /**
- * Whether the first shader built on this page was built beside the main thread; null where there
- * was none to build with. A browser without KHR_parallel_shader_compile builds a shader on the
- * main thread, and a second build there would hold the page in the middle of a scroll, for
- * seconds on a software GL.
+ * The longest the first shader built on a page may have held the main thread for a second one to
+ * be built there. Building one takes a moment on a GPU and seconds on a software GL, and the
+ * second is built in the middle of a scroll.
  */
-let firstBuild: Promise<boolean | null> | null = null
+export const BUILD_BUDGET = 500
+/** How long the first shader built on this page held the main thread; null where none was built. */
+let firstBuild: Promise<number | null> | null = null
 
 /** The renderer's name: browsers that mask `RENDERER` give it through the debug extension. */
 function rendererName(gl: WebGLRenderingContext): string {
@@ -458,13 +474,16 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     return created
   }
   const parallel = gl.getExtension('KHR_parallel_shader_compile')
+  let mark = performance.now()
   const vertex = shader(gl.VERTEX_SHADER, VERTEX)
   const fragment = shader(gl.FRAGMENT_SHADER, FRAGMENT)
   const program = gl.createProgram()
   gl.attachShader(program, vertex)
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
+  let held = performance.now() - mark
   await built(gl, program, parallel)
+  mark = performance.now()
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     const compiled = [vertex, fragment].every((part) =>
       gl.getShaderParameter(part, gl.COMPILE_STATUS),
@@ -491,6 +510,15 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
     dir: uniform('uDir'),
   }
   gl.uniform1f(uniform('uSoft'), soft ? 1 : 0)
+  const pixel = new Uint8Array(4)
+  /** Reading a pixel back returns once the GPU has done everything asked of it so far. */
+  const finish = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
+  // A driver may put the build off until the first draw.
+  gl.viewport(0, 0, 1, 1)
+  gl.drawArrays(gl.TRIANGLES, 0, 3)
+  finish()
+  gl.viewport(0, 0, canvas.width, canvas.height)
+  held += performance.now() - mark
 
   const resize = () => {
     const { width, height } = renderSize(canvas.clientWidth, canvas.clientHeight)
@@ -512,17 +540,21 @@ async function createRenderer(canvas: HTMLCanvasElement, soft: boolean): Promise
       gl.uniform3fv(u.strength, palette.strength)
       gl.uniform1f(u.glow, palette.glow)
     },
-    draw(seconds) {
+    draw(seconds, timed) {
       resize()
       gl.uniform2f(u.res, canvas.width, canvas.height)
       gl.uniform1f(u.time, seconds)
+      const began = performance.now()
       gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (!timed) return 0
+      finish()
+      return performance.now() - began
     },
     lost: () => gl.isContextLost(),
     release: () => {
       if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
-    beside: parallel !== null,
+    held,
   }
 }
 
@@ -563,8 +595,8 @@ export interface BackdropParts {
   /** When the sky can be seen, if that is not simply when the stage is on screen. */
   inView?: Sight
   /**
-   * Builds no shader where the first one on the page was built on the main thread: the CSS layers
-   * stay.
+   * Builds no shader where the first one on the page held the main thread for longer than
+   * `BUILD_BUDGET`: the CSS layers stay.
    */
   thrifty?: boolean
 }
@@ -578,10 +610,12 @@ export interface BackdropHandle {
 /**
  * Draws an aurora with WebGL at up to 30 frames a second while it can be seen and the tab is
  * shown, once its shaders are built; with reduced motion it drifts at a third of the pace. The
- * CSS layers underneath show until then, without WebGL, on a software renderer and when the first
- * frames at rest run slow. `data-backdrop` on the stage says which one shows (`webgl` or `css`) and
- * `data-backdrop-state` whether it moves (`running`, or `idle` while out of sight, in a hidden tab
- * or paused).
+ * CSS layers underneath show until then, without WebGL, on a software renderer, when the first
+ * draws or frames run slow, and while the browser has taken the context away: when it gives it back the
+ * shaders are built again. `data-backdrop` on the stage says which one shows (`webgl` or `css`),
+ * `data-backdrop-reason` why the CSS layers took over from the shader (`none` for no GPU to draw
+ * it, `slow`, `lost`, or `costly` for a shader not built) and `data-backdrop-state` whether it
+ * moves (`running`, or `idle` while out of sight, in a hidden tab or paused).
  */
 export function startBackdrop({
   stage,
@@ -604,7 +638,9 @@ export function startBackdrop({
   let lastScroll = window.scrollY
   let scrolledAt = Number.NEGATIVE_INFINITY
   let flow = FLOW_ORIGIN
-  /** Frame intervals seen at rest so far, until the GPU has shown it keeps up. */
+  /** What the draws so far cost, until the GPU has shown it draws one in time. */
+  let costs: number[] | null = []
+  /** Frame intervals seen at rest so far, until the page has shown it keeps up. */
   let rested: number[] | null = []
   /** The same while the page scrolls, until those have shown it is not far behind. */
   let scrolling: number[] | null = []
@@ -618,17 +654,42 @@ export function startBackdrop({
     return true
   }
 
-  const fallBack = () => {
+  /** Whether the shader was given up for good: no WebGL here, or a GPU that cannot keep up. */
+  let gaveUp = false
+
+  const showCss = (reason: 'none' | 'slow' | 'lost' | 'costly') => {
+    stage.dataset['backdrop'] = 'css'
+    stage.dataset['backdropReason'] = reason
+  }
+
+  const fallBack = (reason: 'none' | 'slow') => {
+    gaveUp = true
     const released = renderer
     renderer = null
-    released?.release()
-    stage.dataset['backdrop'] = 'css'
+    showCss(reason)
+    // The context goes once the canvas is out of sight: a lost canvas caught in its fade is drawn
+    // white.
+    if (released) requestAnimationFrame(() => requestAnimationFrame(() => released.release()))
+  }
+
+  /** The browser has taken the context: the CSS layers show until it gives it back. */
+  const drop = () => {
+    renderer = null
+    showCss('lost')
   }
 
   const draw = () => {
     if (!renderer) return
-    if (renderer.lost()) return fallBack()
-    renderer.draw(flow)
+    if (renderer.lost()) return drop()
+    const cost = renderer.draw(flow, costs !== null)
+    if (!costs) return
+    costs.push(cost)
+    const slow = drawsTooSlow(costs)
+    if (slow === null) return
+    costs = null
+    if (!slow) return
+    fallBack('slow')
+    sync()
   }
 
   const sync = () => {
@@ -655,7 +716,7 @@ export function startBackdrop({
     }
     if (!scrolling) return true
     scrolling.push(interval)
-    const slow = framesTooSlow(scrolling, FRAME_CHECK.scrollingMs)
+    const slow = framesTooSlow(scrolling, true)
     if (slow === null) return true
     scrolling = null
     return !slow
@@ -669,7 +730,7 @@ export function startBackdrop({
       const interval = now - lastTick
       flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
       if (!keepsUp(interval, now - scrolledAt >= SCROLL_REST)) {
-        fallBack()
+        fallBack('slow')
         return sync()
       }
     }
@@ -692,18 +753,21 @@ export function startBackdrop({
     if (created === null) document.documentElement.dataset['auroraStill'] = ''
     renderer = created
     if (renderer && palette()) {
-      draw()
       stage.dataset['backdrop'] = 'webgl'
+      delete stage.dataset['backdropReason']
+      draw()
     } else {
-      fallBack()
+      fallBack('none')
     }
     sync()
   }
-  const build = async () => {
-    if (thrifty && firstBuild !== null && (await firstBuild) === false) return
+  const build = async (again = false) => {
+    if (!again && thrifty && firstBuild !== null && ((await firstBuild) ?? 0) > BUILD_BUDGET) {
+      return showCss('costly')
+    }
     const made = createRenderer(canvas, soft)
     firstBuild ??= made.then(
-      (created) => created?.beside ?? null,
+      (created) => created?.held ?? null,
       () => null,
     )
     made.then(begin, (error: unknown) => {
@@ -729,12 +793,17 @@ export function startBackdrop({
     if (!frame) draw()
   })
   resize.observe(canvas)
+  // Without preventDefault the browser would not give the context back.
   const onLost = (event: Event) => {
     event.preventDefault()
-    fallBack()
+    if (renderer) drop()
     sync()
   }
+  const onRestored = () => {
+    if (!stopped && !gaveUp && !renderer) void build(true)
+  }
   canvas.addEventListener('webglcontextlost', onLost)
+  canvas.addEventListener('webglcontextrestored', onRestored)
   document.addEventListener('visibilitychange', sync)
   dark.addEventListener('change', repaint)
   const stopPause = pause.subscribe(sync)
@@ -749,6 +818,7 @@ export function startBackdrop({
       stopWatching()
       resize.disconnect()
       canvas.removeEventListener('webglcontextlost', onLost)
+      canvas.removeEventListener('webglcontextrestored', onRestored)
       document.removeEventListener('visibilitychange', sync)
       dark.removeEventListener('change', repaint)
       stopPause()
