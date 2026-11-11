@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { DURATION } from '../../src/lib/motion.ts'
-import { HERO_SKY, REDUCED_FLOW } from '../../src/scripts/hero-backdrop.ts'
+import { DRAW_CHECK, HERO_SKY, REDUCED_FLOW } from '../../src/scripts/hero-backdrop.ts'
 import { HERO_SCROLL } from '../../src/scripts/hero.ts'
 import { PAUSE_KEY } from '../../src/scripts/pause.ts'
 import { expect, test } from './fixtures.ts'
@@ -37,7 +37,9 @@ interface Draw {
 /**
  * Counts WebGL contexts and draws and keeps what each draw was given (the uniforms and the
  * scissor set before it), and names the renderer `renderer`: headless Chromium draws on
- * SwiftShader, which the page rightly refuses, so the WebGL tests name a GPU.
+ * SwiftShader, which the page rightly refuses, so the WebGL tests name a GPU. A GPU draws in no
+ * time, so the time the software GL takes over a draw, until the page has read it back, is kept
+ * from the page's clock.
  */
 async function watchWebgl(page: Page, renderer: string) {
   await page.addInitScript((name) => {
@@ -46,8 +48,12 @@ async function watchWebgl(page: Page, renderer: string) {
     record.glDraws = []
     const proto = WebGLRenderingContext.prototype
     const { getParameter, getUniformLocation, uniform1f, uniform2f, uniform3f, scissor } = proto
-    const { drawArrays } = proto
+    const { drawArrays, readPixels } = proto
+    const clock = performance.now.bind(performance)
+    let hidden = 0
+    performance.now = () => clock() - hidden
     const getContext = HTMLCanvasElement.prototype.getContext
+    const made = new WeakSet<object>()
     const names = new WeakMap<WebGLUniformLocation, string>()
     const set: Record<string, number[]> = {}
     let rows: [number, number] = [0, 0]
@@ -56,8 +62,13 @@ async function watchWebgl(page: Page, renderer: string) {
       this: HTMLCanvasElement,
       ...args: Parameters<HTMLCanvasElement['getContext']>
     ) {
-      if (args[0] === 'webgl') record.glContexts += 1
-      return getContext.apply(this, args)
+      const context = getContext.apply(this, args)
+      // Asking a canvas for its context again gives the same one.
+      if (args[0] === 'webgl' && context && !made.has(context)) {
+        made.add(context)
+        record.glContexts += 1
+      }
+      return context
     } as typeof getContext
     proto.getParameter = function (this: WebGLRenderingContext, parameter: number) {
       // UNMASKED_RENDERER_WEBGL from WEBGL_debug_renderer_info.
@@ -104,8 +115,15 @@ async function watchWebgl(page: Page, renderer: string) {
         fade: [one('uFade'), one('uFade', 1)],
         height: this.drawingBufferHeight,
       })
+      const began = clock()
       drawArrays.apply(this, args)
+      hidden += clock() - began
     }
+    proto.readPixels = function (this: WebGLRenderingContext, ...args) {
+      const began = clock()
+      readPixels.apply(this, args)
+      hidden += clock() - began
+    } as typeof readPixels
   }, renderer)
 }
 
@@ -148,6 +166,108 @@ async function buildOnMainThread(page: Page) {
     proto.getExtension = function (this: WebGLRenderingContext, name: string) {
       return name === 'KHR_parallel_shader_compile' ? null : getExtension.call(this, name)
     } as typeof proto.getExtension
+  })
+}
+
+/** Keeps how opaque each canvas was when the page gave its context back. */
+async function watchRelease(page: Page) {
+  await page.addInitScript(() => {
+    const record = window as unknown as { released: string[] }
+    record.released = []
+    const proto = WebGLRenderingContext.prototype
+    const getExtension = proto.getExtension as (
+      this: WebGLRenderingContext,
+      name: string,
+    ) => unknown
+    proto.getExtension = function (this: WebGLRenderingContext, name: string) {
+      const extension = getExtension.call(this, name) as WEBGL_lose_context | null
+      if (name !== 'WEBGL_lose_context' || !extension) return extension
+      const canvas = this.canvas as HTMLCanvasElement
+      return {
+        loseContext() {
+          record.released.push(getComputedStyle(canvas).opacity)
+          extension.loseContext()
+        },
+        restoreContext: () => extension.restoreContext(),
+      }
+    } as typeof proto.getExtension
+  })
+}
+const released = (page: Page) =>
+  page.evaluate(() => (window as unknown as { released: string[] }).released.slice())
+
+/** Has the browser take the canvas's context away, as it does when the GPU is reset. */
+const loseContext = (page: Page, canvas: string) =>
+  page.locator(canvas).evaluate((element: HTMLCanvasElement) => {
+    const lose = element.getContext('webgl')?.getExtension('WEBGL_lose_context')
+    ;(window as unknown as { lose: typeof lose }).lose = lose
+    lose?.loseContext()
+  })
+/** And give it back. */
+const restoreContext = (page: Page) =>
+  page.evaluate(() => (window as unknown as { lose: WEBGL_lose_context }).lose.restoreContext())
+
+/**
+ * Has frames reach the page `quick` and `late` milliseconds apart by turns, whatever the clock
+ * says; `beforeFrame` runs ahead of each with the clock's own time.
+ */
+async function paceFrames(page: Page, quick: number, late: number) {
+  await page.addInitScript(
+    ([first, second]) => {
+      const hooks = window as unknown as { beforeFrame?: (now: number) => void }
+      const request = window.requestAnimationFrame.bind(window)
+      let at = 0
+      let count = 0
+      let frame = Number.NaN
+      window.requestAnimationFrame = (callback) =>
+        request((now) => {
+          // Every callback of one frame gets the same time.
+          if (now !== frame) {
+            frame = now
+            hooks.beforeFrame?.(now)
+            at += (count++ % 2 ? second : first) ?? 0
+          }
+          callback(at)
+        })
+    },
+    [quick, late],
+  )
+}
+
+/**
+ * Has `call` on a WebGL context take `ms` of the page's time: the fake clock stands still through
+ * a task, so the page's `performance.now()` is moved on instead. After `page.clock.install()`.
+ */
+async function takeTime(page: Page, call: 'linkProgram' | 'readPixels', ms: number) {
+  await page.addInitScript(
+    ([name, cost]) => {
+      const now = performance.now.bind(performance)
+      let spent = 0
+      performance.now = () => now() + spent
+      const proto = WebGLRenderingContext.prototype as unknown as Record<
+        string,
+        (this: WebGLRenderingContext, ...args: unknown[]) => unknown
+      >
+      const original = proto[name]
+      proto[name] = function (this: WebGLRenderingContext, ...args: unknown[]) {
+        spent += cost
+        return original?.apply(this, args)
+      }
+    },
+    [call, ms] as const,
+  )
+}
+
+/** Scrolls the page in steps, every tenth frame, as a wheel does, while `scrolling` is set. */
+async function scrollInSteps(page: Page) {
+  await page.addInitScript(() => {
+    const state = window as unknown as { scrolling: boolean; beforeFrame: (now: number) => void }
+    state.scrolling = true
+    state.beforeFrame = (now) => {
+      if (state.scrolling && Math.round(now / 16) % 10 === 0) {
+        window.scrollBy(0, window.scrollY < 200 ? 20 : -200)
+      }
+    }
   })
 }
 
@@ -381,20 +501,67 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     expect(await drawCount(page)).toBe(0)
   })
 
-  test('hands back to the CSS aurora when its first frames come 32 ms apart', async ({ page }) => {
+  // A browser saving energy runs every frame 30 times a second, which is the shader's own pace.
+  test('keeps the shader in a browser whose frames all come 33 ms apart', async ({ page }) => {
     await page.clock.install()
     await watchWebgl(page, GPU)
-    // Frames reach the page twice as far apart as the fake clock's 16 ms.
-    await page.addInitScript(() => {
-      const request = window.requestAnimationFrame.bind(window)
-      window.requestAnimationFrame = (callback) => request((now) => callback(now * 2))
-    })
+    await paceFrames(page, 33, 33)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+
+    await advanceUntil(page, backdropIs(page, 'webgl'))
+    // Twice the frames the check reads.
+    await page.clock.runFor(2500)
+    expect(await backdropIs(page, 'webgl')()).toBe(true)
+    await expect(sky(page)).not.toHaveAttribute('data-backdrop-reason')
+  })
+
+  // Clips starting hold up frames on any machine: that is the page, and the GPU draws in time.
+  test('keeps the shader through a second of frames held up by the page', async ({ page }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await paceFrames(page, 16, 48)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+
+    await advanceUntil(page, backdropIs(page, 'webgl'))
+    await page.clock.runFor(2500)
+    expect(await backdropIs(page, 'webgl')()).toBe(true)
+  })
+
+  test('hands back to the CSS aurora when no draw takes the GPU 10 ms or less', async ({
+    page,
+  }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await takeTime(page, 'readPixels', DRAW_CHECK.ms + 10)
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+
+    await advanceUntil(page, backdropIs(page, 'css'))
+    await expect(sky(page)).toHaveAttribute('data-backdrop-reason', 'slow')
+    // Only the draws that were timed.
+    expect(await drawCount(page)).toBe(DRAW_CHECK.draws)
+    expect(
+      (await swayStates(page)).filter(({ state }) => state === 'running').length,
+    ).toBeGreaterThan(0)
+  })
+
+  test('hands back to the CSS aurora when its frames come 48 ms apart', async ({ page }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await watchRelease(page)
+    await paceFrames(page, 48, 48)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
     await advanceUntil(page, async () => (await drawCount(page)) > 0)
     await advanceUntil(page, backdropIs(page, 'css'))
+    await expect(sky(page)).toHaveAttribute('data-backdrop-reason', 'slow')
     await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
+    // The canvas is out of sight before its context goes: a lost canvas has no picture left.
+    await advanceUntil(page, async () => (await released(page)).length > 0)
+    expect(await released(page)).toEqual(['0'])
     const held = await drawCount(page)
     await page.clock.runFor(1000)
     expect(await drawCount(page)).toBe(held)
@@ -409,21 +576,8 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     test.slow()
     await page.clock.install()
     await watchWebgl(page, GPU)
-    // Frames reach the page twice as far apart as the fake clock's 16 ms, and the page scrolls
-    // in steps while `scrolling` is set.
-    await page.addInitScript(() => {
-      const state = window as unknown as { scrolling: boolean }
-      state.scrolling = true
-      const request = window.requestAnimationFrame.bind(window)
-      window.requestAnimationFrame = (callback) =>
-        request((now) => {
-          // Every tenth frame, as a wheel moves the page in steps.
-          if (state.scrolling && Math.round(now / 16) % 10 === 0) {
-            window.scrollBy(0, window.scrollY < 200 ? 20 : -200)
-          }
-          callback(now * 2)
-        })
-    })
+    await paceFrames(page, 40, 40)
+    await scrollInSteps(page)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
@@ -432,7 +586,7 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     await page.clock.runFor(2500)
     expect(await backdropIs(page, 'webgl')()).toBe(true)
 
-    // At rest the same frames show a GPU that cannot keep up.
+    // At rest the same frames are too far apart for the shader's own pace.
     await page.evaluate(() => {
       ;(window as unknown as { scrolling: boolean }).scrolling = false
     })
@@ -443,14 +597,8 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
   test('hands back even while the page scrolls when frames come 64 ms apart', async ({ page }) => {
     await page.clock.install()
     await watchWebgl(page, GPU)
-    await page.addInitScript(() => {
-      const request = window.requestAnimationFrame.bind(window)
-      window.requestAnimationFrame = (callback) =>
-        request((now) => {
-          if (Math.round(now / 16) % 10 === 0) window.scrollBy(0, window.scrollY < 200 ? 20 : -200)
-          callback(now * 4)
-        })
-    })
+    await paceFrames(page, 64, 64)
+    await scrollInSteps(page)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
 
@@ -460,7 +608,7 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
   })
 
   for (const where of ['over the hero', 'behind a section'] as const) {
-    test(`hands back to the CSS aurora at once, without fading, when the GPU drops its context ${where}`, async ({
+    test(`hands back to the CSS aurora at once while the browser has taken its context ${where}, and takes it up again`, async ({
       page,
       problems,
     }) => {
@@ -469,15 +617,13 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
       await page.emulateMedia({ reducedMotion: 'no-preference' })
       await page.goto('/')
       await advanceUntil(page, backdropIs(page, 'webgl'))
-      if (where === 'behind a section') {
-        await scrollIntoView(page, '#pricing')
-        await advanceUntil(page, drawsOnly(page, 1))
-      }
+      const only = where === 'behind a section' ? 1 : 0
+      if (only === 1) await scrollIntoView(page, '#pricing')
+      await advanceUntil(page, drawsOnly(page, only))
 
-      await canvas(page).evaluate((element: HTMLCanvasElement) => {
-        element.getContext('webgl')?.getExtension('WEBGL_lose_context')?.loseContext()
-      })
+      await loseContext(page, '.page-sky__canvas')
       await advanceUntil(page, backdropIs(page, 'css'))
+      await expect(sky(page)).toHaveAttribute('data-backdrop-reason', 'lost')
       // A canvas without its context is blank: it goes at once and does not fade out, and the
       // hero's CSS sky is back over it as fast.
       await expect(canvas(page)).toHaveCSS('transition-duration', '0s')
@@ -493,6 +639,14 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
       expect(
         (await swayStates(page)).filter(({ state }) => state === 'running').length,
       ).toBeGreaterThan(0)
+
+      // The browser gives the context back, and the shader is built again, on the same canvas.
+      await restoreContext(page)
+      await advanceUntil(page, backdropIs(page, 'webgl'))
+      await expect(sky(page)).not.toHaveAttribute('data-backdrop-reason')
+      await advanceUntil(page, async () => (await drawCount(page)) > held + 10)
+      expect(await drawsOnly(page, only)()).toBe(true)
+      expect(await contexts(page)).toBe(1)
       // WebKit logs every lost context, this deliberate one too.
       const logged = problems.filter((text) => text !== 'WebGL: context lost.')
       problems.splice(0, problems.length, ...logged)

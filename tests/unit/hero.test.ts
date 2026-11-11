@@ -3,7 +3,9 @@ import {
   AURORA_RECIPE,
   auroraPalette,
   BACKDROP_LOOK,
+  DRAW_CHECK,
   FRAME_CHECK,
+  drawsTooSlow,
   frameDue,
   framesTooSlow,
   HERO_DOME,
@@ -445,6 +447,24 @@ describe('softwareRenderer', () => {
   })
 })
 
+describe('drawsTooSlow', () => {
+  const draws = (count: number, ms: number) => Array.from({ length: count }, () => ms)
+
+  it(`waits for ${DRAW_CHECK.draws} draws before deciding`, () => {
+    expect(drawsTooSlow(draws(DRAW_CHECK.draws - 1, 80))).toBeNull()
+  })
+
+  it(`falls back when no draw takes the GPU ${DRAW_CHECK.ms} ms or less`, () => {
+    expect(drawsTooSlow(draws(DRAW_CHECK.draws, 2))).toBe(false)
+    expect(drawsTooSlow(draws(DRAW_CHECK.draws, DRAW_CHECK.ms + 5))).toBe(true)
+    expect(drawsTooSlow(draws(DRAW_CHECK.draws, 80))).toBe(true)
+  })
+
+  it('goes by the quickest draw: the others had the page in their way', () => {
+    expect(drawsTooSlow([...draws(DRAW_CHECK.draws - 1, 60), 3])).toBe(false)
+  })
+})
+
 describe('framesTooSlow', () => {
   const frames = (count: number, ms: number) => Array.from({ length: count }, () => ms)
 
@@ -452,17 +472,27 @@ describe('framesTooSlow', () => {
     expect(framesTooSlow(frames(FRAME_CHECK.frames - 1, 40))).toBeNull()
   })
 
-  it(`falls back when the median frame takes longer than ${FRAME_CHECK.medianMs} ms`, () => {
+  const alternating = (count: number, quick: number, late: number) =>
+    Array.from({ length: count }, (_, at) => (at % 2 ? late : quick))
+
+  it('keeps the shader at any pace that carries its 30 frames a second', () => {
     expect(framesTooSlow(frames(FRAME_CHECK.frames, 16.7))).toBe(false)
     expect(framesTooSlow(frames(FRAME_CHECK.frames, 8.3))).toBe(false)
-    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4))).toBe(true)
+    // A browser saving energy runs every frame at 30 a second.
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4))).toBe(false)
+    // Clips starting hold up every other frame of a page for a second.
+    expect(framesTooSlow(alternating(FRAME_CHECK.frames, 16.7, 33.4))).toBe(false)
+  })
+
+  it(`falls back when the median frame takes longer than ${FRAME_CHECK.restingMs} ms`, () => {
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 40))).toBe(true)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 66.7))).toBe(true)
   })
 
   it('holds frames the page scrolls in to a looser mark, and still to one', () => {
-    const { scrollingMs } = FRAME_CHECK
-    expect(scrollingMs).toBeGreaterThan(FRAME_CHECK.medianMs)
-    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4), scrollingMs)).toBe(false)
-    expect(framesTooSlow(frames(FRAME_CHECK.frames, 100), scrollingMs)).toBe(true)
+    expect(FRAME_CHECK.scrollingMs).toBeGreaterThan(FRAME_CHECK.restingMs)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 40), true)).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 100), true)).toBe(true)
   })
 
   it('shrugs off a few long frames, such as the first draw', () => {

@@ -7,17 +7,32 @@ import {
   LICENCE_CURRENCY,
   OG_IMAGE,
   PLATFORM,
+  REPO_URL,
   SITE_URL,
 } from '../site.ts'
 
+const ORGANIZATION_ID = `${SITE_URL}#organization`
+/** The square icon search engines may show beside the site's name. */
+export const LOGO_PATH = '/favicon-192.png'
+
 /** The home page's schema.org description of Devot, from the facts the page itself shows. */
 export function structuredData(t: Messages) {
+  const publisher = { '@id': ORGANIZATION_ID }
   return {
     '@context': 'https://schema.org',
     '@graph': [
       {
+        '@type': 'Organization',
+        '@id': ORGANIZATION_ID,
+        name: t.siteName,
+        url: SITE_URL,
+        logo: new URL(LOGO_PATH, SITE_URL).href,
+        sameAs: [REPO_URL],
+      },
+      {
         '@type': 'SoftwareApplication',
         name: t.siteName,
+        publisher,
         description: t.meta.description,
         url: SITE_URL,
         image: new URL(OG_IMAGE.path, SITE_URL).href,
@@ -32,7 +47,7 @@ export function structuredData(t: Messages) {
           url: new URL('/#pricing', SITE_URL).href,
         },
       },
-      { '@type': 'WebSite', name: t.siteName, url: SITE_URL },
+      { '@type': 'WebSite', name: t.siteName, url: SITE_URL, publisher },
     ],
   }
 }
