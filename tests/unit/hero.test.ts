@@ -343,6 +343,13 @@ describe('framesTooSlow', () => {
     expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4))).toBe(true)
   })
 
+  it('holds frames the page scrolls in to a looser mark, and still to one', () => {
+    const { scrollingMs } = FRAME_CHECK
+    expect(scrollingMs).toBeGreaterThan(FRAME_CHECK.medianMs)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 33.4), scrollingMs)).toBe(false)
+    expect(framesTooSlow(frames(FRAME_CHECK.frames, 100), scrollingMs)).toBe(true)
+  })
+
   it('shrugs off a few long frames, such as the first draw', () => {
     const intervals = [...frames(FRAME_CHECK.frames - 10, 16.7), ...frames(10, 120)]
     expect(framesTooSlow(intervals)).toBe(false)

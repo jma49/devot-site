@@ -289,6 +289,26 @@ test.describe('WebGL aurora on a slow or software renderer', () => {
     await advanceUntil(page, backdropIs(page, 'css'))
   })
 
+  // A software GL draws on at a few frames a second through a whole scroll.
+  test('hands back even while the page scrolls when frames come 64 ms apart', async ({ page }) => {
+    await page.clock.install()
+    await watchWebgl(page, GPU)
+    await page.addInitScript(() => {
+      const request = window.requestAnimationFrame.bind(window)
+      window.requestAnimationFrame = (callback) =>
+        request((now) => {
+          if (Math.round(now / 16) % 10 === 0) window.scrollBy(0, window.scrollY < 200 ? 20 : -200)
+          callback(now * 4)
+        })
+    })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.goto('/')
+
+    await advanceUntil(page, async () => (await draws(page)).length > 0)
+    await advanceUntil(page, backdropIs(page, 'css'))
+    await expect(hero(page)).toHaveAttribute('data-backdrop-state', 'running')
+  })
+
   test('hands back to the CSS aurora when the GPU drops its context', async ({
     page,
     problems,

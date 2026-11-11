@@ -145,14 +145,16 @@ const FLOW_REACH = 2
 const FLOW_ORIGIN = 21 / FLOW_PACE
 /** With reduced motion the aurora still drifts, at this share of its pace. */
 export const REDUCED_FLOW = 1 / 3
-/** The first frames that decide whether the GPU keeps up, and the median interval it must keep. */
-export const FRAME_CHECK = { frames: 60, medianMs: 20 } as const
 /**
- * Milliseconds after a scroll before frames count toward that check. A frame the page scrolls in,
- * and the ones right after it, say how heavy the page is to scroll (clips starting, sections
- * revealing), not whether the GPU keeps up with the shader: the sky behind the page starts in the
- * middle of a scroll.
+ * The first frames that decide whether the GPU keeps up, and the median interval it must keep: at
+ * rest, and while the page scrolls or has just scrolled. A frame the page scrolls in says how
+ * heavy the page is to scroll (clips starting, sections revealing) as much as how the GPU does
+ * with the shader, and the sky behind the page starts in the middle of a scroll, so those frames
+ * are held to a looser mark. They are still held to one: a software GL draws on at a few frames a
+ * second through a whole scroll and takes the page with it.
  */
+export const FRAME_CHECK = { frames: 60, medianMs: 20, scrollingMs: 50 } as const
+/** Milliseconds after a scroll for which frames still count as scrolling ones. */
 export const SCROLL_REST = 500
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
@@ -175,12 +177,15 @@ export function softwareRenderer(name: string): boolean {
  * Whether the frame intervals (milliseconds) seen while drawing say the GPU cannot keep up; null
  * until there are enough of them.
  */
-export function framesTooSlow(intervals: readonly number[]): boolean | null {
+export function framesTooSlow(
+  intervals: readonly number[],
+  medianMs: number = FRAME_CHECK.medianMs,
+): boolean | null {
   if (intervals.length < FRAME_CHECK.frames) return null
   const sorted = intervals.slice(0, FRAME_CHECK.frames).toSorted((a, b) => a - b)
   const middle = sorted.length / 2
   const median = ((sorted[Math.floor(middle - 0.5)] ?? 0) + (sorted[Math.floor(middle)] ?? 0)) / 2
-  return median > FRAME_CHECK.medianMs
+  return median > medianMs
 }
 
 // A stop in functional notation with spaces or commas, or in hex, which minified stylesheets carry.
@@ -604,8 +609,10 @@ export function startBackdrop({
   let lastScroll = window.scrollY
   let scrolledAt = Number.NEGATIVE_INFINITY
   let flow = FLOW_ORIGIN
-  /** Frame intervals seen so far, until the GPU has shown it keeps up. */
-  let intervals: number[] | null = []
+  /** Frame intervals seen at rest so far, until the GPU has shown it keeps up. */
+  let rested: number[] | null = []
+  /** The same while the page scrolls, until those have shown it is not far behind. */
+  let scrolling: number[] | null = []
 
   const palette = () => {
     // A page that wears the night draws the dark palette whatever the reader's scheme.
@@ -642,12 +649,20 @@ export function startBackdrop({
     }
   }
 
-  const keepsUp = (interval: number) => {
-    if (!intervals) return true
-    intervals.push(interval)
-    const slow = framesTooSlow(intervals)
+  const keepsUp = (interval: number, atRest: boolean) => {
+    if (!rested) return true
+    if (atRest) {
+      rested.push(interval)
+      const slow = framesTooSlow(rested)
+      if (slow === null) return true
+      rested = null
+      return !slow
+    }
+    if (!scrolling) return true
+    scrolling.push(interval)
+    const slow = framesTooSlow(scrolling, FRAME_CHECK.scrollingMs)
     if (slow === null) return true
-    intervals = null
+    scrolling = null
     return !slow
   }
 
@@ -658,7 +673,7 @@ export function startBackdrop({
     if (lastTick) {
       const interval = now - lastTick
       flow += (interval / 1000) * (reduced.matches ? REDUCED_FLOW : 1)
-      if (now - scrolledAt >= SCROLL_REST && !keepsUp(interval)) {
+      if (!keepsUp(interval, now - scrolledAt >= SCROLL_REST)) {
         fallBack()
         return sync()
       }
