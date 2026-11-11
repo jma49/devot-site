@@ -246,6 +246,9 @@ const colourLuminance = (page: Page, colours: Record<string, string>) =>
     canvas.height = 1
     const context = canvas.getContext('2d', { willReadFrequently: true })!
     const probe = document.createElement('span')
+    // With reduced motion every element has a transition of a hundredth of a millisecond, and a
+    // colour read right after it is set would still be the one before it.
+    probe.style.setProperty('transition', 'none')
     document.body.append(probe)
     const out: Record<string, number> = {}
     for (const [name, value] of Object.entries(entries)) {
