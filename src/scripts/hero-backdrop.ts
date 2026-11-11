@@ -179,8 +179,11 @@ export const HERO_SKY = { overhang: 0.12, fade: 0.16, trail: '--hero-sky' } as c
  * the hero's fade, as one layer, so the shader draws it with the sky.
  */
 export const HERO_DOME = { reach: 0.3, height: 0.46, solid: 0.58, shown: '--hero-dome' } as const
-/** How far the film grain over the hero's sky swings around mid grey, to read as grain.svg does. */
-const GRAIN_SPREAD = 0.38
+/**
+ * The hero's box in the window, written to the sky behind the page for the film grain sky.css lays
+ * over the hero's sky.
+ */
+export const HERO_BOX = { top: '--sky-hero-top', height: '--sky-hero-height' } as const
 
 const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|lavapipe|basic render driver/i
 
@@ -365,9 +368,10 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`
 // uZoom about its centre: the window for the sky behind the page, the hero's own box for the
 // hero's. uSoft 1 is the sky behind the page: no tight lower edge or bright core to a band, a
 // fifth of the shimmer, and the veil of the page colour (uVeil) that keeps text readable on it.
-// uSoft 0 is the hero's, under its film grain (uGrain) and the dome that rises from the hero's
-// lower edge (uDome: the hero's top row, its height in rows, the dome's opacity), and uFade the
-// rows over which all of that thins out as one to let the page's sky through.
+// uSoft 0 is the hero's, under the dome that rises from the hero's lower edge (uDome: the hero's
+// top row, its height in rows, the dome's opacity), and uFade the rows over which the two thin
+// out as one to let the page's sky through. The hero's film grain is not drawn here: the canvas
+// holds half the display's pixels or fewer, so sky.css lays it over the canvas.
 const FRAGMENT = `precision highp float;
 uniform vec2 uRes;
 uniform float uTime;
@@ -384,7 +388,6 @@ uniform vec2 uField;
 uniform float uRise;
 uniform float uZoom;
 uniform vec4 uVeil;
-uniform float uGrain;
 uniform vec3 uDome;
 uniform vec2 uFade;
 
@@ -453,14 +456,6 @@ vec3 toSrgb(vec3 c) {
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
 }
 
-// The soft-light blend of a grey over a colour, as CSS compositing defines it.
-vec3 softLight(vec3 under, float grey) {
-  vec3 lifted = mix(((16.0 * under - 12.0) * under + 4.0) * under, sqrt(under), step(0.25, under));
-  return grey <= 0.5
-    ? under - (1.0 - 2.0 * grey) * under * (1.0 - under)
-    : under + (2.0 * grey - 1.0) * (lifted - under);
-}
-
 void main() {
   vec2 view = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   vec2 at = vec2(view.x, view.y + uRise);
@@ -511,8 +506,6 @@ void main() {
   lab.x += (shimmer * (1.0 - 0.8 * uSoft) + (coreA * 0.8 + coreB * 0.5) * rays * (1.0 - uSoft)) * uStrength.y;
 
   vec3 colour = toSrgb(oklabToLinear(lab));
-  float grain = 0.5 + (hash(floor(at)) - 0.5) * ${GRAIN_SPREAD.toFixed(2)};
-  colour = mix(colour, softLight(colour, grain), uGrain * (1.0 - uSoft));
   vec2 fromFoot = vec2(view.x / uRes.x - 0.5, (view.y - uDome.x) / uDome.y - 1.0);
   float dome = (1.0 - length(fromFoot / vec2(${(0.5 + HERO_DOME.reach).toFixed(2)}, ${HERO_DOME.height.toFixed(2)}))) / ${(1 - HERO_DOME.solid).toFixed(2)};
   colour = mix(colour, uVeil.rgb, clamp(dome, 0.0, 1.0) * uDome.z * (1.0 - uSoft));
@@ -526,8 +519,6 @@ interface Ground {
   page: Rgb
   /** 0 to 1. */
   veil: number
-  /** The opacity of the film grain over the hero's sky. */
-  grain: number
 }
 
 interface Renderer {
@@ -630,7 +621,6 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
     glow: uniform('uGlow'),
     dir: uniform('uDir'),
     veil: uniform('uVeil'),
-    grain: uniform('uGrain'),
     dome: uniform('uDome'),
     field: uniform('uField'),
     rise: uniform('uRise'),
@@ -643,7 +633,7 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   const finish = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
 
   return {
-    setPalette(palette, { page, veil, grain }) {
+    setPalette(palette, { page, veil }) {
       const radians = (palette.angle * Math.PI) / 180
       gl.uniform2f(u.dir, Math.sin(radians), -Math.cos(radians))
       gl.uniform3fv(u.sky, palette.sky.flat())
@@ -654,7 +644,6 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
       gl.uniform3fv(u.strength, palette.strength)
       gl.uniform1f(u.glow, palette.glow)
       gl.uniform4f(u.veil, page[0] / 255, page[1] / 255, page[2] / 255, veil)
-      gl.uniform1f(u.grain, grain)
     },
     draw(seconds, { width, height }, passes, timed) {
       if (canvas.width !== width || canvas.height !== height) {
@@ -705,12 +694,11 @@ function readAurora(root: HTMLElement): AuroraInputs | null {
     : null
 }
 
-/** The veil sky.css lays over its CSS sky and the grain hero.css lays over the hero's. */
-function readGround(stage: HTMLElement, hero: HTMLElement): Ground | null {
+/** The veil sky.css lays over its CSS sky. */
+function readGround(stage: HTMLElement): Ground | null {
   const page = parseColour(read(stage, '--site-color-page'))
   const veil = Number.parseFloat(read(stage, '--sky-veil')) / 100
-  const grain = Number.parseFloat(read(hero, '--hero-grain-opacity'))
-  return page && Number.isFinite(veil) && Number.isFinite(grain) ? { page, veil, grain } : null
+  return page && Number.isFinite(veil) ? { page, veil } : null
 }
 
 export interface BackdropParts {
@@ -810,7 +798,7 @@ export function startBackdrop({
     // A page that wears the night draws the dark palette whatever the reader's scheme.
     const scheme: Scheme = dark.matches || stage.closest(NIGHT) !== null ? 'dark' : 'light'
     const inputs = readAurora(sources[scheme])
-    const ground = readGround(stage, hero)
+    const ground = readGround(stage)
     if (!inputs || !ground || !renderer) return false
     renderer.setPalette(auroraPalette(inputs, scheme), ground)
     return true
@@ -857,13 +845,18 @@ export function startBackdrop({
 
   const layOut = () => {
     const size = renderSize(canvas.clientWidth, canvas.clientHeight)
-    const passes = skyPasses(size, canvas.clientWidth, heroView())
-    return { size, passes, key: JSON.stringify([size, passes]) }
+    const view = heroView()
+    const passes = skyPasses(size, canvas.clientWidth, view)
+    return { size, passes, view, key: JSON.stringify([size, passes]) }
   }
 
-  const draw = ({ size, passes, key } = layOut()) => {
+  const draw = ({ size, passes, view, key } = layOut()) => {
     if (!renderer) return
     if (renderer.lost()) return drop()
+    if (key !== drawn) {
+      stage.style.setProperty(HERO_BOX.top, `${view.top}px`)
+      stage.style.setProperty(HERO_BOX.height, `${view.height}px`)
+    }
     drawn = key
     const cost = renderer.draw(flow, size, passes, costs !== null)
     if (!costs) return
