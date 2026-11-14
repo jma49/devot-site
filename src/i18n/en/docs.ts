@@ -203,7 +203,7 @@ const mirror: DocPage = {
   slug: 'markdown-mirror',
   title: 'Devot: keep every note as a Markdown file',
   description:
-    'The Markdown mirror keeps a folder up to date with every Devot note as a Markdown file, for Git, grep, Spotlight and other editors to read.',
+    'Keep a folder of Markdown files in step with every Devot note for Git, grep and other editors, and bring edits made there back into the notes.',
   heading: 'Markdown mirror',
   intro:
     'Devot can keep a folder you choose up to date with every note as a Markdown file, laid out like an export.',
@@ -224,15 +224,18 @@ const mirror: DocPage = {
       ],
     },
     {
-      id: 'one-way',
-      title: 'It only writes',
+      id: 'outside-edits',
+      title: 'Edit the files elsewhere',
       blocks: [
         text(
-          'The folder is written by Devot and never read back: edit notes in Devot. Git, grep, Spotlight, other editors and agents can read your notes there without an export.',
+          'Git, grep, Spotlight, other editors and agents can read your notes in the folder without an export. Turn on Bring Back Outside Edits in Settings > Mirror to edit them there too: a file you change in another app goes back into its note, with the title, tags and status from its front matter and its images still linked.',
+        ),
+        text(
+          'Devot merges the change into the note as an edit, so Revision History and sync keep working, and checks the folder again whenever you return to Devot.',
         ),
         list(
           [
-            'A mirrored file you change elsewhere is never overwritten: Devot renames it to ',
+            'A mirrored file is never overwritten. With Bring Back Outside Edits off, or when the note changed in Devot as well, Devot renames your file to ',
             { code: '<name> (edited outside Devot).md' },
             ', tells you, and writes its own version.',
           ],
@@ -250,7 +253,7 @@ const importExport: DocPage = {
   slug: 'import-export',
   title: 'Devot: import and export Markdown',
   description:
-    'Bring Markdown files, a Markdown folder with its images or HTML into Devot, and export notes as Markdown, HTML or PDF.',
+    'Bring Markdown files, a Markdown folder with its images, HTML, a Notion export or Bear TextBundles into Devot, and export notes as Markdown, HTML or PDF.',
   heading: 'Import and export',
   intro: 'Your notes go in and out of Devot as Markdown, with their images.',
   summary: 'Bring Markdown folders in, and take notes out as Markdown, HTML or PDF.',
@@ -265,6 +268,15 @@ const importExport: DocPage = {
             'A Markdown folder with its images: every folder inside it that holds notes becomes a notebook, nested as on disk, and local images become attachments.',
           ],
           ['HTML files, cleaned and converted to Markdown.'],
+          [
+            'A Notion Markdown export, unzipped: page IDs are left out of titles and notebook names, and a page with subpages goes into one notebook with them.',
+          ],
+          [
+            'Bear TextBundles: each bundle becomes one note with its images, and its hashtags become tags.',
+          ],
+        ),
+        text(
+          'A link from one imported file to another becomes a note link, so the notes stay connected.',
         ),
         text(
           "Choose File > Import, or Import in a notebook's menu to import straight into it. A note takes its title from its first heading, else its file name; front matter that a Devot export wrote also brings back the title, tags and status. Devot lists every file or image it could not import, with the reason.",

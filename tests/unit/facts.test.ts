@@ -146,7 +146,7 @@ options:
 2. Open the dmg and drag Devot to Applications. Releases are signed with Devot's Developer ID and notarised by Apple, so they open without a warning.
 Updates arrive in the app: Devot checks shortly after launch.
 - \`[[\` note links with a link index; each note lists the notes that link to it.
-The folder is written by Devot and never read back: edit notes in Devot.
+Turn on Bring Back Outside Edits to edit the files in other apps too.
 ## Claude and other MCP clients
 Nothing else needs to be installed: clients run a small bridge inside Devot's own binary, which talks to the running app on this Mac only.
 ## Contributing
@@ -310,7 +310,11 @@ describe('checkFacts', () => {
       'src/core/entitlements.ts',
       replace('Feature[] = [\n', "Feature[] = [\n  'localNotes',\n"),
     ],
-    ['E_FACT_MIRROR', 'README.md', replace('never read back', 'read back')],
+    [
+      'E_FACT_MIRROR',
+      'README.md',
+      replace('Turn on Bring Back Outside Edits', 'Devot never reads the folder back'),
+    ],
     ['E_FACT_MCP', 'README.md', replace("inside Devot's own binary", 'from a checkout')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Claude and other MCP clients', '## AI tools')],
     ['E_FACT_SOURCE', 'src/core/search.ts', () => undefined],

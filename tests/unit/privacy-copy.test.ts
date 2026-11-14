@@ -48,10 +48,10 @@ it('names every way note text leaves the Mac in the footnote, sync and AI includ
     expect(en.privacy.network.footnote).toMatch(way)
 })
 
-it('promises plain files only with the Markdown mirror, which Devot writes but never reads', () => {
+it('promises plain files only with the Markdown mirror, read back only when you turn that on', () => {
   expect(en.privacy.lede).toMatch(/mirror/i)
   expect(en.privacy.body).toMatch(/mirror/i)
-  expect(en.privacy.body).toMatch(/never reads/i)
+  expect(en.privacy.body).toMatch(/with Bring Back Outside Edits on/)
 })
 
 it('keeps the paragraph beside the heading short', () => {
