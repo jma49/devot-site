@@ -3,11 +3,11 @@ import '../../styles/home/iphone.css'
 import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
 import readDark from '../../assets/iphone/p2-read-dark.png'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { APP_STORE_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const copy = t.iphone
 const news = t.whatsNew
 

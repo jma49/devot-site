@@ -1,9 +1,9 @@
 ---
 import '../../styles/home/privacy.css'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { STORAGE_DOC_URL } from '../../lib/links.ts'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const copy = t.privacy
 ---
 

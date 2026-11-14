@@ -1,7 +1,7 @@
 ---
 import '../styles/docs.css'
 import type { DocRun, DocSection } from '../i18n/en/docs.ts'
-import { messages } from '../i18n/index.ts'
+import { localeOf, messages } from '../i18n/index.ts'
 import Base from '../layouts/Base.astro'
 
 interface Props {
@@ -21,7 +21,7 @@ interface Props {
   structuredData?: unknown
 }
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const { page, up, byline, toc = true, structuredData } = Astro.props
 const isCode = (run: DocRun): run is { code: string } => typeof run === 'object' && 'code' in run
 ---

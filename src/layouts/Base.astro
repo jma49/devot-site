@@ -6,7 +6,7 @@ import '../styles/global.css'
 import '../styles/motion.css'
 import SiteFooter from '../components/SiteFooter.astro'
 import SiteHeader from '../components/SiteHeader.astro'
-import { messages, type Locale } from '../i18n/index.ts'
+import { alternates, localeOf, messages } from '../i18n/index.ts'
 import { pagePath } from '../lib/page-path.ts'
 import { jsonLd } from '../lib/structured-data.ts'
 import { themeColors } from '../lib/theme-color.ts'
@@ -24,7 +24,7 @@ interface Props {
   night?: boolean
 }
 
-const locale: Locale = 'en'
+const locale = localeOf(Astro.url.pathname)
 const t = messages(locale)
 const {
   title = t.meta.title,
@@ -36,6 +36,7 @@ const {
 const canonical = noindex ? undefined : new URL(pagePath(Astro.url.pathname), SITE_URL).href
 const themeColor = themeColors(tokensCss)
 const image = new URL(OG_IMAGE.path, SITE_URL).href
+const languages = noindex ? [] : alternates(Astro.url.pathname)
 ---
 
 <!doctype html>
@@ -61,6 +62,12 @@ const image = new URL(OG_IMAGE.path, SITE_URL).href
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
     {canonical && <link rel="canonical" href={canonical} />}
+    {languages.map(({ locale: language, path }) => (
+      <link rel="alternate" hreflang={language} href={new URL(path, SITE_URL).href} />
+    ))}
+    {languages[0] && (
+      <link rel="alternate" hreflang="x-default" href={new URL(languages[0].path, SITE_URL).href} />
+    )}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-192.png" sizes="192x192" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -3,13 +3,13 @@ import '../../styles/home/hero.css'
 import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
 import reading from '../../assets/iphone/p2-read-dark.mp4?url'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { DOWNLOAD_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 import Clip from '../Clip.astro'
 import InstallNote from '../InstallNote.astro'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 
 // The widest the phone is drawn is 216 px; twice that covers a 2x screen. Its recording opens on
 // the Notes tab, which this still shows, and is 440 by 956 too.

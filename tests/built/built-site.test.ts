@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
+import { LOCALES, localeOf, messages } from '../../src/i18n/index.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
 import { blogPosting, structuredData } from '../../src/lib/structured-data.ts'
 import { PRICING_PATH } from '../../src/lib/links.ts'
@@ -23,6 +24,9 @@ const pageUrl = (page: string) =>
 // Cloudflare serves it, with status 404, for any path that matches no file.
 const NOT_FOUND = 'dist/404.html'
 const indexed = pages.filter((page) => page !== NOT_FOUND)
+const localeOfPage = (page: string) => localeOf(page.replace(/^dist/, ''))
+// The language switch names each language in that language.
+const languageNames = Object.values(LOCALES).map((catalog) => catalog.chrome.language.name)
 const meta = (html: string, key: string) =>
   tags(html, 'meta')
     .find(({ attrs }) => attrs.get('name') === key || attrs.get('property') === key)
@@ -85,8 +89,8 @@ describe.each(pages)('%s', (page) => {
     expect(missing).toEqual([])
   })
 
-  it('is English, with a title, a description, one heading and link previews', () => {
-    expect(tags(html, 'html')[0]?.attrs.get('lang')).toBe('en')
+  it('is in its language, with a title, a description, one heading and link previews', () => {
+    expect(tags(html, 'html')[0]?.attrs.get('lang')).toBe(localeOfPage(page))
     expect(html).toMatch(/<title>[^<]+<\/title>/)
     expect(meta(html, 'description')).toBeTruthy()
     expect(meta(html, 'og:title')).toBeTruthy()
@@ -105,15 +109,16 @@ describe.each(pages)('%s', (page) => {
     expect(meta(html, 'og:image:type')).toBe('image/png')
     expect(meta(html, 'og:image:width')).toBe(String(OG_IMAGE.width))
     expect(meta(html, 'og:image:height')).toBe(String(OG_IMAGE.height))
-    expect(meta(html, 'og:image:alt')).toBe(en.meta.imageAlt)
+    expect(meta(html, 'og:image:alt')).toBe(messages(localeOfPage(page)).meta.imageAlt)
     expect(meta(html, 'twitter:image')).toBe(image)
-    expect(meta(html, 'twitter:image:alt')).toBe(en.meta.imageAlt)
+    expect(meta(html, 'twitter:image:alt')).toBe(messages(localeOfPage(page)).meta.imageAlt)
     expect(meta(html, 'twitter:title')).toBe(meta(html, 'og:title'))
     expect(meta(html, 'twitter:description')).toBe(meta(html, 'og:description'))
   })
 
-  it('takes all its text from src/i18n/en.ts', () => {
-    const catalog = catalogStrings(en, [new Date().getFullYear()])
+  it('takes all its text from the catalog of its language', () => {
+    const catalog = catalogStrings(messages(localeOfPage(page)), [new Date().getFullYear()])
+    for (const name of languageNames) catalog.add(name)
     expect(pageCopy(html).filter((text) => !catalog.has(text))).toEqual([])
   })
 
@@ -205,6 +210,48 @@ it('builds the blog index and a page for each post', () => {
   for (const { slug } of en.blog.posts) expect(pages).toContain(`dist/blog/${slug}.html`)
 })
 
+describe('the Chinese pages', () => {
+  const links = (page: string, rel: string) =>
+    tags(readRepoFile(page), 'link')
+      .filter(({ attrs }) => attrs.get('rel') === rel)
+      .map(({ attrs }) => `${attrs.get('hreflang')} ${attrs.get('href')}`)
+  const switchTo = (page: string) =>
+    tags(readRepoFile(page), 'a')
+      .filter(({ attrs }) => attrs.has('hreflang'))
+      .map(({ attrs }) => `${attrs.get('hreflang')} ${attrs.get('href')}`)
+
+  it('build beside the English home and support pages', () => {
+    expect(pages).toContain('dist/zh.html')
+    expect(pages).toContain('dist/zh/support.html')
+  })
+
+  it('name each other as alternates, English as the default', () => {
+    const home = [`en ${SITE_URL}`, `zh-Hans ${SITE_URL}zh`, `x-default ${SITE_URL}`]
+    expect(links('dist/index.html', 'alternate')).toEqual(home)
+    expect(links('dist/zh.html', 'alternate')).toEqual(home)
+    expect(links('dist/zh/support.html', 'alternate')).toEqual([
+      `en ${SITE_URL}support`,
+      `zh-Hans ${SITE_URL}zh/support`,
+      `x-default ${SITE_URL}support`,
+    ])
+    expect(links('dist/terms.html', 'alternate')).toEqual([])
+  })
+
+  it('switch to the same page in the other language', () => {
+    expect(switchTo('dist/index.html')).toEqual(['zh-Hans /zh'])
+    expect(switchTo('dist/zh.html')).toEqual(['en /'])
+    expect(switchTo('dist/zh/support.html')).toEqual(['en /support'])
+    expect(switchTo('dist/terms.html')).toEqual([])
+  })
+
+  it('link the sections of the Chinese home page', () => {
+    const hrefs = tags(readRepoFile('dist/zh.html'), 'a').map(({ attrs }) => attrs.get('href'))
+    expect(hrefs).toContain('/zh#pricing')
+    expect(hrefs).toContain('/zh/support')
+    expect(hrefs).not.toContain('/#pricing')
+  })
+})
+
 describe('structured data', () => {
   const ldJson = (html: string) =>
     scripts(html)
@@ -213,8 +260,9 @@ describe('structured data', () => {
 
   const posts = en.blog.posts.map((post) => `dist/blog/${post.slug}.html`)
 
-  it('describes the app once, on the home page', () => {
+  it('describes the app once, on each home page, in its language', () => {
     expect(ldJson(readRepoFile('dist/index.html'))).toEqual([structuredData(en)])
+    expect(ldJson(readRepoFile('dist/zh.html'))).toEqual([structuredData(messages('zh-Hans'))])
   })
 
   it('describes each blog post as a BlogPosting of its own', () => {
@@ -225,7 +273,8 @@ describe('structured data', () => {
   })
 
   it('carries none on the other pages', () => {
-    const others = pages.filter((page) => page !== 'dist/index.html' && !posts.includes(page))
+    const homes = ['dist/index.html', 'dist/zh.html']
+    const others = pages.filter((page) => !homes.includes(page) && !posts.includes(page))
     expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
   })
 })
