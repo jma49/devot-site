@@ -14,7 +14,7 @@ export const privacyCopy: typeof en = {
         ['源码公开，FSL-1.1-MIT', '每日本地备份'],
       ],
     },
-    body: 'Devot 把笔记保存在“资源库”文件夹里的 SQLite 数据库中，书写、搜索、备份和导出都不需要账户或网络。选择一个镜像文件夹后，Devot 还会把每篇笔记写成 Markdown 文件放在那里，供 Git、聚焦搜索和其他编辑器读取，而且从不读回这些文件。',
+    body: 'Devot 把笔记保存在“资源库”文件夹里的 SQLite 数据库中，书写、搜索、备份和导出都不需要账户或网络。镜像文件夹里还会保存每篇笔记的 Markdown 文件；打开“读回外部编辑”后，你在其他应用中修改的文件会回到对应的笔记里。',
     network: {
       summary: 'Devot 会通过网络发送什么？',
       items: [
