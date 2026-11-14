@@ -9,6 +9,7 @@ import { iphoneCopy } from './en/iphone.ts'
 import { legalCopy } from './en/legal.ts'
 import { llmsCopy } from './en/llms.ts'
 import { mediaCopy } from './en/media.ts'
+import { pluginsCopy } from './en/plugins.ts'
 import { pricingCopy } from './en/pricing.ts'
 import { privacyCopy } from './en/privacy.ts'
 import { supportCopy } from './en/support.ts'
@@ -38,6 +39,7 @@ export const en = {
   ...llmsCopy,
   ...docsCopy,
   ...blogCopy,
+  ...pluginsCopy,
 }
 
 export type Messages = typeof en

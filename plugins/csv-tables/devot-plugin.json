@@ -1,0 +1,14 @@
+{
+  "id": "online.devot.csv-tables",
+  "name": "CSV Tables",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "description": "Imports CSV and TSV files as notes with a Markdown table, and draws csv code blocks as tables in the preview.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["preview", "import"],
+  "contributes": {
+    "previewRenderers": [{ "id": "csv", "language": "csv" }],
+    "importFormats": [{ "id": "csv", "title": "CSV or TSV Table", "extensions": ["csv", "tsv"] }]
+  }
+}
