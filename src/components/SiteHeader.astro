@@ -1,8 +1,12 @@
 ---
-import { messages } from '../i18n/index.ts'
+import { alternates, localeOf, localised, messages } from '../i18n/index.ts'
 import { DOWNLOAD_URL, REPO_URL } from '../site.ts'
 
-const t = messages()
+const locale = localeOf(Astro.url.pathname)
+const t = messages(locale)
+const otherLanguages = alternates(Astro.url.pathname)
+  .filter((page) => page.locale !== locale)
+  .map((page) => ({ ...page, name: messages(page.locale).chrome.language.name }))
 const sections = [
   { id: 'write', label: t.chrome.nav.write },
   { id: 'cards', label: t.chrome.nav.cards },
@@ -15,7 +19,7 @@ const sections = [
 
 <header class="site-header" data-site-header>
   <div class="bar" data-menu-scope>
-    <a class="brand" href="/" aria-label={t.chrome.home}>
+    <a class="brand" href={localised('/', locale)} aria-label={t.chrome.home}>
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">{t.siteName}</span>
     </a>
@@ -46,7 +50,7 @@ const sections = [
         <ul class="nav-list" role="list">
           {sections.map(({ id, label }, index) => (
             <li class="nav-item" data-index={index}>
-              <a class="nav-link" href={`/#${id}`} data-nav-section>
+              <a class="nav-link" href={localised(`/#${id}`, locale)} data-nav-section>
                 {label}
               </a>
             </li>
@@ -65,6 +69,13 @@ const sections = [
               </svg>
             </a>
           </li>
+          {otherLanguages.map(({ locale: other, path, name }, index) => (
+            <li class="nav-item nav-item-language" data-index={sections.length + 1 + index}>
+              <a class="nav-link" href={path} hreflang={other} lang={other}>
+                {name}
+              </a>
+            </li>
+          ))}
         </ul>
         <div class="nav-cta">
           <a class="brand-button" href={DOWNLOAD_URL} aria-describedby="menu-note">
@@ -673,6 +684,14 @@ const sections = [
       margin: 0;
       padding: 0;
       border-inline-start: 0;
+      border-bottom: 0;
+    }
+
+    .nav-item-source:has(+ .nav-item-language) {
+      border-bottom: 1px solid var(--site-color-line);
+    }
+
+    .nav-item-language {
       border-bottom: 0;
     }
 

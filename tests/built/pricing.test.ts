@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
+import { zhHans } from '../../src/i18n/zh-Hans.ts'
 import { BUY_URL, ISSUES_URL, LICENCE_PRICE, PRIVACY_EMAIL, RESEND_URL } from '../../src/site.ts'
 import { tags } from '../support/html.ts'
 import { filesUnder, readRepoFile } from '../support/source-files.ts'
@@ -84,6 +85,7 @@ const contactPages = {
   'dist/mcp-privacy.html': en.mcpPrivacy,
   'dist/privacy.html': en.privacyPolicy,
   'dist/support.html': en.support,
+  'dist/zh/support.html': zhHans.support,
 }
 
 it.each(pages.filter((page) => !(page in contactPages)))('%s gives no email address', (page) => {

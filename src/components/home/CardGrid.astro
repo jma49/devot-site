@@ -1,12 +1,12 @@
 ---
 import '../../styles/home/cards.css'
 import '../../styles/clip-controls.css'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { media } from '../../media.ts'
 import Clip from '../Clip.astro'
 import { keyGlyphs, keySymbolsMarkup } from './card-keys.ts'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 
 type CardSlot = keyof typeof t.cards.items
 
