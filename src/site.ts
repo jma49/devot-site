@@ -1,5 +1,6 @@
 export const SITE_URL = 'https://devot.online/'
 export const REPO_URL = 'https://github.com/jma49/devot'
+export const SITE_REPO_URL = 'https://github.com/jma49/devot-site'
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
 /**
  * The App Store page of Devot for iPhone, once it has one. Until then the page shows no link to

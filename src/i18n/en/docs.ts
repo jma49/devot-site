@@ -1,5 +1,7 @@
 import { numberWord } from '../../lib/words.ts'
-import { DOWNLOAD_URL, PLATFORM, REPO_URL, TRIAL_DAYS } from '../../site.ts'
+import type { PluginListing } from '../../lib/plugins.ts'
+import { pluginsCopy } from './plugins.ts'
+import { DOWNLOAD_URL, PLATFORM, REPO_URL, SITE_REPO_URL, TRIAL_DAYS } from '../../site.ts'
 
 /** Text, `code` in the monospaced face, or a link to an absolute or site-relative address. */
 export type DocRun = string | { code: string } | { text: string; href: string }
@@ -489,6 +491,169 @@ const templates: DocPage = {
   ],
 }
 
+const joinAnd = (items: string[]) =>
+  items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+
+const listing = (plugin: PluginListing): DocRun[] => [
+  { text: plugin.name, href: plugin.source },
+  `, by ${plugin.author}. ${plugin.summary} It can ${joinAnd(plugin.permissions.map((p) => pluginsCopy.plugins.permissionNames[p]))}. `,
+  { text: `Download ${plugin.name}`, href: plugin.download },
+]
+
+const plugins: DocPage = {
+  slug: 'plugins',
+  title: 'Devot: plugins and the plugin index',
+  description:
+    'Find plugins for Devot, install them from an archive or a folder, and write your own with commands, preview renderers and import or export formats.',
+  heading: 'Plugins',
+  intro:
+    'Plugins add commands, preview renderers and import and export formats to Devot. Each one runs in a sandbox and can do only what you approved.',
+  summary: 'Find, install and write plugins, and list yours in the index.',
+  sections: [
+    {
+      id: 'sandbox',
+      title: 'What a plugin can do',
+      blocks: [
+        text(
+          'A plugin can add commands to the command palette, items to the Plugins menu, keyboard shortcuts, renderers that draw a kind of code block in the preview, and import and export formats.',
+        ),
+        text(
+          'It runs in a sandbox of its own, in the main window only. It cannot reach the network, your other notes, storage or another plugin, and it reads or changes the open note only with your permission and only while one of its commands runs. Plugins never sync and backups leave them out.',
+        ),
+      ],
+    },
+    {
+      id: 'install',
+      title: 'Install a plugin',
+      blocks: [
+        steps(
+          ["Download the plugin's archive (a ", { code: '.zip' }, ' file) from the index below.'],
+          [
+            'In Devot, open Settings > Plugins and choose Install from Archive, or Install from Folder for a plugin you unpacked or wrote.',
+          ],
+          ['Read what it asks for, then choose Install. Cancel installs nothing.'],
+        ),
+        text(
+          'The same pane turns plugins on and off, lists their permissions and removes them. Installing a newer version replaces the old one whole.',
+        ),
+      ],
+    },
+    {
+      id: 'index',
+      title: 'The index',
+      blocks: [
+        text(
+          'Plugins listed here have public source. Devot checks every package when you install it, whoever made it, so read what a plugin asks for before you approve it.',
+        ),
+        list(...pluginsCopy.plugins.listings.map(listing)),
+      ],
+    },
+    {
+      id: 'write',
+      title: 'Write a plugin',
+      blocks: [
+        text(
+          'A plugin is a folder with a manifest, ',
+          { code: 'devot-plugin.json' },
+          ', and a script. The manifest names the plugin, the permissions it asks for and what it adds:',
+        ),
+        {
+          kind: 'code',
+          label: 'Plugin manifest, devot-plugin.json',
+          lines: [
+            '{',
+            '  "id": "com.example.csv-tables",',
+            '  "name": "CSV Tables",',
+            '  "version": "1.0.0",',
+            '  "apiVersion": 1,',
+            '  "author": "Your name",',
+            '  "main": "main.js",',
+            '  "permissions": ["preview", "import"],',
+            '  "contributes": {',
+            '    "previewRenderers": [{ "id": "csv", "language": "csv" }],',
+            '    "importFormats": [{ "id": "csv", "title": "CSV Table", "extensions": ["csv"] }]',
+            '  }',
+            '}',
+          ],
+        },
+        text(
+          'The script registers a handler for each thing the manifest adds, on the global ',
+          { code: 'devot' },
+          ':',
+        ),
+        list(
+          [{ code: 'devot.commands.handle(id, run)' }, ': runs a command.'],
+          [
+            { code: 'devot.preview.handle(id, (source) => markdown)' },
+            ': draws a code block as Markdown, which the preview renders and sanitizes like note text; null keeps it as code.',
+          ],
+          [
+            { code: 'devot.importer.handle(id, ({ name, text }) => ({ title, markdown }))' },
+            ': turns a file into a note.',
+          ],
+          [
+            { code: 'devot.exporter.handle(id, ({ title, markdown }) => text)' },
+            ': turns the open note into a file.',
+          ],
+          [
+            { code: 'devot.note.read()' },
+            ' and ',
+            { code: 'devot.note.replace({ base, markdown })' },
+            ': read and change the open note while a command runs; a change is refused when the note changed since it was read.',
+          ],
+          [
+            { code: 'devot.ui.show({ height })' },
+            ' and ',
+            { code: 'devot.ui.hide()' },
+            ": show the plugin's page in a sheet, from one of its commands.",
+          ],
+        ),
+        {
+          kind: 'code',
+          label: 'Plugin script, main.js',
+          lines: [
+            "devot.preview.handle('csv', (source) => {",
+            "  const rows = source.trim().split('\\n').map((line) => line.split(','))",
+            "  const line = (cells) => `| ${cells.join(' | ')} |`",
+            "  const rule = `|${' --- |'.repeat(rows[0].length)}`",
+            "  return [line(rows[0]), rule, ...rows.slice(1).map(line)].join('\\n')",
+            '})',
+          ],
+        },
+        text(
+          'The full rules, limits and error codes are in the ',
+          {
+            text: 'extensions spec',
+            href: 'https://github.com/jma49/devot/blob/main/docs/specs/extensions.md',
+          },
+          '. The CSV Tables source above is a complete example.',
+        ),
+      ],
+    },
+    {
+      id: 'list',
+      title: 'List your plugin',
+      blocks: [
+        steps(
+          [
+            'Publish its source in a public repository, with an archive of each version to download.',
+          ],
+          [
+            'Open a pull request on the ',
+            { text: "site's repository", href: SITE_REPO_URL },
+            ' that adds it to ',
+            { code: 'src/i18n/en/plugins.ts' },
+            ': its ID, name, author, a one-sentence summary, the permissions its manifest asks for, its source and its archive.',
+          ],
+        ),
+        text(
+          'A listing names exactly the permissions the plugin asks for, and a plugin that reaches for more than it says is taken out.',
+        ),
+      ],
+    },
+  ],
+}
+
 export const docsCopy = {
   docs: {
     index: {
@@ -501,6 +666,15 @@ export const docsCopy = {
     },
     onThisPage: 'On this page',
     allDocs: 'All docs',
-    pages: [install, aiTools, sync, search, templates, mirror, importExport] satisfies DocPage[],
+    pages: [
+      install,
+      aiTools,
+      sync,
+      search,
+      templates,
+      mirror,
+      importExport,
+      plugins,
+    ] satisfies DocPage[],
   },
 }
