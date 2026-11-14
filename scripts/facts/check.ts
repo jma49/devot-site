@@ -586,13 +586,13 @@ const FACTS: Fact[] = [
     code: 'E_FACT_MIRROR',
     needs: [README],
     check: (devot, copy) => [
-      ...says(copy.privacy.body, 'never reads them back', 'The local-first paragraph'),
-      ...(devot(README).includes('never read back')
+      ...says(copy.privacy.body, 'Bring Back Outside Edits', 'The local-first paragraph'),
+      ...(devot(README).includes('Turn on Bring Back Outside Edits')
         ? []
         : [
             problem(
               'E_FACT_MIRROR',
-              `${README} no longer says the mirror folder is never read back`,
+              `${README} no longer says Bring Back Outside Edits takes mirror files back`,
             ),
           ]),
     ],
