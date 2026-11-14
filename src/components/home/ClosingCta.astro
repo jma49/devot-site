@@ -1,12 +1,12 @@
 ---
 import '../../styles/home/closing.css'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { RELEASES_URL } from '../../lib/links.ts'
 import { APP_STORE_URL, DOWNLOAD_URL, REPO_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 import InstallNote from '../InstallNote.astro'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const copy = t.closing
 const links = [
   { href: REPO_URL, label: copy.links.source },

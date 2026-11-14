@@ -1,7 +1,7 @@
 ---
 import '../styles/legal.css'
 import type { LegalPage } from '../i18n/en/legal.ts'
-import { messages } from '../i18n/index.ts'
+import { localeOf, localised, messages } from '../i18n/index.ts'
 import { LEGAL_LINKS, PRICING_PATH } from '../lib/links.ts'
 import Base from '../layouts/Base.astro'
 import Unbroken from './Unbroken.astro'
@@ -10,7 +10,8 @@ interface Props {
   page: LegalPage
 }
 
-const t = messages()
+const locale = localeOf(Astro.url.pathname)
+const t = messages(locale)
 const { page } = Astro.props
 ---
 
@@ -30,14 +31,14 @@ const { page } = Astro.props
               typeof run === 'string' ? (
                 <Unbroken text={run} />
               ) : (
-                <a href={LEGAL_LINKS[run.link]}>{run.text}</a>
+                <a href={localised(LEGAL_LINKS[run.link], locale)}>{run.text}</a>
               ),
             )}
           </p>
         ))}
       </section>
     ))}
-    <a class="legal__back" href={PRICING_PATH}>
+    <a class="legal__back" href={localised(PRICING_PATH, locale)}>
       {t.legal.backToPricing}
     </a>
   </article>

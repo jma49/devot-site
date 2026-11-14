@@ -1,4 +1,4 @@
-const titleLines = ['Your notes stay on your Mac', 'and iPhone,'] as const
+const titleLines: readonly string[] = ['Your notes stay on your Mac', 'and iPhone,']
 /** The words that close the last line, in the accent ink. */
 const titleAccent = 'in your hands.'
 

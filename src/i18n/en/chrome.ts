@@ -24,6 +24,8 @@ export const chromeCopy = {
     navLabel: 'Main',
     menu: 'Menu',
     pause: 'Pause animations',
+    /** How this language names itself, for the switch on the other languages' pages. */
+    language: { name: 'English' },
     nav: {
       write: 'Features',
       cards: 'More features',

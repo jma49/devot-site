@@ -1,5 +1,5 @@
 ---
-import { messages } from '../i18n/index.ts'
+import { localeOf, messages } from '../i18n/index.ts'
 import { media, pinned, type Scheme, type SlotName } from '../media.ts'
 
 interface Props {
@@ -20,7 +20,8 @@ interface Props {
 
 const { name, class: className, scheme, as: clipName = name, priority = false } = Astro.props
 const slot = scheme ? pinned(media[name], scheme) : media[name]
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
+const alt = t.media[name]
 const posterMedia = JSON.stringify(
   slot.variants.flatMap((variant) => (variant.media ? [[variant.media, variant.poster]] : [])),
 )
@@ -46,8 +47,8 @@ const posterMedia = JSON.stringify(
       height={slot.height}
       data-poster={slot.poster}
       data-poster-media={posterMedia}
-      data-control-label={t.clipControl.named(slot.alt)}
-      aria-label={slot.alt}
+      data-control-label={t.clipControl.named(alt)}
+      aria-label={alt}
       preload="none"
       muted
       loop
@@ -74,7 +75,7 @@ const posterMedia = JSON.stringify(
           src={slot.poster}
           width={slot.width}
           height={slot.height}
-          alt={slot.alt}
+          alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
         />
@@ -87,7 +88,7 @@ const posterMedia = JSON.stringify(
     src={slot.poster}
     width={slot.width}
     height={slot.height}
-    alt={slot.alt}
+    alt={alt}
     loading="lazy"
     decoding="async"
   />

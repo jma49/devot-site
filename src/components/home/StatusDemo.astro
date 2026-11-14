@@ -1,10 +1,10 @@
 ---
 import '../../styles/home/demo.css'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { STATUSES, statusCounts } from '../../scripts/demo.ts'
 import StatusIcon from './StatusIcon.astro'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const copy = t.demo
 const counts = statusCounts(copy.notes.map(({ status }) => status))
 const total = copy.notes.length

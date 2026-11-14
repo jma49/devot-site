@@ -1,11 +1,11 @@
 ---
 import '../../styles/home/pricing.css'
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import { REFUNDS_PATH, TERMS_PATH } from '../../lib/links.ts'
 import { BUILD_URL, BUY_URL, DOWNLOAD_URL, RESEND_URL } from '../../site.ts'
 import Unbroken from '../Unbroken.astro'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const copy = t.pricing
 const links = [
   { href: TERMS_PATH, label: copy.links.terms },

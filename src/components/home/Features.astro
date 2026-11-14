@@ -1,11 +1,11 @@
 ---
-import { messages } from '../../i18n/index.ts'
+import { localeOf, messages } from '../../i18n/index.ts'
 import Clip from '../Clip.astro'
 import StatusDemo from './StatusDemo.astro'
 import '../../styles/home/features.css'
 import '../../styles/clip-controls.css'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 const { items } = t.features
 const number = (index: number) => String(index + 1).padStart(2, '0')
 ---

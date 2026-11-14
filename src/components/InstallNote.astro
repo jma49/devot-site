@@ -1,9 +1,9 @@
 ---
 import '../styles/install-note.css'
-import { messages } from '../i18n/index.ts'
+import { localeOf, messages } from '../i18n/index.ts'
 import { INSTALL_URL } from '../lib/links.ts'
 
-const t = messages()
+const t = messages(localeOf(Astro.url.pathname))
 ---
 
 <p class="install-note">
