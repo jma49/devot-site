@@ -42,10 +42,10 @@ describe.each(pages)('$slug', (page) => {
     for (const id of ids) expect(id).toMatch(/^[a-z]+(-[a-z]+)*$/)
   })
 
-  it('links only to this site, the Devot repository or its releases, over https', () => {
+  it('links only to this site, its plugin archives, the Devot repository or its releases, over https', () => {
     const allowed = (href: string) =>
       href.startsWith('/')
-        ? /^\/[a-z-]+(\/[a-z-]+)?$/.test(href)
+        ? /^\/[a-z-]+(\/[a-z-]+)?$/.test(href) || /^\/plugins\/[a-z0-9-]+\.zip$/.test(href)
         : new URL(href).protocol === 'https:' &&
           (href.startsWith(REPO_URL) || href.startsWith(SITE_URL))
     expect(hrefsOf(page).filter((href) => !allowed(href))).toEqual([])

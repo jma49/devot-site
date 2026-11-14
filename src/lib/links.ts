@@ -60,6 +60,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     links: [
       { id: 'docs', href: DOCS_PATH },
       { id: 'blog', href: BLOG_PATH },
+      { id: 'plugins', href: docPath('plugins') },
       { id: 'releases', href: RELEASES_URL },
       { id: 'install', href: INSTALL_URL },
       { id: 'architecture', href: blob('docs/architecture.md') },
