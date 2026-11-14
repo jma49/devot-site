@@ -435,7 +435,7 @@ const mirror: BlogPost = {
       title: 'It never fights you',
       blocks: [
         text(
-          'The mirror only writes. If you edit a mirrored file by mistake, Devot does not overwrite it: it renames your copy with "(edited outside Devot)" and writes its own beside it. Files Devot did not write are never touched.',
+          'Turn on Bring Back Outside Edits and a file you change in your editor goes back into its note, merged as an edit so history and sync keep working. With it off, or when the note changed in Devot too, Devot never overwrites your file: it renames your copy with "(edited outside Devot)" and writes its own beside it. Files Devot did not write are never touched.',
         ),
         text('More in the docs: ', { text: 'Markdown mirror', href: '/docs/markdown-mirror' }, '.'),
       ],

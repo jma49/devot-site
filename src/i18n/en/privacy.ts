@@ -14,7 +14,7 @@ export const privacyCopy = {
         ['Source available, FSL-1.1-MIT', 'Daily local backups'],
       ],
     },
-    body: 'Devot keeps your notes in a SQLite database in your Library folder, and needs no account or connection to write, search, back up or export. Choose a mirror folder and Devot also writes every note there as a Markdown file for Git, Spotlight and other editors to read, and never reads them back.',
+    body: 'Devot keeps your notes in a SQLite database in your Library folder, and needs no account or connection to write, search, back up or export. A mirror folder also holds every note as a Markdown file, and with Bring Back Outside Edits on, files you change in other apps go back into their notes.',
     network: {
       summary: 'What does Devot send over the network?',
       items: [
