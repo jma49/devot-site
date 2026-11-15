@@ -20,3 +20,15 @@ it('keeps the job names that branch protection requires', () => {
   expect(ci).toMatch(/^ {2}e2e:$/m)
   expect(ci).toMatch(/^permissions:\n {2}contents: read$/m)
 })
+
+it('spends the shared macOS runners only on the WebKit shards', () => {
+  const ci = readRepoFile('.github/workflows/ci.yml')
+  const shards = [...ci.matchAll(/- \{ project: (\w+), os: ([\w.-]+), shard: \d+, shards: \d+ \}/g)]
+  expect(shards.length).toBeGreaterThan(0)
+  for (const [, project, os] of shards) {
+    expect(`${project} on ${os}`).toBe(
+      `${project} on ${project === 'webkit' ? 'macos-latest' : 'ubuntu-latest'}`,
+    )
+  }
+  expect(ci).toMatch(/--project=\$\{\{ matrix\.project \}\}/)
+})
