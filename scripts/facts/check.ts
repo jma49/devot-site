@@ -555,12 +555,13 @@ const FACTS: Fact[] = [
       const archs = [...devot(RELEASE).matchAll(/Devot_\$\{[^}]*\}_(\w+)\.dmg/g)].map((m) => m[1])
       return [
         ...says(copy.download.requirements, 'Apple Silicon', 'The download requirements'),
-        ...(archs.length > 0 && archs.every((arch) => arch === 'aarch64')
+        ...says(copy.download.requirements, 'Intel', 'The download requirements'),
+        ...(archs.length > 0 && archs.every((arch) => arch === 'universal')
           ? []
           : [
               problem(
                 'E_FACT_RELEASE',
-                `${RELEASE} names dmg assets for ${archs.join(', ') || 'no architecture'}, not only aarch64 (Apple Silicon)`,
+                `${RELEASE} names dmg assets for ${archs.join(', ') || 'no architecture'}, not only universal (Apple Silicon and Intel)`,
               ),
             ]),
       ]

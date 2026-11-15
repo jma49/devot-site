@@ -62,7 +62,7 @@ const install: DocPage = {
         steps(
           [
             'Download the latest ',
-            { code: 'Devot_<version>_aarch64.dmg' },
+            { code: 'Devot_<version>_universal.dmg' },
             ' from the ',
             { text: 'latest release', href: DOWNLOAD_URL },
             '.',

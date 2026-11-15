@@ -67,5 +67,5 @@ it('makes no claim the app cannot prove', () => {
 
 it('keeps the closing call to action to what the download page offers', () => {
   expect(en.closing.title).toEqual(['Write on your Mac and iPhone.', 'Keep what you write.'])
-  expect(en.download.requirements).toBe('macOS 26+ on Apple Silicon · iOS 26+')
+  expect(en.download.requirements).toBe('macOS 15+ on Apple Silicon or Intel · iOS 26+')
 })

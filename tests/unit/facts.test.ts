@@ -137,10 +137,10 @@ options:
   }),
   'src-tauri/tauri.conf.json': JSON.stringify({
     productName: 'Devot',
-    bundle: { macOS: { minimumSystemVersion: '26.0' } },
+    bundle: { macOS: { minimumSystemVersion: '15.0' } },
   }),
-  '.github/workflows/release.yml': `          cp "$dmg" "out/Devot_\${VERSION}_aarch64.dmg"
-          cp "$bundle/macos/Devot.app.tar.gz" "out/Devot_\${VERSION}_aarch64.app.tar.gz"
+  '.github/workflows/release.yml': `          mv signed/Devot.dmg "out/Devot_\${VERSION}_universal.dmg"
+          mv signed/Devot.app.tar.gz "out/Devot_\${VERSION}_universal.app.tar.gz"
 `,
   'README.md': `## Download
 2. Open the dmg and drag Devot to Applications. Releases are signed with Devot's Developer ID and notarised by Apple, so they open without a warning.
@@ -247,7 +247,7 @@ describe('checkFacts', () => {
     ['E_FACT_LICENCE', 'LICENSE', replace('FSL-1.1-MIT\n', 'Apache-2.0\n')],
     ['E_FACT_LICENCE', 'LICENSE', replace('## Abbreviation', '## Name')],
     ['E_FACT_LICENCE', 'LICENSE', replace('2026 devot.online', '2026 Someone Else')],
-    ['E_FACT_PLATFORM', 'src-tauri/tauri.conf.json', replace('"26.0"', '"27.0"')],
+    ['E_FACT_PLATFORM', 'src-tauri/tauri.conf.json', replace('"15.0"', '"26.0"')],
     ['E_FACT_PLATFORM', 'src-tauri/gen/apple/project.yml', replace('iOS: 26.0', 'iOS: 27.0')],
     ['E_FACT_PLATFORM', 'src-tauri/gen/apple/project.yml', replace('iOS: 26.0', 'tvOS: 26.0')],
     [
@@ -260,7 +260,7 @@ describe('checkFacts', () => {
       'src-tauri/apple/DevotStore/DevotStore.storekit',
       replace('Devot Pro', 'Devot Plus'),
     ],
-    ['E_FACT_RELEASE', '.github/workflows/release.yml', replace('_aarch64.dmg', '_universal.dmg')],
+    ['E_FACT_RELEASE', '.github/workflows/release.yml', replace('_universal.dmg', '_aarch64.dmg')],
     [
       'E_FACT_RELEASE',
       '.github/workflows/release.yml',
