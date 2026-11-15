@@ -1,4 +1,4 @@
-/* Generated from jma49/devot@e2a39a334850a65b8605f94b9908e33042a763b2 (src/renderer/src/theme/tokens.css). Do not edit. */
+/* Generated from jma49/devot@51b26a41800bdccf146eed737e3b5b4997819caa (src/renderer/src/theme/tokens.css). Do not edit. */
 :root {
   color-scheme: light dark;
   --font-family-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
@@ -345,6 +345,7 @@
   --size-phone-search-chip: 34px;
   --size-phone-search-empty: 56px;
   --size-phone-heat-cell: 16px;
+  --size-phone-heat-cell-wide: 40px;
   --size-phone-heat-gap: 4px;
   --size-phone-heat-legend: 11px;
   --size-phone-section-head: 40px;

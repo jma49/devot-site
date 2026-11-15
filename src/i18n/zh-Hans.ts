@@ -18,7 +18,7 @@ export const zhHans: Messages = {
     label: '下载 macOS 版',
     iphone: '获取 iPhone 版',
     appStore: '在 App Store 获取',
-    requirements: `${PLATFORM.os}，${PLATFORM.processor} · ${IPHONE_OS}`,
+    requirements: `${PLATFORM.os}，Apple Silicon 或 Intel · ${IPHONE_OS}`,
     iphoneRequirements: `iPhone，${IPHONE_OS}`,
   },
   ...chromeCopy,
