@@ -25,7 +25,9 @@ function load(folder: string, more: Record<string, unknown> = {}) {
   const main = pluginPackages()
     .get(folder)!
     .find((f) => f.path === 'main.js')!.text
-  runInNewContext(main, { devot, atob, TextDecoder })
+  // The plugin frame has a location; bundled libraries read it to find their own address.
+  const location = { href: 'https://plugin.devot.invalid/main.js' }
+  runInNewContext(main, { devot, atob, TextDecoder, location })
   return handlers
 }
 
