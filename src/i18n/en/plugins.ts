@@ -57,6 +57,94 @@ const listings: PluginListing[] = [
     download: '/plugins/graphviz.zip',
     folder: 'graphviz',
   },
+  {
+    id: 'online.devot.theme-catppuccin',
+    name: 'Catppuccin',
+    author: 'Devot',
+    summary:
+      'The Catppuccin themes in soothing pastels: Latte for Light Mode; Frappé, Macchiato and Mocha for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/catppuccin`,
+    download: '/plugins/catppuccin.zip',
+    folder: 'catppuccin',
+  },
+  {
+    id: 'online.devot.theme-tokyo-night',
+    name: 'Tokyo Night',
+    author: 'Devot',
+    summary:
+      'The Tokyo Night themes in blues and violets: Tokyo Night Light for Light Mode; Tokyo Night and Storm for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/tokyo-night`,
+    download: '/plugins/tokyo-night.zip',
+    folder: 'tokyo-night',
+  },
+  {
+    id: 'online.devot.theme-dracula',
+    name: 'Dracula',
+    author: 'Devot',
+    summary:
+      'The Dracula theme, vivid purple, pink and green on deep gray, for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/dracula`,
+    download: '/plugins/dracula.zip',
+    folder: 'dracula',
+  },
+  {
+    id: 'online.devot.theme-nord',
+    name: 'Nord',
+    author: 'Devot',
+    summary:
+      'The Nord theme of calm arctic blues and frosted grays, for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/nord`,
+    download: '/plugins/nord.zip',
+    folder: 'nord',
+  },
+  {
+    id: 'online.devot.theme-gruvbox',
+    name: 'Gruvbox',
+    author: 'Devot',
+    summary:
+      'The Gruvbox themes in warm retro browns, yellows and greens, for Light Mode and Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/gruvbox`,
+    download: '/plugins/gruvbox.zip',
+    folder: 'gruvbox',
+  },
+  {
+    id: 'online.devot.theme-solarized',
+    name: 'Solarized',
+    author: 'Devot',
+    summary:
+      'The Solarized themes of cream and deep teal, for Light Mode and Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/solarized`,
+    download: '/plugins/solarized.zip',
+    folder: 'solarized',
+  },
+  {
+    id: 'online.devot.theme-rose-pine',
+    name: 'Rosé Pine',
+    author: 'Devot',
+    summary:
+      'The Rosé Pine themes in muted rose, pine and gold: Dawn for Light Mode; Rosé Pine and Moon for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/rose-pine`,
+    download: '/plugins/rose-pine.zip',
+    folder: 'rose-pine',
+  },
+  {
+    id: 'online.devot.theme-one',
+    name: 'One Dark and Light',
+    author: 'Devot',
+    summary:
+      'The One themes of cool grays and soft colors: One Light for Light Mode, One Dark for Dark Mode. Needs Devot 1.1.8.',
+    permissions: ['themes'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/one`,
+    download: '/plugins/one.zip',
+    folder: 'one',
+  },
 ]
 
 const permissionNames: Record<PluginPermission, string> = {

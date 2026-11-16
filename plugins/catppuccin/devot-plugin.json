@@ -1,0 +1,39 @@
+{
+  "id": "online.devot.theme-catppuccin",
+  "name": "Catppuccin",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "Soothing pastel colors: Latte for Light Mode; Frappé, Macchiato and Mocha for Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "latte",
+        "title": "Catppuccin Latte",
+        "appearance": "light",
+        "path": "latte.json"
+      },
+      {
+        "id": "frappe",
+        "title": "Catppuccin Frappé",
+        "appearance": "dark",
+        "path": "frappe.json"
+      },
+      {
+        "id": "macchiato",
+        "title": "Catppuccin Macchiato",
+        "appearance": "dark",
+        "path": "macchiato.json"
+      },
+      {
+        "id": "mocha",
+        "title": "Catppuccin Mocha",
+        "appearance": "dark",
+        "path": "mocha.json"
+      }
+    ]
+  }
+}

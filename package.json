@@ -18,6 +18,8 @@
     "tokens": "node scripts/tokens/cli.ts",
     "tokens:check": "node scripts/tokens/cli.ts --check",
     "tokens:update": "node scripts/tokens/cli.ts --update",
+    "plugin-themes": "node scripts/plugin-themes/cli.ts",
+    "plugin-themes:check": "node scripts/plugin-themes/cli.ts --check",
     "media:capture": "node scripts/media/cli.ts capture",
     "media:encode": "node scripts/media/cli.ts encode",
     "media:device": "node scripts/media/device/cli.ts",

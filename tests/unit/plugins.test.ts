@@ -71,7 +71,10 @@ describe('each official plugin', () => {
       const files = pluginPackages()
         .get(folder)!
         .map((f) => f.path)
-      expect(files).toEqual(['devot-plugin.json', 'main.js'])
+      const manifest = JSON.parse(readFileSync(join(PLUGINS, folder, 'devot-plugin.json'), 'utf8'))
+      const themes = (manifest.contributes.themes ?? []).map((t: { path: string }) => t.path)
+      const license = themes.length > 0 ? ['LICENSE'] : []
+      expect(files).toEqual([...license, 'devot-plugin.json', ...themes, 'main.js'].sort())
     },
   )
 })

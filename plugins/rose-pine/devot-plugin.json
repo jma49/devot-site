@@ -1,0 +1,33 @@
+{
+  "id": "online.devot.theme-rose-pine",
+  "name": "Rosé Pine",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "Soho vibes in muted rose, pine and gold: Dawn for Light Mode; Rosé Pine and Moon for Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "dawn",
+        "title": "Rosé Pine Dawn",
+        "appearance": "light",
+        "path": "dawn.json"
+      },
+      {
+        "id": "main",
+        "title": "Rosé Pine",
+        "appearance": "dark",
+        "path": "main.json"
+      },
+      {
+        "id": "moon",
+        "title": "Rosé Pine Moon",
+        "appearance": "dark",
+        "path": "moon.json"
+      }
+    ]
+  }
+}

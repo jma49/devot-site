@@ -1,0 +1,27 @@
+{
+  "id": "online.devot.theme-solarized",
+  "name": "Solarized",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "The precise sixteen-color palette of cream and deep teal, for Light Mode and Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "light",
+        "title": "Solarized Light",
+        "appearance": "light",
+        "path": "light.json"
+      },
+      {
+        "id": "dark",
+        "title": "Solarized Dark",
+        "appearance": "dark",
+        "path": "dark.json"
+      }
+    ]
+  }
+}

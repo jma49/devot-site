@@ -1,0 +1,33 @@
+{
+  "id": "online.devot.theme-tokyo-night",
+  "name": "Tokyo Night",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "The blues and violets of a city at night: Tokyo Night Light for Light Mode; Tokyo Night and Storm for Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "light",
+        "title": "Tokyo Night Light",
+        "appearance": "light",
+        "path": "light.json"
+      },
+      {
+        "id": "night",
+        "title": "Tokyo Night",
+        "appearance": "dark",
+        "path": "night.json"
+      },
+      {
+        "id": "storm",
+        "title": "Tokyo Night Storm",
+        "appearance": "dark",
+        "path": "storm.json"
+      }
+    ]
+  }
+}
