@@ -58,6 +58,17 @@ const listings: PluginListing[] = [
     folder: 'graphviz',
   },
   {
+    id: 'online.devot.excalidraw',
+    name: 'Excalidraw',
+    author: 'Devot',
+    summary:
+      'Draws excalidraw code blocks as hand-drawn sketches in the preview, and edits them in a whiteboard in the plugin panel. Needs Devot 1.1.8.',
+    permissions: ['preview'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/excalidraw`,
+    download: '/plugins/excalidraw.zip',
+    folder: 'excalidraw',
+  },
+  {
     id: 'online.devot.theme-catppuccin',
     name: 'Catppuccin',
     author: 'Devot',

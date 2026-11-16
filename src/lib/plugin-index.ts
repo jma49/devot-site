@@ -1,7 +1,7 @@
 // The index Devot's Settings > Plugins reads to list official plugins and install or update them.
 // A breaking change to its shape raises the schema; Devot ignores an index whose schema it does not know.
 import { SITE_REPO_URL } from '../site.ts'
-import { pluginArchive, pluginPackages } from './plugin-packages.ts'
+import { packedText, pluginArchive, pluginPackages } from './plugin-packages.ts'
 
 export const PLUGIN_INDEX_SCHEMA = 1
 
@@ -32,9 +32,9 @@ export async function pluginIndex(): Promise<{
 }> {
   const plugins: PluginIndexEntry[] = []
   for (const [folder, files] of pluginPackages()) {
-    const text = files.find((f) => f.path === 'devot-plugin.json')?.text
-    if (!text) throw new Error(`E_PLUGIN_MANIFEST_MISSING ${folder}`)
-    const manifest = JSON.parse(text)
+    const manifestFile = files.find((f) => f.path === 'devot-plugin.json')
+    if (!manifestFile) throw new Error(`E_PLUGIN_MANIFEST_MISSING ${folder}`)
+    const manifest = JSON.parse(packedText(manifestFile))
     const archive = pluginArchive(folder)
     plugins.push({
       id: manifest.id,

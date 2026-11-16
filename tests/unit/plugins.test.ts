@@ -4,27 +4,34 @@ import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { PLUGIN_PERMISSIONS } from '../../src/lib/plugins.ts'
-import { pluginArchive, pluginPackages } from '../../src/lib/plugin-packages.ts'
+import { builtFiles } from '../../src/lib/plugin-builds.ts'
+import { packedText, pluginArchive, pluginPackages } from '../../src/lib/plugin-packages.ts'
 import { crc32, storedZip } from '../../src/lib/zip.ts'
 
 const PLUGIN_LISTINGS = en.plugins.listings
 const pluginsDoc = en.docs.pages.find((page) => page.slug === 'plugins')!
 const PLUGINS = join(import.meta.dirname, '../../plugins')
 const ID = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+const MIB = 1024 * 1024
 
 type Handler = (input: never) => unknown
 function load(folder: string, more: Record<string, unknown> = {}) {
-  const handlers = { preview: new Map<string, Handler>(), importer: new Map<string, Handler>() }
+  const handlers = {
+    preview: new Map<string, Handler>(),
+    edit: new Map<string, Handler>(),
+    importer: new Map<string, Handler>(),
+  }
   const handle = (kind: keyof typeof handlers) => (id: string, fn: Handler) =>
     handlers[kind].set(id, fn)
   const devot = {
     ...more,
-    preview: { handle: handle('preview') },
+    preview: { handle: handle('preview'), edit: handle('edit') },
     importer: { handle: handle('importer') },
   }
-  const main = pluginPackages()
+  const mainFile = pluginPackages()
     .get(folder)!
-    .find((f) => f.path === 'main.js')!.text
+    .find((f) => f.path === 'main.js')!
+  const main = packedText(mainFile)
   // The plugin frame has a location; bundled libraries read it to find their own address.
   const location = { href: 'https://plugin.devot.invalid/main.js' }
   runInNewContext(main, { devot, atob, TextDecoder, location })
@@ -54,9 +61,13 @@ describe('each official plugin', () => {
     const handlers = load(folder)
     const registered = [
       ...[...handlers.preview.keys()].map((id) => `preview:${id}`),
+      ...[...handlers.edit.keys()].map((id) => `edit:${id}`),
       ...[...handlers.importer.keys()].map((id) => `import:${id}`),
     ].sort()
+    const renderers: { id: string; editable?: boolean }[] =
+      manifest.contributes.previewRenderers ?? []
     const declared = [
+      ...renderers.filter((r) => r.editable).map((r) => `edit:${r.id}`),
       ...(manifest.contributes.previewRenderers ?? []).map(
         (r: { id: string }) => `preview:${r.id}`,
       ),
@@ -66,17 +77,34 @@ describe('each official plugin', () => {
   })
 
   it.each(folders)(
-    '%s is packed with its manifest at the archive root, without the README',
+    '%s is packed with its manifest at the archive root, without the README or the build’s sources',
     (folder) => {
       const files = pluginPackages()
         .get(folder)!
         .map((f) => f.path)
-      const manifest = JSON.parse(readFileSync(join(PLUGINS, folder, 'devot-plugin.json'), 'utf8'))
-      const themes = (manifest.contributes.themes ?? []).map((t: { path: string }) => t.path)
-      const license = themes.length > 0 ? ['LICENSE'] : []
-      expect(files).toEqual([...license, 'devot-plugin.json', ...themes, 'main.js'].sort())
+      const own = readdirSync(join(PLUGINS, folder), { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name !== 'README.md')
+        .map((entry) => entry.name)
+      expect(own).toContain('devot-plugin.json')
+      expect(files).toEqual([...own, ...builtFiles(folder).map((f) => f.path)].sort())
     },
   )
+
+  it.each(folders)('%s stays within what Devot installs', (folder) => {
+    const files = pluginPackages().get(folder)!
+    const part = /^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/
+    expect(files.length).toBeLessThanOrEqual(256)
+    expect(files.reduce((sum, f) => sum + f.bytes.byteLength, 0)).toBeLessThanOrEqual(20 * MIB)
+    for (const { path, bytes } of files) {
+      expect(bytes.byteLength, path).toBeLessThanOrEqual(5 * MIB)
+      expect(path.length, path).toBeLessThanOrEqual(200)
+      expect(path.split('/').length, path).toBeLessThanOrEqual(8)
+      expect(
+        path.split('/').every((p) => part.test(p)),
+        path,
+      ).toBe(true)
+    }
+  })
 })
 
 describe('the plugin index', () => {
@@ -386,9 +414,11 @@ describe('Graphviz', () => {
   const theme = { colors: { text: '#e0e0e0', edge: '#9a9a9a' } }
 
   it('is packed after the pinned Viz.js build', () => {
-    const main = pluginPackages()
-      .get('graphviz')!
-      .find((f) => f.path === 'main.js')!.text
+    const main = packedText(
+      pluginPackages()
+        .get('graphviz')!
+        .find((f) => f.path === 'main.js')!,
+    )
     expect(main.startsWith('/*!\nViz.js 3.31.0')).toBe(true)
     expect(main.endsWith(readFileSync(join(PLUGINS, 'graphviz', 'main.js'), 'utf8'))).toBe(true)
   })
@@ -404,5 +434,48 @@ describe('Graphviz', () => {
   it('shows what Graphviz could not read, and keeps an empty block as code', async () => {
     expect(await draw('digraph { a -> }', theme)).toMatch(/^<svg[^>]*>.*syntax error/s)
     expect(await draw('  \n', theme)).toBeNull()
+  })
+})
+
+describe('Excalidraw', () => {
+  const files = pluginPackages().get('excalidraw')!
+  const paths = files.map((f) => f.path)
+  const text = (path: string) => packedText(files.find((f) => f.path === path)!)
+
+  it('registers a drawing renderer it can edit, and loads Excalidraw only when first asked', () => {
+    const handlers = load('excalidraw')
+    expect([...handlers.preview.keys()]).toEqual(['excalidraw'])
+    expect([...handlers.edit.keys()]).toEqual(['excalidraw'])
+  })
+
+  it('carries the bundled editor, its stylesheet and its fonts, but not the CJK handwriting face', () => {
+    expect(paths).toContain('excalidraw/editor.js')
+    expect(paths).toContain('excalidraw/index.css')
+    expect(paths.some((p) => p.startsWith('excalidraw/fonts/Excalifont/'))).toBe(true)
+    expect(paths.some((p) => p.includes('Xiaolai'))).toBe(false)
+  })
+
+  // esbuild's minified output writes `from"./chunk.js"` with no space, which text in strings does not.
+  it('loads its chunks from its own folder only', () => {
+    for (const path of paths.filter((p) => p.endsWith('.js') && p.startsWith('excalidraw/'))) {
+      const code = text(path)
+      expect(
+        [...code.matchAll(/\bfrom"([^"\s]+)"/g)].every(([, to]) => to!.startsWith('./')),
+        path,
+      ).toBe(true)
+      expect(
+        [...code.matchAll(/\bimport\("([^"\s]+)"\)/g)].every(([, to]) => to!.startsWith('./')),
+        path,
+      ).toBe(true)
+    }
+  })
+
+  it('leaves out the Mermaid converter, which Devot does not need', () => {
+    const all = paths
+      .filter((p) => p.endsWith('.js'))
+      .map(text)
+      .join('\n')
+    expect(all).toContain('E_EXCALIDRAW_MERMAID_OFF')
+    expect(all).not.toContain('flowchart-v2')
   })
 })
