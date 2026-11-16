@@ -54,12 +54,15 @@ describe('each official plugin', () => {
     expect(registered).toEqual(declared)
   })
 
-  it('is packed with its manifest at the archive root, without the README', () => {
-    const files = pluginPackages()
-      .get('csv-tables')!
-      .map((f) => f.path)
-    expect(files).toEqual(['devot-plugin.json', 'main.js'])
-  })
+  it.each(folders)(
+    '%s is packed with its manifest at the archive root, without the README',
+    (folder) => {
+      const files = pluginPackages()
+        .get(folder)!
+        .map((f) => f.path)
+      expect(files).toEqual(['devot-plugin.json', 'main.js'])
+    },
+  )
 })
 
 describe('the plugin index', () => {
@@ -136,6 +139,102 @@ describe('CSV Tables', () => {
   it('keeps an empty block as code and names an untitled file', () => {
     expect(render('\n  \n')).toBeNull()
     expect(convert({ name: '.csv', text: 'a' }).title).toBe('Table')
+  })
+})
+
+describe('Charts', () => {
+  const render = load('charts').preview.get('chart') as (source: string) => string | null
+  const image = (drawn: string) => {
+    const found = /^!\[([^\]]*)\]\(data:image\/svg\+xml,([^)]+)\)/.exec(drawn)
+    if (!found) throw new Error('expected an image')
+    return { alt: found[1]!, svg: decodeURIComponent(found[2]!) }
+  }
+
+  it('draws a bar per row, scaled from zero, and reads the data out in its description', () => {
+    const { alt, svg } = image(render('title: Rent & food\nRent, 1200\nFood, 400')!)
+    expect(alt).toBe('Bar chart: Rent & food. Rent 1200; Food 400')
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true)
+    expect(svg).toContain('>Rent &amp; food</text>')
+    expect(svg.match(/<rect class="s0"/g)).toHaveLength(2)
+    expect(svg).toContain('>0</text>')
+    expect(svg).toContain('>1500</text>')
+    expect(svg).toContain('@media (prefers-color-scheme:dark)')
+  })
+
+  it('draws a line per series named by a header row, with a legend', () => {
+    const { alt, svg } = image(render('type: line\nmonth, web, app\nJan, 120, 40\nFeb, 180, 65')!)
+    expect(alt).toBe('Line chart. Jan web 120, app 40; Feb web 180, app 65')
+    expect(svg.match(/<polyline/g)).toHaveLength(2)
+    expect(svg).toContain('>web</text>')
+    expect(svg).toContain('>app</text>')
+  })
+
+  it('keeps the image out of reach of Markdown and of the SVG it sits in', () => {
+    const drawn = render('title: a (b) ]\n<x>, 1\n"q", -2')!
+    expect(drawn.endsWith(')')).toBe(true)
+    expect(drawn.slice(drawn.indexOf('](data:') + 2, -1)).not.toMatch(/[()\s]/)
+    const { alt, svg } = image(drawn)
+    expect(alt).not.toContain(']')
+    expect(svg).toContain('&lt;x&gt;')
+    expect(svg).not.toContain('<x>')
+    expect(svg).toContain('>-2</text>')
+  })
+
+  it('keeps a block it cannot read as code, and draws at most 200 rows', () => {
+    for (const source of ['', 'type: pie\na, 1', 'a, b\nc, d', 'a, 1\nb'])
+      expect(render(source)).toBeNull()
+    const rows = Array.from({ length: 203 }, (_, i) => `r${i}, ${i}`).join('\n')
+    const drawn = render(rows)!
+    expect(image(drawn).svg.match(/<rect class="s0"/g)).toHaveLength(200)
+    expect(drawn.endsWith('\n\n3 more rows are not drawn.')).toBe(true)
+  })
+})
+
+describe('BibTeX References', () => {
+  const { preview, importer } = load('bibtex')
+  const render = preview.get('bibtex') as (source: string) => string | null
+  const convert = importer.get('bibtex') as (file: { name: string; text: string }) => {
+    title: string
+    markdown: string
+  }
+  const LIBRARY = `@string{ieee = "IEEE Software"}
+@comment{ignored @article{nope, title = {No}} }
+@article{knuth84,
+  author = {Knuth, Donald E.},
+  title = {Literate {P}rogramming},
+  journal = {The Computer Journal},
+  volume = 27, number = {2}, pages = {97--111},
+  year = 1984, doi = {https://doi.org/10.1093/comjnl/27.2.97}
+}
+@book{goedel,
+  author = "G{\\"o}del, Kurt and Escher, M. C. and Bach, J. S. and Hofstadter, Douglas",
+  title = {G\\"odel, Escher, Bach},
+  publisher = {Basic Books}, year = {1979}
+}
+@inproceedings{p, author = {A and B and C}, title = {Typed *Notes*}, booktitle = ieee # " Proc.", year = 2020}
+@misc{broken, title = {never closed`
+
+  it('formats each entry as a reference, in the order written', () => {
+    expect(render(LIBRARY)).toBe(
+      [
+        '- Donald E. Knuth (1984). Literate Programming. *The Computer Journal*, 27(2), pp. 97–111. doi:10.1093/comjnl/27.2.97',
+        '- Kurt Gödel et al. (1979). *Gödel, Escher, Bach*. Basic Books.',
+        '- A, B, and C (2020). Typed \\*Notes\\*. *IEEE Software Proc.*.',
+      ].join('\n'),
+    )
+  })
+
+  it('imports a library as a note of references with the entries kept as written', () => {
+    const note = convert({ name: 'thesis.bib', text: LIBRARY })
+    expect(note.title).toBe('thesis')
+    expect(note.markdown.startsWith('- Donald E. Knuth (1984).')).toBe(true)
+    expect(note.markdown).toContain(`\n\n\`\`\`bibtex\n${LIBRARY}\n\`\`\`\n`)
+  })
+
+  it('keeps a block without entries as code, and a fence longer than any in the file', () => {
+    expect(render('% nothing here')).toBeNull()
+    const note = convert({ name: '.bib', text: '````' })
+    expect(note).toEqual({ title: 'References', markdown: '`````bibtex\n````\n`````\n' })
   })
 })
 

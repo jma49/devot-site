@@ -13,6 +13,28 @@ const listings: PluginListing[] = [
     download: '/plugins/csv-tables.zip',
     folder: 'csv-tables',
   },
+  {
+    id: 'online.devot.charts',
+    name: 'Charts',
+    author: 'Devot',
+    summary:
+      'Draws chart code blocks as bar or line charts in the preview, from rows of a label and numbers, in light and dark.',
+    permissions: ['preview'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/charts`,
+    download: '/plugins/charts.zip',
+    folder: 'charts',
+  },
+  {
+    id: 'online.devot.bibtex',
+    name: 'BibTeX References',
+    author: 'Devot',
+    summary:
+      'Imports .bib files as notes of formatted references, and shows bibtex code blocks as a reference list in the preview.',
+    permissions: ['preview', 'import'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/bibtex`,
+    download: '/plugins/bibtex.zip',
+    folder: 'bibtex',
+  },
 ]
 
 const permissionNames: Record<PluginPermission, string> = {
