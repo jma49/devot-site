@@ -1,0 +1,21 @@
+{
+  "id": "online.devot.theme-nord",
+  "name": "Nord",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "Calm arctic blues and frosted grays, for Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "nord",
+        "title": "Nord",
+        "appearance": "dark",
+        "path": "nord.json"
+      }
+    ]
+  }
+}

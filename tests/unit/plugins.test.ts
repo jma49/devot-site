@@ -4,21 +4,37 @@ import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { PLUGIN_PERMISSIONS } from '../../src/lib/plugins.ts'
-import { pluginArchive, pluginPackages } from '../../src/lib/plugin-packages.ts'
+import { builtFiles } from '../../src/lib/plugin-builds.ts'
+import { packedText, pluginArchive, pluginPackages } from '../../src/lib/plugin-packages.ts'
 import { crc32, storedZip } from '../../src/lib/zip.ts'
 
 const PLUGIN_LISTINGS = en.plugins.listings
 const pluginsDoc = en.docs.pages.find((page) => page.slug === 'plugins')!
 const PLUGINS = join(import.meta.dirname, '../../plugins')
 const ID = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+const MIB = 1024 * 1024
 
 type Handler = (input: never) => unknown
-function load(folder: string) {
-  const handlers = { preview: new Map<string, Handler>(), importer: new Map<string, Handler>() }
+function load(folder: string, more: Record<string, unknown> = {}) {
+  const handlers = {
+    preview: new Map<string, Handler>(),
+    edit: new Map<string, Handler>(),
+    importer: new Map<string, Handler>(),
+  }
   const handle = (kind: keyof typeof handlers) => (id: string, fn: Handler) =>
     handlers[kind].set(id, fn)
-  const devot = { preview: { handle: handle('preview') }, importer: { handle: handle('importer') } }
-  runInNewContext(readFileSync(join(PLUGINS, folder, 'main.js'), 'utf8'), { devot })
+  const devot = {
+    ...more,
+    preview: { handle: handle('preview'), edit: handle('edit') },
+    importer: { handle: handle('importer') },
+  }
+  const mainFile = pluginPackages()
+    .get(folder)!
+    .find((f) => f.path === 'main.js')!
+  const main = packedText(mainFile)
+  // The plugin frame has a location; bundled libraries read it to find their own address.
+  const location = { href: 'https://plugin.devot.invalid/main.js' }
+  runInNewContext(main, { devot, atob, TextDecoder, location })
   return handlers
 }
 
@@ -29,7 +45,9 @@ describe('each official plugin', () => {
     const manifest = JSON.parse(readFileSync(join(PLUGINS, folder, 'devot-plugin.json'), 'utf8'))
     expect(manifest.id).toMatch(ID)
     expect(manifest.id.startsWith('devot')).toBe(false)
-    expect(manifest.apiVersion).toBe(1)
+    expect([1, 2]).toContain(manifest.apiVersion)
+    // A plugin of API 2 names the first Devot that runs it.
+    expect(manifest.apiVersion === 1 || /^\d+\.\d+\.\d+$/.test(manifest.minAppVersion)).toBe(true)
     expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/)
     expect(readdirSync(join(PLUGINS, folder))).toContain(manifest.main)
     for (const p of manifest.permissions) expect(PLUGIN_PERMISSIONS).toContain(p)
@@ -43,9 +61,13 @@ describe('each official plugin', () => {
     const handlers = load(folder)
     const registered = [
       ...[...handlers.preview.keys()].map((id) => `preview:${id}`),
+      ...[...handlers.edit.keys()].map((id) => `edit:${id}`),
       ...[...handlers.importer.keys()].map((id) => `import:${id}`),
     ].sort()
+    const renderers: { id: string; editable?: boolean }[] =
+      manifest.contributes.previewRenderers ?? []
     const declared = [
+      ...renderers.filter((r) => r.editable).map((r) => `edit:${r.id}`),
       ...(manifest.contributes.previewRenderers ?? []).map(
         (r: { id: string }) => `preview:${r.id}`,
       ),
@@ -55,14 +77,34 @@ describe('each official plugin', () => {
   })
 
   it.each(folders)(
-    '%s is packed with its manifest at the archive root, without the README',
+    '%s is packed with its manifest at the archive root, without the README or the build’s sources',
     (folder) => {
       const files = pluginPackages()
         .get(folder)!
         .map((f) => f.path)
-      expect(files).toEqual(['devot-plugin.json', 'main.js'])
+      const own = readdirSync(join(PLUGINS, folder), { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name !== 'README.md')
+        .map((entry) => entry.name)
+      expect(own).toContain('devot-plugin.json')
+      expect(files).toEqual([...own, ...builtFiles(folder).map((f) => f.path)].sort())
     },
   )
+
+  it.each(folders)('%s stays within what Devot installs', (folder) => {
+    const files = pluginPackages().get(folder)!
+    const part = /^[A-Za-z0-9_-][A-Za-z0-9_.-]*$/
+    expect(files.length).toBeLessThanOrEqual(256)
+    expect(files.reduce((sum, f) => sum + f.bytes.byteLength, 0)).toBeLessThanOrEqual(20 * MIB)
+    for (const { path, bytes } of files) {
+      expect(bytes.byteLength, path).toBeLessThanOrEqual(5 * MIB)
+      expect(path.length, path).toBeLessThanOrEqual(200)
+      expect(path.split('/').length, path).toBeLessThanOrEqual(8)
+      expect(
+        path.split('/').every((p) => part.test(p)),
+        path,
+      ).toBe(true)
+    }
+  })
 })
 
 describe('the plugin index', () => {
@@ -275,5 +317,165 @@ describe('the stored zip', () => {
     for (const path of ['../x', '/x', 'a/../b', '.hidden']) {
       expect(() => storedZip([{ path, bytes: new Uint8Array() }])).toThrow(/E_ZIP_PATH_INVALID/)
     }
+  })
+})
+
+describe('Note Query', () => {
+  const DAY = Date.UTC(2026, 10, 16)
+  const notes = [
+    {
+      id: 'a',
+      title: 'Plan',
+      notebook: 'w',
+      createdAt: DAY,
+      updatedAt: DAY + 3,
+      tags: ['work'],
+      status: 'active',
+      pinned: true,
+    },
+    {
+      id: 'b',
+      title: 'Trip | Rome',
+      notebook: null,
+      createdAt: DAY - 86_400_000,
+      updatedAt: DAY + 2,
+      tags: ['travel'],
+      status: 'none',
+      pinned: false,
+    },
+    {
+      id: 'c',
+      title: 'Ship it',
+      notebook: 'w',
+      createdAt: DAY,
+      updatedAt: DAY + 1,
+      tags: ['work/launch'],
+      status: 'completed',
+      pinned: false,
+    },
+  ]
+  const properties: Record<string, Record<string, unknown>> = {
+    a: { due: '2026-12-01', priority: 2 },
+    b: { due: '2026-11-20' },
+    c: { priority: 1, owners: ['Ada', 'Lin'] },
+  }
+  const reads: string[] = []
+  const { preview } = load('note-query', {
+    notes: {
+      list: async () => notes,
+      get: async (id: string) => {
+        reads.push(id)
+        return { id, properties: properties[id] }
+      },
+    },
+    notebooks: { list: async () => [{ id: 'w', name: 'Work', parent: null }] },
+  })
+  const run = preview.get('query') as (source: string) => Promise<string>
+
+  it('lists the notes of a tag, its nested tags included, sorted, as links', async () => {
+    reads.length = 0
+    expect(await run('LIST FROM #work SORT title DESC')).toBe('- [[Ship it]]\n- [[Plan]]')
+    expect(reads).toEqual([])
+  })
+
+  it('tables front matter and built-in fields, filtered and sorted', async () => {
+    expect(
+      await run(
+        'TABLE status, due AS "Due date", owners\nWHERE priority >= 1 AND NOT pinned\nSORT priority',
+      ),
+    ).toBe(
+      '| Note | status | Due date | owners |\n| --- | --- | --- | --- |\n| [[Ship it]] | completed |  | Ada, Lin |',
+    )
+    expect(
+      await run('TABLE due FROM "work" WHERE due < 2026-12-01 OR status = "completed" SORT due'),
+    ).toBe('| Note | due |\n| --- | --- |\n| [[Ship it]] |  |')
+  })
+
+  it('reads dates, tags and titles that would break a table', async () => {
+    expect(await run('TABLE created, tags WHERE tags contains "travel"')).toBe(
+      '| Note | created | tags |\n| --- | --- | --- |\n| [[Trip   Rome]] | 2026-11-15 | travel |',
+    )
+    expect(await run('LIST WHERE updated = 2026-11-16 LIMIT 1')).toBe('- [[Plan]]')
+  })
+
+  it('says when nothing matches or the query cannot be read', async () => {
+    expect(await run('LIST WHERE status = "dropped"')).toBe('No notes match.')
+    expect(await run('SHOW everything')).toBe('**Query:** a query starts with TABLE or LIST.')
+    expect(await run('LIST LIMIT 0')).toBe('**Query:** LIMIT takes a whole number.')
+    expect(preview.get('dataview')).toBe(run)
+  })
+})
+
+describe('Graphviz', () => {
+  const draw = load('graphviz').preview.get('dot') as (
+    source: string,
+    theme?: { colors: Record<string, string> },
+  ) => Promise<string | null>
+  const theme = { colors: { text: '#e0e0e0', edge: '#9a9a9a' } }
+
+  it('is packed after the pinned Viz.js build', () => {
+    const main = packedText(
+      pluginPackages()
+        .get('graphviz')!
+        .find((f) => f.path === 'main.js')!,
+    )
+    expect(main.startsWith('/*!\nViz.js 3.31.0')).toBe(true)
+    expect(main.endsWith(readFileSync(join(PLUGINS, 'graphviz', 'main.js'), 'utf8'))).toBe(true)
+  })
+
+  it('draws a graph in the theme’s colours, as SVG alone', async () => {
+    const svg = (await draw('digraph { a -> b }', theme))!
+    expect(svg.startsWith('<svg')).toBe(true)
+    expect(svg).toContain('<title>a&#45;&gt;b</title>')
+    expect(svg).toContain('fill="#e0e0e0"')
+    expect(svg).toContain('stroke="#9a9a9a"')
+  })
+
+  it('shows what Graphviz could not read, and keeps an empty block as code', async () => {
+    expect(await draw('digraph { a -> }', theme)).toMatch(/^<svg[^>]*>.*syntax error/s)
+    expect(await draw('  \n', theme)).toBeNull()
+  })
+})
+
+describe('Excalidraw', () => {
+  const files = pluginPackages().get('excalidraw')!
+  const paths = files.map((f) => f.path)
+  const text = (path: string) => packedText(files.find((f) => f.path === path)!)
+
+  it('registers a drawing renderer it can edit, and loads Excalidraw only when first asked', () => {
+    const handlers = load('excalidraw')
+    expect([...handlers.preview.keys()]).toEqual(['excalidraw'])
+    expect([...handlers.edit.keys()]).toEqual(['excalidraw'])
+  })
+
+  it('carries the bundled editor, its stylesheet and its fonts, but not the CJK handwriting face', () => {
+    expect(paths).toContain('excalidraw/editor.js')
+    expect(paths).toContain('excalidraw/index.css')
+    expect(paths.some((p) => p.startsWith('excalidraw/fonts/Excalifont/'))).toBe(true)
+    expect(paths.some((p) => p.includes('Xiaolai'))).toBe(false)
+  })
+
+  // esbuild's minified output writes `from"./chunk.js"` with no space, which text in strings does not.
+  it('loads its chunks from its own folder only', () => {
+    for (const path of paths.filter((p) => p.endsWith('.js') && p.startsWith('excalidraw/'))) {
+      const code = text(path)
+      expect(
+        [...code.matchAll(/\bfrom"([^"\s]+)"/g)].every(([, to]) => to!.startsWith('./')),
+        path,
+      ).toBe(true)
+      expect(
+        [...code.matchAll(/\bimport\("([^"\s]+)"\)/g)].every(([, to]) => to!.startsWith('./')),
+        path,
+      ).toBe(true)
+    }
+  })
+
+  it('leaves out the Mermaid converter, which Devot does not need', () => {
+    const all = paths
+      .filter((p) => p.endsWith('.js'))
+      .map(text)
+      .join('\n')
+    expect(all).toContain('E_EXCALIDRAW_MERMAID_OFF')
+    expect(all).not.toContain('flowchart-v2')
   })
 })

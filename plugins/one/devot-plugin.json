@@ -1,0 +1,27 @@
+{
+  "id": "online.devot.theme-one",
+  "name": "One Dark and Light",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "The cool grays and soft syntax colors of One: One Light for Light Mode, One Dark for Dark Mode.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["themes"],
+  "contributes": {
+    "themes": [
+      {
+        "id": "light",
+        "title": "One Light",
+        "appearance": "light",
+        "path": "light.json"
+      },
+      {
+        "id": "dark",
+        "title": "One Dark",
+        "appearance": "dark",
+        "path": "dark.json"
+      }
+    ]
+  }
+}

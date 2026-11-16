@@ -11,7 +11,9 @@ const csp = siteCsp(readRepoFile('dist/_headers'))
 // back to the MP4, as on a Mac without AV1 hardware. And late in a long run its GPU can run out of host
 // memory: WebKit logs the loss itself, and the page answers it by falling back to the CSS aurora.
 const virtualMac = process.platform === 'darwin' && !!cpus()[0]?.model.includes('(Virtual)')
-const gpuMemoryLoss = /^WebGL: (OUT_OF_MEMORY|context lost)/
+// A frame already drawing when the context goes logs its calls as made on a lost context.
+const gpuMemoryLoss =
+  /^WebGL: (OUT_OF_MEMORY|context lost|INVALID_OPERATION: \w+: Context has been lost\.)/
 
 /** Console errors, page errors and CSP violations; any left at the end fails the test. */
 export const test = base.extend<{ problems: string[] }>({
