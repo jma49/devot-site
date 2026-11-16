@@ -1,0 +1,14 @@
+{
+  "id": "online.devot.graphviz",
+  "name": "Graphviz",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "minAppVersion": "1.1.8",
+  "description": "Draws dot code blocks as Graphviz diagrams in the preview, in the colours of the theme on screen, without a network.",
+  "author": "Devot",
+  "main": "main.js",
+  "permissions": ["preview"],
+  "contributes": {
+    "previewRenderers": [{ "id": "dot", "language": "dot", "output": "svg" }]
+  }
+}

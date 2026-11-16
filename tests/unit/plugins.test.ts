@@ -22,7 +22,10 @@ function load(folder: string, more: Record<string, unknown> = {}) {
     preview: { handle: handle('preview') },
     importer: { handle: handle('importer') },
   }
-  runInNewContext(readFileSync(join(PLUGINS, folder, 'main.js'), 'utf8'), { devot })
+  const main = pluginPackages()
+    .get(folder)!
+    .find((f) => f.path === 'main.js')!.text
+  runInNewContext(main, { devot, atob, TextDecoder })
   return handlers
 }
 
@@ -367,5 +370,34 @@ describe('Note Query', () => {
     expect(await run('SHOW everything')).toBe('**Query:** a query starts with TABLE or LIST.')
     expect(await run('LIST LIMIT 0')).toBe('**Query:** LIMIT takes a whole number.')
     expect(preview.get('dataview')).toBe(run)
+  })
+})
+
+describe('Graphviz', () => {
+  const draw = load('graphviz').preview.get('dot') as (
+    source: string,
+    theme?: { colors: Record<string, string> },
+  ) => Promise<string | null>
+  const theme = { colors: { text: '#e0e0e0', edge: '#9a9a9a' } }
+
+  it('is packed after the pinned Viz.js build', () => {
+    const main = pluginPackages()
+      .get('graphviz')!
+      .find((f) => f.path === 'main.js')!.text
+    expect(main.startsWith('/*!\nViz.js 3.31.0')).toBe(true)
+    expect(main.endsWith(readFileSync(join(PLUGINS, 'graphviz', 'main.js'), 'utf8'))).toBe(true)
+  })
+
+  it('draws a graph in the theme’s colours, as SVG alone', async () => {
+    const svg = (await draw('digraph { a -> b }', theme))!
+    expect(svg.startsWith('<svg')).toBe(true)
+    expect(svg).toContain('<title>a&#45;&gt;b</title>')
+    expect(svg).toContain('fill="#e0e0e0"')
+    expect(svg).toContain('stroke="#9a9a9a"')
+  })
+
+  it('shows what Graphviz could not read, and keeps an empty block as code', async () => {
+    expect(await draw('digraph { a -> }', theme)).toMatch(/^<svg[^>]*>.*syntax error/s)
+    expect(await draw('  \n', theme)).toBeNull()
   })
 })

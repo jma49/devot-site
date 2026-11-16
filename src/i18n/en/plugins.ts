@@ -46,6 +46,17 @@ const listings: PluginListing[] = [
     download: '/plugins/note-query.zip',
     folder: 'note-query',
   },
+  {
+    id: 'online.devot.graphviz',
+    name: 'Graphviz',
+    author: 'Devot',
+    summary:
+      'Draws dot code blocks as Graphviz diagrams in the preview, in the colours of the theme on screen, without a network. Needs Devot 1.1.8.',
+    permissions: ['preview'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/graphviz`,
+    download: '/plugins/graphviz.zip',
+    folder: 'graphviz',
+  },
 ]
 
 const permissionNames: Record<PluginPermission, string> = {
