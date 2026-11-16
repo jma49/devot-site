@@ -234,13 +234,12 @@
     return entries.length > 0 ? list(entries) : null
   })
 
+  // The note keeps the library as written in one block, which the preview shows as the reference list.
   devot.importer.handle('bibtex', ({ name, text }) => {
-    const entries = parse(text)
     const fence = '`'.repeat(Math.max(3, ...(text.match(/`+/g) ?? []).map((t) => t.length + 1)))
-    const body = entries.length > 0 ? `${list(entries)}\n\n` : ''
     return {
       title: name.replace(/\.bib$/i, '').trim() || 'References',
-      markdown: `${body}${fence}bibtex\n${text.replace(/\s+$/, '')}\n${fence}\n`,
+      markdown: `${fence}bibtex\n${text.replace(/\s+$/, '')}\n${fence}\n`,
     }
   })
 })()

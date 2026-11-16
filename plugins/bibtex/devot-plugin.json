@@ -1,7 +1,7 @@
 {
   "id": "online.devot.bibtex",
   "name": "BibTeX References",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": 1,
   "description": "Imports .bib files as notes of formatted references, and shows bibtex code blocks as a reference list in the preview.",
   "author": "Devot",

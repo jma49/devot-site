@@ -197,7 +197,11 @@
         : String(v)
     return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
   }
-  const link = (title) => `[[${title.replace(/[[\]|]/g, ' ').trim() || 'Untitled'}]]`
+  // A link to the note by its ID: the preview draws one whose text is the note's title as the note's chip.
+  const link = (note) => {
+    const title = note.title.replace(/\s+/g, ' ').trim() || 'Untitled'
+    return `[${title.replace(/[\\[\]|*_`<>~]/g, (c) => `\\${c}`)}](devot://note/${note.id})`
+  }
 
   async function run(source) {
     let query
@@ -262,7 +266,7 @@
       remarks.push(`${total - found.length} more notes match.`)
     if (found.length === 0) return ['No notes match.', ...remarks].join('\n\n')
     let out
-    if (query.kind === 'list') out = found.map((n) => `- ${link(n.title)}`).join('\n')
+    if (query.kind === 'list') out = found.map((n) => `- ${link(n)}`).join('\n')
     else {
       const head = ['Note', ...query.fields.map((f) => cell(f.label))]
       out = [
@@ -270,7 +274,7 @@
         `| ${head.map(() => '---').join(' | ')} |`,
         ...found.map(
           (n) =>
-            `| ${[link(n.title), ...query.fields.map((f) => cell(valueOf(n, f.name)))].join(' | ')} |`,
+            `| ${[link(n), ...query.fields.map((f) => cell(valueOf(n, f.name)))].join(' | ')} |`,
         ),
       ].join('\n')
     }
