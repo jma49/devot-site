@@ -20,3 +20,6 @@
 
 /media/*
   Cache-Control: public, max-age=0, must-revalidate
+
+/plugins/index.json
+  Cache-Control: public, max-age=0, must-revalidate
