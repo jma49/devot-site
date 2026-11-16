@@ -35,6 +35,17 @@ const listings: PluginListing[] = [
     download: '/plugins/bibtex.zip',
     folder: 'bibtex',
   },
+  {
+    id: 'online.devot.note-query',
+    name: 'Note Query',
+    author: 'Devot',
+    summary:
+      'Shows query code blocks as a live table or list of the notes that match, by tag, notebook, status, dates and front matter. Needs Devot 1.1.8.',
+    permissions: ['preview', 'notes.read'],
+    source: `${SITE_REPO_URL}/tree/main/plugins/note-query`,
+    download: '/plugins/note-query.zip',
+    folder: 'note-query',
+  },
 ]
 
 const permissionNames: Record<PluginPermission, string> = {
@@ -46,6 +57,9 @@ const permissionNames: Record<PluginPermission, string> = {
   preview: 'draw code blocks in the preview',
   import: 'add an import format',
   export: 'add an export format',
+  storage: 'keep its own data',
+  'notes.read': 'read all notes',
+  themes: 'add colour themes',
 }
 
 export const pluginsCopy = { plugins: { listings, permissionNames } }

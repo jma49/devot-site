@@ -1,4 +1,4 @@
-/** Permissions as a plugin's manifest asks for them (Devot's plugin API version 1). */
+/** Permissions as a plugin's manifest asks for them (Devot's plugin API versions 1 and 2). */
 export const PLUGIN_PERMISSIONS = [
   'note.read',
   'note.edit',
@@ -8,6 +8,9 @@ export const PLUGIN_PERMISSIONS = [
   'preview',
   'import',
   'export',
+  'storage',
+  'notes.read',
+  'themes',
 ] as const
 export type PluginPermission = (typeof PLUGIN_PERMISSIONS)[number]
 
