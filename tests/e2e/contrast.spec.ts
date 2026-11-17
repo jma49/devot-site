@@ -416,6 +416,19 @@ test('the shader’s sky behind the page keeps text, muted text and links at 4.5
     }
   })
   await expect(page.locator('.page-sky__canvas')).toHaveCSS('opacity', '1')
+  // The page measures the hero in a ResizeObserver, which the browser runs at its own rendering
+  // step while the installed clock drives the frames: a frame drawn before that step still holds
+  // the hero's sky at full strength, and the first screenshot caught it. Observers run in the
+  // order they were made, so a new one's first call comes after the page's.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        new ResizeObserver((_, observer) => {
+          observer.disconnect()
+          resolve()
+        }).observe(document.body)
+      }),
+  )
 
   let brightest = 0
   for (let moment = 0; moment < 16; moment++) {

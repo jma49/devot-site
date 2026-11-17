@@ -14,11 +14,14 @@ import { pluginsCopy } from './en/plugins.ts'
 import { pricingCopy } from './en/pricing.ts'
 import { privacyCopy } from './en/privacy.ts'
 import { supportCopy } from './en/support.ts'
+import { themesCopy } from './en/themes.ts'
 import { IPHONE_OS, PLATFORM } from '../site.ts'
 
 /** Copy shared by several sections lives here; each package's own copy lives in `en/<package>.ts`. */
 export const en = {
   siteName: 'Devot',
+  /** What searchers may call Devot beside its bare name, which other things share. */
+  siteAlternateNames: ['Devot app', 'Devot Markdown notes'],
   download: {
     label: 'Download for macOS',
     iphone: 'Get it for iPhone',
@@ -42,6 +45,7 @@ export const en = {
   ...blogCopy,
   ...compareCopy,
   ...pluginsCopy,
+  ...themesCopy,
 }
 
 export type Messages = typeof en

@@ -1,6 +1,6 @@
 import type { Messages } from '../i18n/en.ts'
 import { DOWNLOAD_URL, LICENCE_PRICE, REPO_URL, SITE_URL } from '../site.ts'
-import { blogPath, comparePath, docPath, FOOTER_GROUPS } from './links.ts'
+import { blogPath, comparePath, docPath, FOOTER_GROUPS, THEMES_PATH } from './links.ts'
 
 type Run = string | { code: string }
 
@@ -77,6 +77,10 @@ export function llmsTxt(t: Messages): string {
     ...t.compare.pages.map(
       (page) => `${link(page.heading, comparePath(page.slug))}: ${page.summary}`,
     ),
+    '',
+    `## ${t.themes.heading}`,
+    '',
+    `${link(t.themes.heading, THEMES_PATH)}: ${t.themes.description}`,
     '',
     `## ${t.blog.index.heading}`,
     '',

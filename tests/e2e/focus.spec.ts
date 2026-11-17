@@ -74,6 +74,9 @@ for (const viewport of [
 ]) {
   test.describe(`keyboard focus at ${viewport.width}, animations paused`, () => {
     test.use({ viewport })
+    // A walk visits every stop of the home page, footer links included, and waits for each to
+    // settle over several frames: on CI's WebKit that alone nears the default 30 s budget.
+    const walks = () => test.slow()
 
     test.beforeEach(async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'no-preference' })
@@ -85,6 +88,7 @@ for (const viewport of [
 
     test('stops clear of the header bar going back up the page', async ({ page, browserName }) => {
       // WebKit, as Safari by default, moves Tab between text fields only; Option-Tab reaches all.
+      walks()
       const back = browserName === 'webkit' ? 'Alt+Shift+Tab' : 'Shift+Tab'
       await page.locator('.site-footer a').last().focus()
 
@@ -119,6 +123,7 @@ for (const viewport of [
       page,
       browserName,
     }) => {
+      walks()
       const forward = browserName === 'webkit' ? 'Alt+Tab' : 'Tab'
       const last = page.locator('.site-footer a').last()
       await last.evaluate((link) => link.setAttribute('data-walk-end', ''))
