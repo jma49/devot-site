@@ -1,8 +1,9 @@
 import type { Messages } from '../i18n/en.ts'
 import type { BlogPost } from '../i18n/en/blog.ts'
+import type { ComparePage } from '../i18n/en/compare.ts'
 import type { DocPage } from '../i18n/en/docs.ts'
 import { localised, type Locale } from '../i18n/index.ts'
-import { BLOG_PATH, blogPath, DOCS_PATH, docPath } from './links.ts'
+import { BLOG_PATH, blogPath, COMPARE_PATH, comparePath, DOCS_PATH, docPath } from './links.ts'
 import {
   IPHONE_OS,
   DOWNLOAD_URL,
@@ -109,6 +110,31 @@ export function techArticle(t: Messages, page: DocPage) {
       breadcrumbs(t, [
         { name: t.docs.index.heading, path: DOCS_PATH },
         { name: page.heading, path: docPath(page.slug) },
+      ]),
+    ),
+  }
+}
+
+/** A comparison page as a schema.org `Article` about Devot, dated by when its facts were checked. */
+export function comparison(t: Messages, page: ComparePage) {
+  const url = absolute(comparePath(page.slug))
+  return {
+    '@context': 'https://schema.org',
+    '@graph': nodes(
+      {
+        '@type': 'Article',
+        headline: page.heading,
+        description: page.description,
+        dateModified: page.checked,
+        url,
+        mainEntityOfPage: url,
+        inLanguage: 'en',
+        about: { '@id': APP_ID },
+        publisher: { '@id': ORGANIZATION_ID },
+      },
+      breadcrumbs(t, [
+        { name: t.compare.index.heading, path: COMPARE_PATH },
+        { name: page.heading, path: comparePath(page.slug) },
       ]),
     ),
   }

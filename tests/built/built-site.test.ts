@@ -5,8 +5,13 @@ import { en } from '../../src/i18n/en.ts'
 import { LOCALES, localeOf, messages } from '../../src/i18n/index.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
 import { blogFeed } from '../../src/lib/feed.ts'
-import { blogPosting, structuredData, techArticle } from '../../src/lib/structured-data.ts'
-import { docPath, FEED_PATH, PRICING_PATH } from '../../src/lib/links.ts'
+import {
+  blogPosting,
+  comparison,
+  structuredData,
+  techArticle,
+} from '../../src/lib/structured-data.ts'
+import { comparePath, docPath, FEED_PATH, PRICING_PATH } from '../../src/lib/links.ts'
 import { DOWNLOAD_URL, OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
@@ -283,11 +288,32 @@ describe('structured data', () => {
     }
   })
 
+  it('names every cell of a comparison by its column, for the stacked phone layout', () => {
+    for (const page of en.compare.pages) {
+      const html = readRepoFile(`dist${comparePath(page.slug)}.html`)
+      expect(tags(html, 'caption')).toHaveLength(1)
+      const labels = tags(html, 'td').map(({ attrs }) => attrs.get('data-label'))
+      expect(labels.length).toBeGreaterThan(0)
+      expect(new Set(labels)).toEqual(new Set(['Devot', page.other]))
+    }
+  })
+
+  it('describes each comparison as an Article of its own', () => {
+    for (const page of en.compare.pages) {
+      expect(ldJson(readRepoFile(`dist${comparePath(page.slug)}.html`))).toEqual([
+        comparison(en, page),
+      ])
+    }
+  })
+
   it('carries none on the other pages', () => {
     const homes = ['dist/index.html', 'dist/zh.html']
-    const docs = en.docs.pages.map((page) => `dist${docPath(page.slug)}.html`)
+    const articles = [
+      ...en.docs.pages.map((page) => `dist${docPath(page.slug)}.html`),
+      ...en.compare.pages.map((page) => `dist${comparePath(page.slug)}.html`),
+    ]
     const others = pages.filter(
-      (page) => !homes.includes(page) && !posts.includes(page) && !docs.includes(page),
+      (page) => !homes.includes(page) && !posts.includes(page) && !articles.includes(page),
     )
     expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
   })

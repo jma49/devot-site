@@ -16,5 +16,6 @@ The landing page for Devot at https://devot.online: static Astro, plain CSS, dep
 - Commits and pull requests carry no AI attribution: no `Co-Authored-By` trailers, no "Generated with" lines.
 - Comment sparingly: only for what the code cannot say (a non-obvious reason, a constraint, a workaround with its cause). Never restate code, narrate a change or leave commented-out code.
 - Repository text (docs, issues, commits, comments, code) describes Devot on its own terms. Never name other apps or websites as a source or model for Devot or this site.
+- The comparison pages (`/compare`, `src/i18n/en/compare.ts`) are the one place that names other notes apps. They state only facts the other app's own pages or store listing state, list those pages as sources with the date they were checked, and say where the other app fits better too.
 - Local test runs are capped: Vitest 3 workers (`SITE_TEST_WORKERS`), Playwright 2 (`SITE_UI_WORKERS`). Raise them with those variables if you like; CI sets its own.
 - Error messages carry codes (`E_TOKENS_STALE` and the like) and paths or IDs.

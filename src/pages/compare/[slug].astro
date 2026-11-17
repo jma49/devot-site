@@ -1,0 +1,24 @@
+---
+import type { GetStaticPaths } from 'astro'
+import Article from '../../components/Article.astro'
+import type { ComparePage } from '../../i18n/en/compare.ts'
+import { messages } from '../../i18n/index.ts'
+import { COMPARE_PATH } from '../../lib/links.ts'
+import { comparison } from '../../lib/structured-data.ts'
+
+export const getStaticPaths = (() =>
+  messages().compare.pages.map((page) => ({
+    params: { slug: page.slug },
+    props: { page },
+  }))) satisfies GetStaticPaths
+
+const t = messages()
+const { page } = Astro.props as { page: ComparePage }
+---
+
+<Article
+  page={page}
+  up={{ href: COMPARE_PATH, label: t.compare.allComparisons }}
+  byline={{ text: page.checkedLabel, datetime: page.checked }}
+  structuredData={comparison(t, page)}
+/>

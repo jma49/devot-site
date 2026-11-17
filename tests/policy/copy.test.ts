@@ -7,7 +7,8 @@ import { filesUnder, readRepoFile } from '../support/source-files.ts'
 // the built pages too, which also catches text a template builds in its frontmatter.
 
 // Wording the page once used that claimed more than Devot does.
-const RETIRED_CLAIMS: { wording: RegExp; why: string }[] = [
+// The comparison pages state other apps' prices, which may well be free; Devot's own rows still pass the rest.
+const RETIRED_CLAIMS: { wording: RegExp; why: string; devotOnly?: true }[] = [
   { wording: /any editor/i, why: 'notes are plain files only once the Markdown mirror is on' },
   { wording: /\bnative\b/i, why: 'the window is a macOS window around a web view' },
   { wording: /any shortcut/i, why: 'some keys are reserved for macOS and the app menu' },
@@ -17,15 +18,18 @@ const RETIRED_CLAIMS: { wording: RegExp; why: string }[] = [
   { wording: /^devot-mcp$/, why: 'devot-mcp runs from a checkout of the source' },
   { wording: /\bany (version|revision)/i, why: 'versions older than a day are thinned' },
   { wording: /\brestore (any|every)\b/i, why: 'versions older than a day are thinned' },
-  { wording: /\bfree\b(?! trial)/i, why: 'Devot is free only during its trial' },
-  { wording: /US\$0\b/, why: 'there is no free tier, only the trial' },
+  { wording: /\bfree\b(?! trial)/i, why: 'Devot is free only during its trial', devotOnly: true },
+  { wording: /US\$0\b/, why: 'there is no free tier, only the trial', devotOnly: true },
   { wording: /\bunlocks? sync and AI\b/i, why: 'a licence unlocks everything, editing included' },
   { wording: /\bpay once for sync\b/i, why: 'a licence unlocks everything, editing included' },
 ]
 
 it('retires wording that claimed more than Devot does', () => {
+  const aboutOthers = catalogStrings(en.compare, [])
   const offenders = [...catalogStrings(en, [2026])].flatMap((text) =>
-    RETIRED_CLAIMS.filter(({ wording }) => wording.test(text)).map(({ why }) => `${text} (${why})`),
+    RETIRED_CLAIMS.filter(
+      ({ wording, devotOnly }) => wording.test(text) && !(devotOnly && aboutOthers.has(text)),
+    ).map(({ why }) => `${text} (${why})`),
   )
   expect(offenders).toEqual([])
 })

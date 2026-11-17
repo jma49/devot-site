@@ -84,6 +84,32 @@ const isCode = (run: DocRun): run is { code: string } => typeof run === 'object'
               tabindex="0"
             ><code>{code}</code></pre>
           }
+          if (block.kind === 'table') {
+            return (
+              <div class="doc__table" role="region" aria-label={block.caption} tabindex="0">
+                <table>
+                  <caption>{block.caption}</caption>
+                  <thead>
+                    <tr>
+                      {block.head.map((cell) => (
+                        <th scope="col">{cell}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map(([header = [], ...cells]) => (
+                      <tr>
+                        <th scope="row">{runs(header)}</th>
+                        {cells.map((cell, column) => (
+                          <td data-label={block.head[column + 1]}>{runs(cell)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
           const items = block.items.map((item) => <li>{runs(item)}</li>)
           return block.ordered ? <ol>{items}</ol> : <ul>{items}</ul>
         })}
