@@ -1,7 +1,7 @@
 {
   "id": "online.devot.theme-dracula",
   "name": "Dracula",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": 2,
   "minAppVersion": "1.1.8",
   "description": "A dark theme of vivid purple, pink and green on deep gray, for Dark Mode.",

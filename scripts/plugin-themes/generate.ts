@@ -16,8 +16,13 @@ const BLOCKS = {
   dark: ":root[data-appearance='dark'], [data-appearance-preview='dark'] {",
 } as const
 
-/** Tokens a theme leaves to Devot: a QR code stays dark on light to scan. */
-const KEPT = new Set(['qr-ground', 'qr-module'])
+/** Icons keep Devot's colors in every theme, as Devot itself does: a status or a settings pane reads the same in all. */
+export const isIconColor = (token: string): boolean =>
+  /^(?:icon-tile-|tag-icon-|phone-status-tile-)/.test(token) || /^status-[a-z]+-mark$/.test(token)
+
+/** Tokens a theme leaves to Devot: a QR code stays dark on light to scan, and icons keep their colors. */
+const isKept = (token: string): boolean =>
+  token === 'qr-ground' || token === 'qr-module' || isIconColor(token)
 
 /** Tokens that take the palette's accent whatever color Devot gives them. */
 const ACCENTED = new Set([
@@ -199,7 +204,7 @@ export function themeColors(
     return lightness(color)
   }
   const devotGrays = [...devot.entries()]
-    .filter(([name, c]) => !KEPT.has(name) && c.a === 1 && chroma(c) < GRAY_CHROMA)
+    .filter(([name, c]) => !isKept(name) && c.a === 1 && chroma(c) < GRAY_CHROMA)
     .map(([, c]) => lightness(c))
   // Devot's editor ground and ink land on the palette's; its darkest and lightest grays on the ramp's ends.
   const anchors = [
@@ -232,8 +237,7 @@ export function themeColors(
   }
 
   const drawn = new Map<string, Rgba>()
-  for (const [name, color] of devot)
-    if (!KEPT.has(name)) drawn.set(name, rounded(draw(name, color)))
+  for (const [name, color] of devot) if (!isKept(name)) drawn.set(name, rounded(draw(name, color)))
 
   // An opaque color reads on the editor ground at least as well as Devot's does, up to 4.5:1.
   const ground = drawn.get('surface-editor')!
