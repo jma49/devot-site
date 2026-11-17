@@ -89,14 +89,13 @@ export async function openPlugin(
   }
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  // Excalidraw names its CDN after the plugin's own copy of each font, and React sets style attributes: the frame's
-  // policy refuses both, as it should, and neither keeps a plugin from working.
+  // Excalidraw names its CDN after the plugin's own copy of each font, and React adds inline styles: the frame's policy
+  // refuses both, as it should, and neither keeps a plugin from working. Chromium and WebKit word the refusals apart.
+  const refusedAsMeant = (text: string) =>
+    text.includes('https://esm.sh/@excalidraw/') ||
+    /inline style|apply a stylesheet because its hash/.test(text)
   page.on('console', (message) => {
-    const text = message.text()
-    if (message.type() !== 'error') return
-    if (/^Loading the font 'https:\/\/esm\.sh\//.test(text)) return
-    if (text.startsWith('Applying inline style violates')) return
-    errors.push(text)
+    if (message.type() === 'error' && !refusedAsMeant(message.text())) errors.push(message.text())
   })
   await page.route(`${base}**`, async (route) => {
     const path = new URL(route.request().url()).pathname.slice(new URL(base).pathname.length)
