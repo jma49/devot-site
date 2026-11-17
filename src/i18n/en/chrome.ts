@@ -5,8 +5,8 @@ const trial = `${numberWord(TRIAL_DAYS)}-day free trial`
 
 export const chromeCopy = {
   meta: {
-    title: 'Devot: local-first Markdown notes for Mac and iPhone',
-    description: `Local-first Markdown notes for Mac and iPhone: live preview, nested notebooks, tags, full-text search, plugins and themes. Offline, no account, source-available. A ${trial}, then pay once.`,
+    title: 'Devot: local-first Markdown notes app for Mac and iPhone',
+    description: `Devot is a local-first Markdown notes app for Mac and iPhone: live preview, nested notebooks, tags, full-text search, plugins and themes. Offline, no account, source-available. A ${trial}, then pay once.`,
     ogLocale: 'en_US',
     imageAlt:
       'The Devot window on a soft blue gradient: notebooks, statuses and tags in the sidebar, a list of notes, and an open note.',

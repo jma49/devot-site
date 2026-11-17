@@ -87,9 +87,18 @@ it('names the website', () => {
   expect(site).toMatchObject({ name: en.siteName, url: SITE_URL })
 })
 
+it('carries the name, the app and the notes people search Devot by in the home title and description', () => {
+  for (const words of [en.meta.title, en.meta.description]) {
+    expect(words).toMatch(/^Devot\b/)
+    expect(words).toMatch(/\bnotes app\b/)
+  }
+  expect(en.siteAlternateNames).toEqual(expect.arrayContaining(['Devot app', 'Devot Notes']))
+  expect(en.siteAlternateNames).toContain(new URL(SITE_URL).hostname)
+})
+
 it('names the app and the site by the words people search for it with', () => {
   expect(en.siteAlternateNames.length).toBeGreaterThan(0)
-  for (const name of en.siteAlternateNames) expect(name).toContain(en.siteName)
+  for (const name of en.siteAlternateNames) expect(name.toLowerCase()).toContain('devot')
   expect(site).toMatchObject({ name: en.siteName, alternateName: en.siteAlternateNames })
   expect(app).toMatchObject({ alternateName: en.siteAlternateNames, sameAs: [REPO_URL] })
 })

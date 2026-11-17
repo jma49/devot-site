@@ -21,7 +21,7 @@ import { IPHONE_OS, PLATFORM } from '../site.ts'
 export const en = {
   siteName: 'Devot',
   /** What searchers may call Devot beside its bare name, which other things share. */
-  siteAlternateNames: ['Devot app', 'Devot Markdown notes'],
+  siteAlternateNames: ['Devot app', 'Devot Notes', 'Devot Markdown notes', 'devot.online'],
   download: {
     label: 'Download for macOS',
     iphone: 'Get it for iPhone',
