@@ -58,6 +58,36 @@ test('draws a scene as SVG, light and dark, and an empty block as an invitation 
   expect(errors).toEqual([])
 })
 
+test("names a system font of its kind after each text, since the page has none of Excalidraw's", async ({
+  page,
+}) => {
+  const { frame, errors } = await open(page)
+  const scene = JSON.parse(SCENE) as { elements: Record<string, unknown>[] }
+  scene.elements[1]!['fontFamily'] = 5
+  scene.elements.push({
+    id: 'code',
+    type: 'text',
+    x: 40,
+    y: 80,
+    width: 80,
+    height: 25,
+    text: 'let a',
+    originalText: 'let a',
+    fontSize: 20,
+    fontFamily: 8,
+    seed: 3,
+  })
+  const svg = await frame.evaluate(
+    (s) => host.call('preview', 'excalidraw', s, { appearance: 'light' }),
+    JSON.stringify(scene),
+  )
+  const families = [...String(svg).matchAll(/font-family="([^"]*)"/g)].map((m) => m[1])
+  expect(families).toHaveLength(2)
+  expect(families[0]).toMatch(/^Excalifont,.*'Chalkboard SE'.*, cursive$/)
+  expect(families[1]).toMatch(/^Comic Shanns,.*, monospace$/)
+  expect(errors).toEqual([])
+})
+
 test('edits a scene in the panel and answers the edited scene on Done', async ({ page }) => {
   const { frame, errors } = await open(page)
   await frame.evaluate((s) => {
