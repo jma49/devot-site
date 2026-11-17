@@ -1,7 +1,7 @@
 {
   "id": "online.devot.note-query",
   "name": "Note Query",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": 2,
   "minAppVersion": "1.1.8",
   "description": "Shows query code blocks as a live table or list of the notes that match, by tag, notebook, status, dates and front matter.",

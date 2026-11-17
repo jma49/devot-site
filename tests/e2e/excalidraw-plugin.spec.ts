@@ -1,56 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
-import { readStoredZip } from '../support/stored-zip.ts'
+import { openPlugin, readArchive } from './plugin-frame.ts'
 
-// The Excalidraw plugin's archive, as this site serves it, run in a page under the policy Devot gives a plugin's
-// frame (src-tauri/plugin-frame/frame.csp in Devot), with a small stand-in for Devot's runtime.
-const BASE = 'https://plugin.devot.test/online.devot.excalidraw/'
-const FRAME_CSP = [
-  "default-src 'none'",
-  `script-src ${BASE} 'wasm-unsafe-eval'`,
-  `style-src ${BASE}`,
-  `img-src ${BASE} data: blob:`,
-  `font-src ${BASE}`,
-  `media-src ${BASE} data: blob:`,
-  "connect-src 'none'",
-  "frame-src 'none'",
-  "child-src 'none'",
-  "worker-src 'none'",
-  "object-src 'none'",
-  "manifest-src 'none'",
-  "form-action 'none'",
-  "base-uri 'none'",
-].join('; ')
-
-const RUNTIME = `
-const renderers = new Map()
-const editors = new Map()
-const hidden = []
-globalThis.panel = { shown: false }
-globalThis.devot = {
-  preview: { handle: (id, fn) => renderers.set(id, fn), edit: (id, fn) => editors.set(id, fn) },
-  ui: {
-    show: async () => { panel.shown = true },
-    hide: async () => { panel.shown = false },
-    onHidden: (fn) => hidden.push(fn),
-  },
-}
-globalThis.host = {
-  draw: (source, theme) => renderers.get('excalidraw')(source, theme),
-  edit: (source) => editors.get('excalidraw')(source),
-  close: () => { panel.shown = false; for (const fn of hidden) fn() },
-}
-`
-
-const FRAME = `<!doctype html><html><head><meta charset="utf-8">
-<script src="${BASE}__devot/runtime.js"></script><script src="${BASE}main.js"></script></head><body></body></html>`
-
-const TYPES: Record<string, string> = {
-  js: 'text/javascript',
-  css: 'text/css',
-  json: 'application/json',
-  woff2: 'font/woff2',
-  ttf: 'font/ttf',
-}
+// The Excalidraw plugin's archive, as this site serves it, in a frame as Devot gives it: its editor and fonts load as
+// modules and files beside its main script, which only works from answers Devot shares with the frame's opaque origin.
 
 const SCENE = JSON.stringify({
   type: 'excalidraw',
@@ -75,96 +27,79 @@ const SCENE = JSON.stringify({
 let archive: Map<string, Uint8Array>
 
 test.beforeAll(async ({ request }) => {
-  const response = await request.get('/plugins/excalidraw.zip')
-  expect(response.ok()).toBe(true)
-  archive = readStoredZip(new Uint8Array(await response.body()))
+  archive = await readArchive(request, 'excalidraw')
 })
 
-async function openFrame(page: Page): Promise<string[]> {
-  const errors: string[] = []
-  page.on('pageerror', (error) => errors.push(error.message))
-  await page.route(`${BASE}**`, async (route) => {
-    const path = new URL(route.request().url()).pathname.slice(new URL(BASE).pathname.length)
-    if (path === 'frame.html')
-      return route.fulfill({
-        body: FRAME,
-        headers: { 'content-type': 'text/html', 'content-security-policy': FRAME_CSP },
-      })
-    if (path === '__devot/runtime.js')
-      return route.fulfill({ body: RUNTIME, headers: { 'content-type': 'text/javascript' } })
-    const file = archive.get(path)
-    if (!file) return route.fulfill({ status: 404 })
-    return route.fulfill({
-      body: Buffer.from(file),
-      headers: { 'content-type': TYPES[path.split('.').pop()!] ?? 'application/octet-stream' },
-    })
-  })
-  await page.goto(`${BASE}frame.html`)
-  return errors
-}
+const open = (page: Page) => openPlugin(page, 'online.devot.excalidraw', archive)
 
 test('draws a scene as SVG, light and dark, and an empty block as an invitation to draw', async ({
   page,
 }) => {
-  const errors = await openFrame(page)
-  const light = await page.evaluate((s) => host.draw(s, { appearance: 'light' }), SCENE)
+  const { frame, errors } = await open(page)
+  const light = await frame.evaluate(
+    (s) => host.call('preview', 'excalidraw', s, { appearance: 'light' }),
+    SCENE,
+  )
   expect(light).toMatch(/^<svg[^>]*viewBox/)
   expect(light).toContain('Hello')
   expect(light).not.toContain('invert(')
-  const dark = await page.evaluate((s) => host.draw(s, { appearance: 'dark' }), SCENE)
-  expect(dark).toContain('invert(')
-  const empty = await page.evaluate(() => host.draw('', { appearance: 'light' }))
-  expect(empty).toContain('Edit')
-  await expect(page.evaluate(() => host.draw('[1, 2]', { appearance: 'light' }))).rejects.toThrow(
-    'E_EXCALIDRAW_SCENE',
+  const dark = await frame.evaluate(
+    (s) => host.call('preview', 'excalidraw', s, { appearance: 'dark' }),
+    SCENE,
   )
+  expect(dark).toContain('invert(')
+  const empty = await frame.evaluate(() =>
+    host.call('preview', 'excalidraw', '', { appearance: 'light' }),
+  )
+  expect(empty).toContain('Edit')
+  await expect(
+    frame.evaluate(() => host.call('preview', 'excalidraw', '[1, 2]', { appearance: 'light' })),
+  ).rejects.toThrow('E_EXCALIDRAW_SCENE')
   expect(errors).toEqual([])
 })
 
 test('edits a scene in the panel and answers the edited scene on Done', async ({ page }) => {
-  const errors = await openFrame(page)
-  await page.evaluate((s) => {
-    void host.edit(s).then((edited) => (globalThis.edited = edited))
+  const { frame, errors } = await open(page)
+  await frame.evaluate((s) => {
+    void host.call('edit', 'excalidraw', s).then((edited) => (globalThis.edited = edited as string))
   }, SCENE)
-  await expect(page.locator('.excalidraw canvas').first()).toBeVisible()
-  await expect.poll(() => page.evaluate(() => panel.shown)).toBe(true)
-  await page.getByRole('button', { name: 'Done' }).click()
-  const edited = await page.waitForFunction(() => globalThis.edited).then((h) => h.jsonValue())
+  await expect(frame.locator('.excalidraw canvas').first()).toBeVisible()
+  await expect.poll(() => frame.evaluate(() => panel.shown)).toBe(true)
+  await frame.getByRole('button', { name: 'Done' }).click()
+  const edited = await frame.waitForFunction(() => globalThis.edited).then((h) => h.jsonValue())
   const scene = JSON.parse(edited as string)
   expect(scene.type).toBe('excalidraw')
   expect(scene.elements.map((e: { id: string }) => e.id)).toEqual(['box', 'word'])
-  expect(await page.evaluate(() => panel.shown)).toBe(false)
-  await expect(page.locator('.excalidraw')).toHaveCount(0)
+  expect(await frame.evaluate(() => panel.shown)).toBe(false)
+  await expect(frame.locator('.excalidraw')).toHaveCount(0)
   expect(errors).toEqual([])
 })
 
 test('leaves the block as it was on Cancel, or when the panel closes', async ({ page }) => {
-  await openFrame(page)
-  await page.evaluate((s) => {
-    void host.edit(s).then((edited) => (globalThis.cancelled = edited))
+  const { frame } = await open(page)
+  await frame.evaluate((s) => {
+    void host
+      .call('edit', 'excalidraw', s)
+      .then((edited) => (globalThis.cancelled = edited as string))
   }, SCENE)
-  await page.getByRole('button', { name: 'Cancel' }).click()
-  expect(await page.waitForFunction(() => globalThis.cancelled).then((h) => h.jsonValue())).toBe(
+  await frame.getByRole('button', { name: 'Cancel' }).click()
+  expect(await frame.waitForFunction(() => globalThis.cancelled).then((h) => h.jsonValue())).toBe(
     SCENE,
   )
-  await page.evaluate((s) => {
-    void host.edit(s).then((edited) => (globalThis.afterClose = edited))
+  await frame.evaluate((s) => {
+    void host
+      .call('edit', 'excalidraw', s)
+      .then((edited) => (globalThis.afterClose = edited as string))
   }, SCENE)
-  await expect(page.locator('.excalidraw canvas').first()).toBeVisible()
-  await page.evaluate(() => host.close())
-  expect(await page.waitForFunction(() => globalThis.afterClose).then((h) => h.jsonValue())).toBe(
+  await expect(frame.locator('.excalidraw canvas').first()).toBeVisible()
+  await frame.evaluate(() => host.close())
+  expect(await frame.waitForFunction(() => globalThis.afterClose).then((h) => h.jsonValue())).toBe(
     SCENE,
   )
-  await expect(page.locator('.excalidraw')).toHaveCount(0)
+  await expect(frame.locator('.excalidraw')).toHaveCount(0)
 })
 
 declare global {
-  var host: {
-    draw: (source: string, theme: { appearance: 'light' | 'dark' }) => Promise<string>
-    edit: (source: string) => Promise<string>
-    close: () => void
-  }
-  var panel: { shown: boolean }
   var edited: string | undefined
   var cancelled: string | undefined
   var afterClose: string | undefined

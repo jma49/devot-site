@@ -266,11 +266,10 @@ describe('BibTeX References', () => {
     )
   })
 
-  it('imports a library as a note of references with the entries kept as written', () => {
+  it('imports a library as one block, which the preview shows as its references once', () => {
     const note = convert({ name: 'thesis.bib', text: LIBRARY })
     expect(note.title).toBe('thesis')
-    expect(note.markdown.startsWith('- Donald E. Knuth (1984).')).toBe(true)
-    expect(note.markdown).toContain(`\n\n\`\`\`bibtex\n${LIBRARY}\n\`\`\`\n`)
+    expect(note.markdown).toBe(`\`\`\`bibtex\n${LIBRARY}\n\`\`\`\n`)
   })
 
   it('keeps a block without entries as code, and a fence longer than any in the file', () => {
@@ -372,9 +371,11 @@ describe('Note Query', () => {
   })
   const run = preview.get('query') as (source: string) => Promise<string>
 
-  it('lists the notes of a tag, its nested tags included, sorted, as links', async () => {
+  it('lists the notes of a tag, its nested tags included, sorted, as links to the notes', async () => {
     reads.length = 0
-    expect(await run('LIST FROM #work SORT title DESC')).toBe('- [[Ship it]]\n- [[Plan]]')
+    expect(await run('LIST FROM #work SORT title DESC')).toBe(
+      '- [Ship it](devot://note/c)\n- [Plan](devot://note/a)',
+    )
     expect(reads).toEqual([])
   })
 
@@ -384,18 +385,18 @@ describe('Note Query', () => {
         'TABLE status, due AS "Due date", owners\nWHERE priority >= 1 AND NOT pinned\nSORT priority',
       ),
     ).toBe(
-      '| Note | status | Due date | owners |\n| --- | --- | --- | --- |\n| [[Ship it]] | completed |  | Ada, Lin |',
+      '| Note | status | Due date | owners |\n| --- | --- | --- | --- |\n| [Ship it](devot://note/c) | completed |  | Ada, Lin |',
     )
     expect(
       await run('TABLE due FROM "work" WHERE due < 2026-12-01 OR status = "completed" SORT due'),
-    ).toBe('| Note | due |\n| --- | --- |\n| [[Ship it]] |  |')
+    ).toBe('| Note | due |\n| --- | --- |\n| [Ship it](devot://note/c) |  |')
   })
 
   it('reads dates, tags and titles that would break a table', async () => {
     expect(await run('TABLE created, tags WHERE tags contains "travel"')).toBe(
-      '| Note | created | tags |\n| --- | --- | --- |\n| [[Trip   Rome]] | 2026-11-15 | travel |',
+      '| Note | created | tags |\n| --- | --- | --- |\n| [Trip \\| Rome](devot://note/b) | 2026-11-15 | travel |',
     )
-    expect(await run('LIST WHERE updated = 2026-11-16 LIMIT 1')).toBe('- [[Plan]]')
+    expect(await run('LIST WHERE updated = 2026-11-16 LIMIT 1')).toBe('- [Plan](devot://note/a)')
   })
 
   it('says when nothing matches or the query cannot be read', async () => {
