@@ -4,15 +4,38 @@
   const WIDTH = 640
   const HEIGHT = 320
   const PAD = { top: 36, right: 16, bottom: 48, left: 56 }
-  // Light and dark tones of each series; the image follows the system appearance itself.
-  const COLOURS = [
-    ['#2f6fdf', '#7aa7ff'],
-    ['#d9622b', '#ff9a66'],
-    ['#2e9e6b', '#5fd39b'],
-    ['#9a4fd1', '#c99bff'],
-    ['#c4a400', '#f2d43d'],
-    ['#d23f6e', '#ff7fa6'],
-  ]
+  // Tones for a theme that names none, by its appearance.
+  const FALLBACK = {
+    light: {
+      text: '#1c1c1e',
+      label: '#3c3c43',
+      hairline: '#d1d1d6',
+      edge: '#8e8e93',
+      series: ['#2f6fdf', '#d9622b', '#2e9e6b', '#9a4fd1', '#c4a400', '#d23f6e'],
+    },
+    dark: {
+      text: '#f2f2f7',
+      label: '#d1d1d6',
+      hairline: '#3a3a3c',
+      edge: '#636366',
+      series: ['#7aa7ff', '#ff9a66', '#5fd39b', '#c99bff', '#f2d43d', '#ff7fa6'],
+    },
+  }
+  const SERIES = 6
+
+  /** The theme on screen's colours, as the page gives them to a drawing. */
+  function tones(theme) {
+    const base = FALLBACK[theme?.appearance === 'dark' ? 'dark' : 'light']
+    const colors = theme?.colors ?? {}
+    const pick = (name) => (/^#[0-9a-f]{3,8}$/i.test(colors[name] ?? '') ? colors[name] : null)
+    return {
+      text: pick('text') ?? base.text,
+      label: pick('label') ?? pick('text') ?? base.label,
+      hairline: pick('hairline') ?? base.hairline,
+      edge: pick('edge') ?? base.edge,
+      series: base.series.map((fallback, i) => pick(`series${i + 1}`) ?? fallback),
+    }
+  }
 
   const number = (text) => {
     const t = text.trim().replace(/,(?=\d{3}(?:\D|$))/g, '')
@@ -82,7 +105,8 @@
     return String(Number(v.toPrecision(6)))
   }
 
-  function svg(chart) {
+  function svg(chart, theme) {
+    const tone = tones(theme)
     const values = chart.data.flatMap((d) => d.values.filter((v) => v !== undefined))
     const { low, high, ticks } = scale(values)
     const plotW = WIDTH - PAD.left - PAD.right
@@ -92,14 +116,11 @@
     const x = (i) => PAD.left + band * (i + 0.5)
     const parts = []
     const styles = [
-      'text{font:12px -apple-system,system-ui,sans-serif;fill:#3c3c43}',
-      '.title{font-weight:600;font-size:14px;fill:#1c1c1e}',
-      '.grid{stroke:#d1d1d6;stroke-width:1}',
-      '.axis{stroke:#8e8e93;stroke-width:1}',
-      ...COLOURS.map(([light], i) => `.s${i}{fill:${light};stroke:${light}}`),
-      '@media (prefers-color-scheme:dark){text{fill:#d1d1d6}.title{fill:#f2f2f7}.grid{stroke:#3a3a3c}.axis{stroke:#636366}',
-      ...COLOURS.map(([, dark], i) => `.s${i}{fill:${dark};stroke:${dark}}`),
-      '}',
+      `text{font:12px -apple-system,system-ui,sans-serif;fill:${tone.label}}`,
+      `.title{font-weight:600;font-size:14px;fill:${tone.text}}`,
+      `.grid{stroke:${tone.hairline};stroke-width:1}`,
+      `.axis{stroke:${tone.edge};stroke-width:1}`,
+      ...tone.series.map((c, i) => `.s${i}{fill:${c};stroke:${c}}`),
     ]
     parts.push(`<style>${styles.join('')}</style>`)
     if (chart.title)
@@ -123,7 +144,7 @@
     })
     const count = chart.series.length
     chart.series.forEach((_, s) => {
-      const tone = `s${s % COLOURS.length}`
+      const series = `s${s % SERIES}`
       if (chart.type === 'line') {
         const points = chart.data
           .map((d, i) =>
@@ -131,11 +152,11 @@
           )
           .filter(Boolean)
         parts.push(
-          `<polyline class="${tone}" fill="none" stroke-width="2" points="${points.join(' ')}" style="fill:none"/>`,
+          `<polyline class="${series}" fill="none" stroke-width="2" points="${points.join(' ')}" style="fill:none"/>`,
         )
         for (const p of points) {
           const [cx, cy] = p.split(',')
-          parts.push(`<circle class="${tone}" cx="${cx}" cy="${cy}" r="3"/>`)
+          parts.push(`<circle class="${series}" cx="${cx}" cy="${cy}" r="3"/>`)
         }
       } else {
         const inner = band * 0.8
@@ -147,7 +168,7 @@
           const h = Math.abs(y(v) - y(0))
           const left = x(i) - inner / 2 + w * s
           parts.push(
-            `<rect class="${tone}" x="${left.toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(w - 1, 1).toFixed(1)}" height="${Math.max(h, 0.5).toFixed(1)}" stroke-width="0"/>`,
+            `<rect class="${series}" x="${left.toFixed(1)}" y="${top.toFixed(1)}" width="${Math.max(w - 1, 1).toFixed(1)}" height="${Math.max(h, 0.5).toFixed(1)}" stroke-width="0"/>`,
           )
         })
       }
@@ -157,16 +178,21 @@
       chart.series.forEach((name, s) => {
         const label = escape(name.slice(0, 20))
         parts.push(
-          `<rect class="s${s % COLOURS.length}" x="${lx}" y="${HEIGHT - 16}" width="10" height="10" stroke-width="0"/>`,
+          `<rect class="s${s % SERIES}" x="${lx}" y="${HEIGHT - 16}" width="10" height="10" stroke-width="0"/>`,
         )
         parts.push(`<text x="${lx + 14}" y="${HEIGHT - 7}">${label}</text>`)
         lx += 24 + label.length * 7
       })
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">${parts.join('')}</svg>`
+    if (chart.dropped > 0)
+      parts.push(
+        `<text x="${WIDTH - PAD.right}" y="20" text-anchor="end">${chart.dropped} more rows are not drawn.</text>`,
+      )
+    const label = escape(described(chart))
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-label="${label}"><title>${label}</title>${parts.join('')}</svg>`
   }
 
-  /** The image's text alternative reads the data out, so the chart says what it shows without being seen. */
+  /** The drawing's text alternative reads the data out, so the chart says what it shows without being seen. */
   function described(chart) {
     const kind = chart.type === 'line' ? 'Line chart' : 'Bar chart'
     const head = chart.title ? `${kind}: ${chart.title}` : kind
@@ -178,17 +204,12 @@
           : `${d.label} ${chart.series.map((n, i) => `${n} ${d.values[i] ?? '-'}`).join(', ')}`,
       )
     const more = chart.data.length > 20 ? `; ${chart.data.length - 20} more` : ''
-    return `${head}. ${rows.join('; ')}${more}`.replace(/[[\]\\]/g, ' ')
+    return `${head}. ${rows.join('; ')}${more}`
   }
 
-  const dataUri = (text) =>
-    `data:image/svg+xml,${encodeURIComponent(text).replace(/[()']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`
-
-  function render(source) {
+  function render(source, theme) {
     const chart = parse(source)
-    if (!chart) return null
-    const image = `![${described(chart)}](${dataUri(svg(chart))})`
-    return chart.dropped > 0 ? `${image}\n\n${chart.dropped} more rows are not drawn.` : image
+    return chart ? svg(chart, theme) : null
   }
 
   devot.preview.handle('chart', render)

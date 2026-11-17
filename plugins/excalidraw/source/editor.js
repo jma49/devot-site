@@ -50,6 +50,32 @@ function emptyDrawing() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 72" width="360" height="72"><rect x="1" y="1" width="358" height="70" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-dasharray="6 4"/><text x="180" y="41" text-anchor="middle" font-size="14" fill="currentColor" fill-opacity="0.7">${escaped}</text></svg>`
 }
 
+// The page shows the drawing without Excalidraw's fonts, so each text falls back to a system font of its kind, not the default serif.
+const SYSTEM_FONTS = {
+  hand: "'Chalkboard SE', 'Bradley Hand', 'Comic Sans MS', cursive",
+  code: 'ui-monospace, Menlo, Consolas, monospace',
+  sans: 'system-ui, -apple-system, Helvetica, Arial, sans-serif',
+}
+const KIND = {
+  Virgil: 'hand',
+  Excalifont: 'hand',
+  Cascadia: 'code',
+  'Comic Shanns': 'code',
+}
+
+function withSystemFonts(svg) {
+  for (const text of svg.querySelectorAll('text')) {
+    const families = text.getAttribute('font-family')
+    if (!families) continue
+    const kind = families
+      .split(',')
+      .map((name) => KIND[name.trim()])
+      .find(Boolean)
+    text.setAttribute('font-family', `${families}, ${SYSTEM_FONTS[kind ?? 'sans']}`)
+  }
+  return svg
+}
+
 export async function draw(source, theme) {
   const s = scene(source)
   if (!s || shown(s).length === 0) return emptyDrawing()
@@ -63,7 +89,7 @@ export async function draw(source, theme) {
     files: s.files,
     skipInliningFonts: true,
   })
-  return new XMLSerializer().serializeToString(svg)
+  return new XMLSerializer().serializeToString(withSystemFonts(svg))
 }
 
 function Editor({ initial, finish }) {

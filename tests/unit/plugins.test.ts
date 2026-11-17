@@ -185,50 +185,75 @@ describe('CSV Tables', () => {
 })
 
 describe('Charts', () => {
-  const render = load('charts').preview.get('chart') as (source: string) => string | null
-  const image = (drawn: string) => {
-    const found = /^!\[([^\]]*)\]\(data:image\/svg\+xml,([^)]+)\)/.exec(drawn)
-    if (!found) throw new Error('expected an image')
-    return { alt: found[1]!, svg: decodeURIComponent(found[2]!) }
+  type Theme = { appearance: 'light' | 'dark'; colors: Record<string, string> }
+  const render = load('charts').preview.get('chart') as (
+    source: string,
+    theme?: Theme,
+  ) => string | null
+  const theme: Theme = {
+    appearance: 'dark',
+    colors: {
+      text: '#f5f5f7',
+      label: '#aeaeb2',
+      hairline: '#38383a',
+      edge: '#636366',
+      series1: '#64d2ff',
+      series2: '#ff9f0a',
+    },
   }
+  const labelOf = (svg: string) => /aria-label="([^"]*)"/.exec(svg)?.[1]
 
   it('draws a bar per row, scaled from zero, and reads the data out in its description', () => {
-    const { alt, svg } = image(render('title: Rent & food\nRent, 1200\nFood, 400')!)
-    expect(alt).toBe('Bar chart: Rent & food. Rent 1200; Food 400')
+    const svg = render('title: Rent & food\nRent, 1200\nFood, 400', theme)!
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true)
+    expect(labelOf(svg)).toBe('Bar chart: Rent &amp; food. Rent 1200; Food 400')
+    expect(svg).toContain('<title>Bar chart: Rent &amp; food. Rent 1200; Food 400</title>')
     expect(svg).toContain('>Rent &amp; food</text>')
     expect(svg.match(/<rect class="s0"/g)).toHaveLength(2)
     expect(svg).toContain('>0</text>')
     expect(svg).toContain('>1500</text>')
-    expect(svg).toContain('@media (prefers-color-scheme:dark)')
+  })
+
+  it('draws in the colours of the theme on screen, whatever the system appearance', () => {
+    const svg = render('a, 1', theme)!
+    expect(svg).toContain('fill:#aeaeb2}')
+    expect(svg).toContain('.title{font-weight:600;font-size:14px;fill:#f5f5f7}')
+    expect(svg).toContain('.grid{stroke:#38383a;')
+    expect(svg).toContain('.s0{fill:#64d2ff;stroke:#64d2ff}')
+    expect(svg).toContain('.s1{fill:#ff9f0a;stroke:#ff9f0a}')
+    expect(svg).not.toContain('prefers-color-scheme')
+  })
+
+  it('falls back to tones for the appearance where the theme names no colour, or names one oddly', () => {
+    const dark = render('a, 1', { appearance: 'dark', colors: { text: 'red;}x{' } })!
+    expect(dark).toContain('.title{font-weight:600;font-size:14px;fill:#f2f2f7}')
+    expect(dark).not.toContain('red;')
+    expect(render('a, 1')).toContain('.title{font-weight:600;font-size:14px;fill:#1c1c1e}')
   })
 
   it('draws a line per series named by a header row, with a legend', () => {
-    const { alt, svg } = image(render('type: line\nmonth, web, app\nJan, 120, 40\nFeb, 180, 65')!)
-    expect(alt).toBe('Line chart. Jan web 120, app 40; Feb web 180, app 65')
+    const svg = render('type: line\nmonth, web, app\nJan, 120, 40\nFeb, 180, 65', theme)!
+    expect(labelOf(svg)).toBe('Line chart. Jan web 120, app 40; Feb web 180, app 65')
     expect(svg.match(/<polyline/g)).toHaveLength(2)
     expect(svg).toContain('>web</text>')
     expect(svg).toContain('>app</text>')
   })
 
-  it('keeps the image out of reach of Markdown and of the SVG it sits in', () => {
-    const drawn = render('title: a (b) ]\n<x>, 1\n"q", -2')!
-    expect(drawn.endsWith(')')).toBe(true)
-    expect(drawn.slice(drawn.indexOf('](data:') + 2, -1)).not.toMatch(/[()\s]/)
-    const { alt, svg } = image(drawn)
-    expect(alt).not.toContain(']')
+  it('keeps the text it is given out of reach of the SVG it sits in', () => {
+    const svg = render('title: a "(b)" ]\n<x>, 1\n"q", -2', theme)!
     expect(svg).toContain('&lt;x&gt;')
     expect(svg).not.toContain('<x>')
+    expect(labelOf(svg)).toContain('a &quot;(b)&quot; ]')
     expect(svg).toContain('>-2</text>')
   })
 
   it('keeps a block it cannot read as code, and draws at most 200 rows', () => {
     for (const source of ['', 'type: pie\na, 1', 'a, b\nc, d', 'a, 1\nb'])
-      expect(render(source)).toBeNull()
+      expect(render(source, theme)).toBeNull()
     const rows = Array.from({ length: 203 }, (_, i) => `r${i}, ${i}`).join('\n')
-    const drawn = render(rows)!
-    expect(image(drawn).svg.match(/<rect class="s0"/g)).toHaveLength(200)
-    expect(drawn.endsWith('\n\n3 more rows are not drawn.')).toBe(true)
+    const svg = render(rows, theme)!
+    expect(svg.match(/<rect class="s0"/g)).toHaveLength(200)
+    expect(svg).toContain('>3 more rows are not drawn.</text>')
   })
 })
 

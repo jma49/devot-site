@@ -1,7 +1,7 @@
 {
   "id": "online.devot.theme-gruvbox",
   "name": "Gruvbox",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": 2,
   "minAppVersion": "1.1.8",
   "description": "Warm retro browns, yellows and greens, for Light Mode and Dark Mode.",

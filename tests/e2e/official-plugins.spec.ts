@@ -36,7 +36,7 @@ const SAMPLES: Record<
     preview: {
       chart: [
         'title: Spend\nRent, 1200\nFood, 400',
-        /^!\[Bar chart: Spend[^\]]*\]\(data:image\/svg\+xml,/,
+        /^<svg [^>]*aria-label="Bar chart: Spend\. Rent 1200; Food 400"[\s\S]*<\/svg>$/,
       ],
     },
   },

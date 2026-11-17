@@ -1,7 +1,7 @@
 {
   "id": "online.devot.excalidraw",
   "name": "Excalidraw",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "apiVersion": 2,
   "minAppVersion": "1.1.9",
   "description": "Draws excalidraw code blocks as hand-drawn sketches in the preview, and edits them in Excalidraw's whiteboard with Edit.",

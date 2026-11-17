@@ -5,6 +5,7 @@ import {
   contrast,
   devotTokens,
   hex,
+  isIconColor,
   lightness,
   parseColor,
   themeColors,
@@ -113,6 +114,12 @@ describe('a theme drawn from a palette', () => {
   it('leaves the QR code to Devot', () => {
     expect(colors).not.toHaveProperty('qr-module')
   })
+
+  it("leaves every icon in Devot's colors: status marks, settings tiles, tag icons and phone status tiles", () => {
+    const icons = [...devotTokens(CSS, 'dark').keys()].filter(isIconColor)
+    expect(icons.length).toBe(31)
+    for (const token of icons) expect(colors).not.toHaveProperty(token)
+  })
 })
 
 describe('the official theme plugins', () => {
@@ -121,6 +128,13 @@ describe('the official theme plugins', () => {
   it('hold the theme files the palettes make (pnpm plugin-themes writes them)', () => {
     for (const [path, text] of files)
       expect(existsSync(join(ROOT, path)) && read(path), path).toBe(text)
+  })
+
+  it('set no icon color in any of the eighteen themes', () => {
+    const themes = [...files].filter(([path]) => path.endsWith('.json'))
+    expect(themes).toHaveLength(18)
+    for (const [path, text] of themes)
+      expect(Object.keys(JSON.parse(text).colors).filter(isIconColor), path).toEqual([])
   })
 
   it.each(THEME_FAMILIES)(
