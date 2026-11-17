@@ -223,9 +223,13 @@ it('gives no email address in the copy but the privacy contact, which links to a
 })
 
 it('promises nothing Devot has not shipped', () => {
-  const claims = [...catalogStrings(en, [2026])].filter(
-    (text) => /\biPad(OS)?\b|\bAndroid\b|\bWindows\b/.test(text) || /semantic search/i.test(text),
-  )
+  // The comparison pages name the platforms other apps run on.
+  const aboutOthers = catalogStrings(en.compare, [])
+  const claims = [...catalogStrings(en, [2026])]
+    .filter((text) => !aboutOthers.has(text))
+    .filter(
+      (text) => /\biPad(OS)?\b|\bAndroid\b|\bWindows\b/.test(text) || /semantic search/i.test(text),
+    )
   expect(claims).toEqual([])
 })
 

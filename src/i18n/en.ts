@@ -1,5 +1,6 @@
 import { cardsCopy } from './en/cards.ts'
 import { chromeCopy } from './en/chrome.ts'
+import { compareCopy } from './en/compare.ts'
 import { blogCopy } from './en/blog.ts'
 import { demoCopy } from './en/demo.ts'
 import { docsCopy } from './en/docs.ts'
@@ -39,6 +40,7 @@ export const en = {
   ...llmsCopy,
   ...docsCopy,
   ...blogCopy,
+  ...compareCopy,
   ...pluginsCopy,
 }
 

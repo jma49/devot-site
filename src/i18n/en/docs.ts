@@ -11,6 +11,8 @@ export type DocBlock =
   | { kind: 'list'; ordered?: boolean; items: DocRun[][] }
   /** `label` names the block for assistive technology: what the reader would run or paste it into. */
   | { kind: 'code'; label: string; lines: string[] }
+  /** Each row starts with its header cell; `caption` names the table. */
+  | { kind: 'table'; caption: string; head: string[]; rows: DocRun[][][] }
 
 export interface DocSection {
   /** The section's anchor, unique on its page. */

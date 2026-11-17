@@ -19,14 +19,21 @@ interface Props {
   /** Lists the sections at the top, for a page read in parts. */
   toc?: boolean
   structuredData?: unknown
+  /** ISO date a blog post went up. */
+  published?: string
 }
 
 const t = messages(localeOf(Astro.url.pathname))
-const { page, up, byline, toc = true, structuredData } = Astro.props
+const { page, up, byline, toc = true, structuredData, published } = Astro.props
 const isCode = (run: DocRun): run is { code: string } => typeof run === 'object' && 'code' in run
 ---
 
-<Base title={page.title} description={page.description} structuredData={structuredData}>
+<Base
+  title={page.title}
+  description={page.description}
+  structuredData={structuredData}
+  published={published}
+>
   <article class="doc">
     <header class="doc__head">
       <a class="doc__up" href={up.href}>
@@ -76,6 +83,32 @@ const isCode = (run: DocRun): run is { code: string } => typeof run === 'object'
               aria-label={block.label}
               tabindex="0"
             ><code>{code}</code></pre>
+          }
+          if (block.kind === 'table') {
+            return (
+              <div class="doc__table" role="region" aria-label={block.caption} tabindex="0">
+                <table>
+                  <caption>{block.caption}</caption>
+                  <thead>
+                    <tr>
+                      {block.head.map((cell) => (
+                        <th scope="col">{cell}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map(([header = [], ...cells]) => (
+                      <tr>
+                        <th scope="row">{runs(header)}</th>
+                        {cells.map((cell, column) => (
+                          <td data-label={block.head[column + 1]}>{runs(cell)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           }
           const items = block.items.map((item) => <li>{runs(item)}</li>)
           return block.ordered ? <ol>{items}</ol> : <ul>{items}</ul>

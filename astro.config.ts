@@ -1,10 +1,14 @@
 import sitemap from '@astrojs/sitemap'
 import { defineConfig } from 'astro/config'
+import { messages, SITEMAP_I18N } from './src/i18n/index.ts'
+import { datedSitemapItem } from './src/lib/sitemap.ts'
 import { SITE_URL } from './src/site.ts'
 
 export default defineConfig({
   site: SITE_URL,
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({ i18n: SITEMAP_I18N, serialize: (item) => datedSitemapItem(messages(), item) }),
+  ],
   // public/_headers allows no inline script or style, so every stylesheet, script and image
   // must be a file under /_astro/, never inlined into the page or turned into a data: URL.
   // `file` builds /terms as terms.html, which Cloudflare Pages serves at /terms without a redirect.

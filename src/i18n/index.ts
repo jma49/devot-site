@@ -11,6 +11,14 @@ const PREFIX: Record<Locale, string> = { en: '', 'zh-Hans': '/zh' }
 /** The English paths of the pages that have every language; the rest stay English. */
 const TRANSLATED = ['/', '/support']
 
+/** The sitemap's language of each path prefix, for its `hreflang` alternates; English has none. */
+export const SITEMAP_I18N = {
+  defaultLocale: 'en',
+  locales: Object.fromEntries(
+    (Object.keys(LOCALES) as Locale[]).map((locale) => [PREFIX[locale].slice(1) || locale, locale]),
+  ),
+}
+
 export function messages(locale: Locale = 'en'): Messages {
   return LOCALES[locale]
 }

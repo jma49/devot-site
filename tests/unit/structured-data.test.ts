@@ -1,7 +1,10 @@
 import { expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
-import { jsonLd, LOGO_PATH, structuredData } from '../../src/lib/structured-data.ts'
+import { zhHans } from '../../src/i18n/zh-Hans.ts'
+import { DOCS_PATH, docPath } from '../../src/lib/links.ts'
+import { jsonLd, LOGO_PATH, structuredData, techArticle } from '../../src/lib/structured-data.ts'
 import {
+  IPHONE_OS,
   DOWNLOAD_URL,
   LICENCE_AMOUNT,
   LICENCE_CURRENCY,
@@ -29,10 +32,39 @@ it('describes Devot as a macOS productivity app with the page description', () =
 })
 
 it('states the platform the download requirements name, however the copy words them', () => {
-  expect(app?.operatingSystem).toBe(PLATFORM.os)
+  expect(app?.operatingSystem).toBe(`${PLATFORM.os}, ${IPHONE_OS}`)
   expect(app?.processorRequirements).toBe(PLATFORM.processor)
   expect(en.download.requirements).toContain(PLATFORM.os)
   expect(en.download.requirements).toContain(PLATFORM.processor)
+  expect(en.download.requirements).toContain(IPHONE_OS)
+})
+
+it('describes each home page in its own language, at its own address', () => {
+  for (const [locale, t, url] of [
+    ['en', en, SITE_URL],
+    ['zh-Hans', zhHans, `${SITE_URL}zh`],
+  ] as const) {
+    const page = structuredData(t, locale)['@graph'].find((node) => node['@type'] === 'WebPage')
+    expect(page).toMatchObject({ url, inLanguage: locale, name: t.meta.title })
+  }
+})
+
+it('places every docs page under the docs index as a TechArticle', () => {
+  for (const page of en.docs.pages) {
+    const url = new URL(docPath(page.slug), SITE_URL).href
+    const [article, trail] = techArticle(en, page)['@graph']
+    expect(article).toMatchObject({ '@type': 'TechArticle', headline: page.heading, url })
+    expect(trail?.itemListElement).toEqual([
+      { '@type': 'ListItem', position: 1, name: en.siteName, item: SITE_URL },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: en.docs.index.heading,
+        item: new URL(DOCS_PATH, SITE_URL).href,
+      },
+      { '@type': 'ListItem', position: 3, name: page.heading, item: url },
+    ])
+  }
 })
 
 it('offers the licence at the price the pricing section shows', () => {

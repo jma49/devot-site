@@ -506,6 +506,7 @@ export const blogCopy = {
       listLabel: 'Posts',
     },
     allPosts: 'All posts',
+    feedTitle: 'Devot blog',
     posts: [payOnce, codex, daily, importing, mcp, sync, mirror, tauri] satisfies BlogPost[],
   },
 }

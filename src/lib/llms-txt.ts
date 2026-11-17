@@ -1,6 +1,6 @@
 import type { Messages } from '../i18n/en.ts'
 import { DOWNLOAD_URL, LICENCE_PRICE, REPO_URL, SITE_URL } from '../site.ts'
-import { blogPath, docPath, FOOTER_GROUPS } from './links.ts'
+import { blogPath, comparePath, docPath, FOOTER_GROUPS } from './links.ts'
 
 type Run = string | { code: string }
 
@@ -71,6 +71,12 @@ export function llmsTxt(t: Messages): string {
     '',
     ...t.docs.pages.map((page) => `${link(page.heading, docPath(page.slug))}: ${page.summary}`),
     ...docs,
+    '',
+    `## ${t.compare.index.heading}`,
+    '',
+    ...t.compare.pages.map(
+      (page) => `${link(page.heading, comparePath(page.slug))}: ${page.summary}`,
+    ),
     '',
     `## ${t.blog.index.heading}`,
     '',
