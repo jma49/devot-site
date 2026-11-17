@@ -87,6 +87,13 @@ it('names the website', () => {
   expect(site).toMatchObject({ name: en.siteName, url: SITE_URL })
 })
 
+it('names the app and the site by the words people search for it with', () => {
+  expect(en.siteAlternateNames.length).toBeGreaterThan(0)
+  for (const name of en.siteAlternateNames) expect(name).toContain(en.siteName)
+  expect(site).toMatchObject({ name: en.siteName, alternateName: en.siteAlternateNames })
+  expect(app).toMatchObject({ alternateName: en.siteAlternateNames, sameAs: [REPO_URL] })
+})
+
 it('serialises to JSON that cannot close its script element', () => {
   const text = jsonLd({ note: '</script><script>alert(1)</script>' })
   expect(text).not.toContain('<')

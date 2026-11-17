@@ -20,6 +20,8 @@ import { IPHONE_OS, PLATFORM } from '../site.ts'
 /** Copy shared by several sections lives here; each package's own copy lives in `en/<package>.ts`. */
 export const en = {
   siteName: 'Devot',
+  /** What searchers may call Devot beside its bare name, which other things share. */
+  siteAlternateNames: ['Devot app', 'Devot Markdown notes'],
   download: {
     label: 'Download for macOS',
     iphone: 'Get it for iPhone',
