@@ -1,0 +1,68 @@
+---
+import '../../styles/docs.css'
+import '../../styles/themes.css'
+import { messages } from '../../i18n/index.ts'
+import Base from '../../layouts/Base.astro'
+import { docPath } from '../../lib/links.ts'
+import { PREVIEW, previewPath, themeFamilies } from '../../lib/theme-preview.ts'
+
+const t = messages()
+const copy = t.themes
+const listing = (folder: string) => {
+  const found = t.plugins.listings.find((entry) => entry.folder === folder)
+  if (!found) throw new Error(`E_THEME_LISTING_MISSING ${folder}`)
+  return found
+}
+const families = themeFamilies(copy.gallery).map((family) => ({
+  ...family,
+  listing: listing(family.folder),
+}))
+---
+
+<Base title={copy.title} description={copy.description}>
+  <article class="doc themes">
+    <header class="doc__head">
+      <h1 class="doc__title">{copy.heading}</h1>
+      <p class="doc__intro">{copy.intro}</p>
+      <p class="themes__install">
+        {copy.install.lead}
+        <a href={docPath('plugins')}>{copy.install.more}</a>
+      </p>
+    </header>
+    <ul class="themes__families" aria-label={copy.listLabel}>
+      {families.map(({ folder, themes, listing }) => (
+        <li class="themes__family" id={folder}>
+          <div class="themes__family-head">
+            <h2 class="themes__family-name">{listing.name}</h2>
+            <a class="themes__download" href={listing.download} download>
+              {copy.download}
+            </a>
+          </div>
+          <p class="themes__summary">{listing.summary}</p>
+          <ul class="themes__grid">
+            {themes.map((theme) => (
+              <li>
+                <figure class="themes__card">
+                  <img
+                    src={previewPath(theme)}
+                    alt={theme.alt}
+                    width={PREVIEW.width}
+                    height={PREVIEW.height}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <figcaption>
+                    <span class="themes__name">{theme.title}</span>
+                    <span class="themes__mode">
+                      {theme.appearance === 'light' ? copy.light : copy.dark}
+                    </span>
+                  </figcaption>
+                </figure>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+  </article>
+</Base>

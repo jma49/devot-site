@@ -83,6 +83,7 @@ export const privacyCopy: typeof en = {
           blog: '博客（英文）',
           plugins: '插件（英文）',
           compare: '对比（英文）',
+          themes: '主题（英文）',
           releases: '版本发布',
           install: '安装步骤',
           architecture: 'Devot 的工作原理',

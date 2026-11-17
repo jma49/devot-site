@@ -16,6 +16,7 @@ export const docPath = (slug: string) => `${DOCS_PATH}/${slug}`
 export const BLOG_PATH = '/blog'
 export const blogPath = (slug: string) => `${BLOG_PATH}/${slug}`
 export const COMPARE_PATH = '/compare'
+export const THEMES_PATH = '/themes'
 export const comparePath = (slug: string) => `${COMPARE_PATH}/${slug}`
 export const FEED_PATH = `${BLOG_PATH}/rss.xml`
 
@@ -64,6 +65,7 @@ export const FOOTER_GROUPS: FooterGroup[] = [
       { id: 'docs', href: DOCS_PATH },
       { id: 'blog', href: BLOG_PATH },
       { id: 'plugins', href: docPath('plugins') },
+      { id: 'themes', href: THEMES_PATH },
       { id: 'compare', href: COMPARE_PATH },
       { id: 'releases', href: RELEASES_URL },
       { id: 'install', href: INSTALL_URL },

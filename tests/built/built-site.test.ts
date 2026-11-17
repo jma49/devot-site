@@ -11,7 +11,8 @@ import {
   structuredData,
   techArticle,
 } from '../../src/lib/structured-data.ts'
-import { comparePath, docPath, FEED_PATH, PRICING_PATH } from '../../src/lib/links.ts'
+import { comparePath, docPath, FEED_PATH, PRICING_PATH, THEMES_PATH } from '../../src/lib/links.ts'
+import { previewPath } from '../../src/lib/theme-preview.ts'
 import { DOWNLOAD_URL, OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
@@ -295,6 +296,17 @@ describe('structured data', () => {
       const labels = tags(html, 'td').map(({ attrs }) => attrs.get('data-label'))
       expect(labels.length).toBeGreaterThan(0)
       expect(new Set(labels)).toEqual(new Set(['Devot', page.other]))
+    }
+  })
+
+  it('shows every theme by its own preview, described for screen readers', () => {
+    const images = tags(readRepoFile(`dist${THEMES_PATH}.html`), 'img')
+    expect(images.map(({ attrs }) => attrs.get('src'))).toEqual(en.themes.gallery.map(previewPath))
+    expect(images.map(({ attrs }) => attrs.get('alt'))).toEqual(
+      en.themes.gallery.map((theme) => theme.alt),
+    )
+    for (const theme of en.themes.gallery) {
+      expect(readRepoFile(`dist${previewPath(theme)}`)).toMatch(/^<svg /)
     }
   })
 

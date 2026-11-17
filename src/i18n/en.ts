@@ -14,6 +14,7 @@ import { pluginsCopy } from './en/plugins.ts'
 import { pricingCopy } from './en/pricing.ts'
 import { privacyCopy } from './en/privacy.ts'
 import { supportCopy } from './en/support.ts'
+import { themesCopy } from './en/themes.ts'
 import { IPHONE_OS, PLATFORM } from '../site.ts'
 
 /** Copy shared by several sections lives here; each package's own copy lives in `en/<package>.ts`. */
@@ -42,6 +43,7 @@ export const en = {
   ...blogCopy,
   ...compareCopy,
   ...pluginsCopy,
+  ...themesCopy,
 }
 
 export type Messages = typeof en
