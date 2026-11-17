@@ -22,4 +22,5 @@ const { post } = Astro.props as { post: BlogPost }
   byline={{ text: post.publishedLabel, datetime: post.published }}
   toc={false}
   structuredData={blogPosting(t, post)}
+  published={post.published}
 />

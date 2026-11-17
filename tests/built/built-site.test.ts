@@ -4,8 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { LOCALES, localeOf, messages } from '../../src/i18n/index.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
-import { blogPosting, structuredData } from '../../src/lib/structured-data.ts'
-import { PRICING_PATH } from '../../src/lib/links.ts'
+import { blogFeed } from '../../src/lib/feed.ts'
+import { blogPosting, structuredData, techArticle } from '../../src/lib/structured-data.ts'
+import { docPath, FEED_PATH, PRICING_PATH } from '../../src/lib/links.ts'
 import { DOWNLOAD_URL, OG_IMAGE, SITE_URL } from '../../src/site.ts'
 import { catalogStrings, pageCopy } from '../support/copy-policy.ts'
 import { fetches } from '../support/csp-fetches.ts'
@@ -213,7 +214,7 @@ it('builds the blog index and a page for each post', () => {
 describe('the Chinese pages', () => {
   const links = (page: string, rel: string) =>
     tags(readRepoFile(page), 'link')
-      .filter(({ attrs }) => attrs.get('rel') === rel)
+      .filter(({ attrs }) => attrs.get('rel') === rel && attrs.has('hreflang'))
       .map(({ attrs }) => `${attrs.get('hreflang')} ${attrs.get('href')}`)
   const switchTo = (page: string) =>
     tags(readRepoFile(page), 'a')
@@ -262,7 +263,9 @@ describe('structured data', () => {
 
   it('describes the app once, on each home page, in its language', () => {
     expect(ldJson(readRepoFile('dist/index.html'))).toEqual([structuredData(en)])
-    expect(ldJson(readRepoFile('dist/zh.html'))).toEqual([structuredData(messages('zh-Hans'))])
+    expect(ldJson(readRepoFile('dist/zh.html'))).toEqual([
+      structuredData(messages('zh-Hans'), 'zh-Hans'),
+    ])
   })
 
   it('describes each blog post as a BlogPosting of its own', () => {
@@ -272,9 +275,20 @@ describe('structured data', () => {
     }
   })
 
+  it('describes each docs page as a TechArticle of its own', () => {
+    for (const page of en.docs.pages) {
+      expect(ldJson(readRepoFile(`dist${docPath(page.slug)}.html`))).toEqual([
+        techArticle(en, page),
+      ])
+    }
+  })
+
   it('carries none on the other pages', () => {
     const homes = ['dist/index.html', 'dist/zh.html']
-    const others = pages.filter((page) => !homes.includes(page) && !posts.includes(page))
+    const docs = en.docs.pages.map((page) => `dist${docPath(page.slug)}.html`)
+    const others = pages.filter(
+      (page) => !homes.includes(page) && !posts.includes(page) && !docs.includes(page),
+    )
     expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
   })
 })
@@ -313,5 +327,39 @@ describe('files for Cloudflare and crawlers', () => {
       ),
     )
     expect(listed.toSorted()).toEqual(indexed.map(pageUrl).toSorted())
+  })
+
+  it('names the Chinese pages beside the English ones in the sitemap', () => {
+    const sitemap = readRepoFile('dist/sitemap-0.xml')
+    const entry = (url: string) =>
+      new RegExp(`<url><loc>${url}</loc>(.*?)</url>`).exec(sitemap)?.[1] ?? ''
+    const pair = (english: string, zh: string) =>
+      `<xhtml:link rel="alternate" hreflang="en" href="${english}"/>` +
+      `<xhtml:link rel="alternate" hreflang="zh-Hans" href="${zh}"/>`
+    expect(entry(SITE_URL)).toBe(pair(SITE_URL, `${SITE_URL}zh`))
+    expect(entry(`${SITE_URL}zh`)).toBe(pair(SITE_URL, `${SITE_URL}zh`))
+    expect(entry(`${SITE_URL}zh/support`)).toBe(pair(`${SITE_URL}support`, `${SITE_URL}zh/support`))
+    expect(entry(`${SITE_URL}terms`)).toBe('')
+  })
+
+  it('serves the blog feed every page announces', () => {
+    expect(readRepoFile(`dist${FEED_PATH}`)).toBe(blogFeed(en))
+    for (const page of indexed) {
+      const feeds = tags(readRepoFile(page), 'link').filter(
+        ({ attrs }) => attrs.get('type') === 'application/rss+xml',
+      )
+      expect(feeds.map(({ attrs }) => attrs.get('href'))).toEqual([FEED_PATH])
+    }
+  })
+
+  it('announces blog posts as articles with their date, and other pages as a website', () => {
+    for (const post of en.blog.posts) {
+      const html = readRepoFile(`dist/blog/${post.slug}.html`)
+      expect(meta(html, 'og:type')).toBe('article')
+      expect(meta(html, 'article:published_time')).toBe(post.published)
+    }
+    expect(meta(readRepoFile('dist/index.html'), 'og:type')).toBe('website')
+    expect(meta(readRepoFile('dist/zh.html'), 'og:locale:alternate')).toBe('en_US')
+    expect(meta(readRepoFile('dist/index.html'), 'og:locale:alternate')).toBe('zh_CN')
   })
 })

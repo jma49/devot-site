@@ -12,7 +12,7 @@ import Base from '../../layouts/Base.astro'
 import { structuredData } from '../../lib/structured-data.ts'
 ---
 
-<Base night structuredData={structuredData(messages('zh-Hans'))}>
+<Base night structuredData={structuredData(messages('zh-Hans'), 'zh-Hans')}>
   <PageSky />
   <Hero />
   <Features />

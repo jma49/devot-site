@@ -15,6 +15,7 @@ export const DOCS_PATH = '/docs'
 export const docPath = (slug: string) => `${DOCS_PATH}/${slug}`
 export const BLOG_PATH = '/blog'
 export const blogPath = (slug: string) => `${BLOG_PATH}/${slug}`
+export const FEED_PATH = `${BLOG_PATH}/rss.xml`
 
 /** Where the links inside the legal and support pages go, by the id the copy names. */
 export const LEGAL_LINKS = {

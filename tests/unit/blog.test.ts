@@ -61,13 +61,21 @@ describe.each(posts)('$slug', (post) => {
     expect(hrefsOf(post).filter((href) => !allowed(href))).toEqual([])
   })
 
-  it('is described as a BlogPosting at its own address', () => {
-    expect(blogPosting(en, post)).toMatchObject({
+  it('is described as a BlogPosting at its own address, under the blog', () => {
+    const url = new URL(blogPath(post.slug), SITE_URL).href
+    const [posting, trail] = blogPosting(en, post)['@graph']
+    expect(posting).toMatchObject({
       '@type': 'BlogPosting',
       headline: post.heading,
       datePublished: post.published,
-      url: new URL(blogPath(post.slug), SITE_URL).href,
+      inLanguage: 'en',
+      url,
     })
+    expect(trail?.itemListElement.map(({ item }) => item)).toEqual([
+      SITE_URL,
+      new URL(BLOG_PATH, SITE_URL).href,
+      url,
+    ])
   })
 
   it('is listed in llms.txt', () => {
