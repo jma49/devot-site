@@ -1,4 +1,4 @@
-/* Generated from jma49/devot@550c8650cd7d1b2dda75a8e9859e9a19d1a968fd (src/renderer/src/theme/tokens.css). Do not edit. */
+/* Generated from jma49/devot@d8f015accf175e4cc823d98e692df5c69d34a42a (src/renderer/src/theme/tokens.css). Do not edit. */
 :root {
   color-scheme: light dark;
   --font-family-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
@@ -239,6 +239,8 @@
   --size-drag-card-min-width: 60px;
   --size-drag-card-max-width: 300px;
   --size-pane-min-width: 240px;
+  --size-inspector-min-width: 180px;
+  --size-inspector-max-width: 480px;
   --size-outline-width: 220px;
   --size-sidebar-collapse-width: 1000px;
   --size-window-controls-inset: 84px;
