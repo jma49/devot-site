@@ -20,8 +20,16 @@ const scrollIntoMiddle = (locator: Locator) =>
 const revealAll = async (page: Page) => {
   const count = await cards(page).count()
   for (let i = 0; i < count; i++) {
-    await scrollIntoMiddle(cards(page).nth(i))
-    await expect(cards(page).nth(i)).toHaveAttribute('data-revealed', '')
+    await page.waitForFunction(
+      (index) => {
+        const target = document.querySelectorAll('#cards .card').item(index)
+        if (target === null) return false
+        target.scrollIntoView({ block: 'center' })
+        return target.getAttribute('data-revealed') === ''
+      },
+      i,
+      { timeout: 5000 },
+    )
   }
   await expect
     .poll(() => cards(page).evaluateAll((all) => all.map((c) => getComputedStyle(c).opacity)))
