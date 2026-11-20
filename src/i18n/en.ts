@@ -4,6 +4,7 @@ import { compareCopy } from './en/compare.ts'
 import { blogCopy } from './en/blog.ts'
 import { demoCopy } from './en/demo.ts'
 import { docsCopy } from './en/docs.ts'
+import { edgeCopy } from './en/edge.ts'
 import { featuresCopy } from './en/features.ts'
 import { heroCopy } from './en/hero.ts'
 import { iphoneCopy } from './en/iphone.ts'
@@ -31,6 +32,7 @@ export const en = {
   },
   ...chromeCopy,
   ...heroCopy,
+  ...edgeCopy,
   ...iphoneCopy,
   ...featuresCopy,
   ...cardsCopy,

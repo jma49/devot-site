@@ -37,6 +37,7 @@ test('lays out the sections in order, each one a named region', async ({ page })
     .evaluateAll((sections) => sections.map((s) => s.id))
   expect(ids).toEqual([
     'hero',
+    'edge',
     'write',
     'cards',
     'new',
@@ -47,6 +48,7 @@ test('lays out the sections in order, each one a named region', async ({ page })
   ])
   for (const [id, name] of [
     ['hero', en.hero.title],
+    ['edge', en.edge.label],
     ['write', en.features.label],
     ['cards', en.cards.label],
     ['new', en.whatsNew.label],

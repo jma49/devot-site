@@ -1,0 +1,30 @@
+---
+import '../../styles/home/edge.css'
+import { localeOf, messages } from '../../i18n/index.ts'
+
+const copy = messages(localeOf(Astro.url.pathname)).edge
+---
+
+<section id="edge" class="edge" aria-labelledby="edge-title">
+  <div class="edge__inner">
+    <header class="edge__head">
+      <h2 id="edge-title" class="edge__title" data-reveal>
+        {copy.label}
+      </h2>
+      <p class="edge__lead" data-reveal>
+        {copy.lead}
+      </p>
+    </header>
+    <ul class="edge__grid" role="list">
+      {copy.items.map((item, index) => (
+        <li class="edge__item" id={`edge-${item.id}`} data-reveal data-reveal-index={index}>
+          <h3 class="edge__heading">
+            <span class="edge__name">{item.name}</span>
+            <span class="edge__claim">{item.title}</span>
+          </h3>
+          <p class="edge__body">{item.body}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

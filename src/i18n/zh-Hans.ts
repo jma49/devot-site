@@ -2,6 +2,7 @@ import { en, type Messages } from './en.ts'
 import { cardsCopy } from './zh-Hans/cards.ts'
 import { chromeCopy } from './zh-Hans/chrome.ts'
 import { demoCopy } from './zh-Hans/demo.ts'
+import { edgeCopy } from './zh-Hans/edge.ts'
 import { featuresCopy } from './zh-Hans/features.ts'
 import { heroCopy } from './zh-Hans/hero.ts'
 import { iphoneCopy } from './zh-Hans/iphone.ts'
@@ -23,6 +24,7 @@ export const zhHans: Messages = {
   },
   ...chromeCopy,
   ...heroCopy,
+  ...edgeCopy,
   ...iphoneCopy,
   ...featuresCopy,
   ...cardsCopy,
