@@ -6,7 +6,7 @@ const trial = `${TRIAL_DAYS} 天免费试用`
 export const chromeCopy: typeof en = {
   meta: {
     title: 'Devot：本地优先的 Markdown 笔记 App，适用于 Mac 和 iPhone',
-    description: `Devot 是本地优先的 Mac 与 iPhone Markdown 笔记 App：实时预览、嵌套笔记本、标签、全文搜索、插件和主题。离线可用，无需账户，源码公开。${trial}，之后一次买断。`,
+    description: `Devot 是本地优先的 Mac 与 iPhone Markdown 笔记 App：端到端加密同步无需订阅、在设备上按意思搜索、逐处审阅 AI 的修改，还有插件和主题。离线可用，无需账户，源码公开。${trial}，之后一次买断。`,
     ogLocale: 'zh_CN',
     imageAlt:
       '柔和蓝色渐变上的 Devot 窗口：侧边栏里是笔记本、状态和标签，旁边是笔记列表和一篇打开的笔记。',

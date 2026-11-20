@@ -10,7 +10,7 @@ export const heroCopy = {
     title: [...titleLines, titleAccent].join(' '),
     titleLines,
     titleAccent,
-    lead: 'Local-first Markdown notes for Mac and iPhone. Write offline and without an account, then sync through your own iCloud.',
+    lead: 'Local-first Markdown notes for Mac and iPhone: encrypted sync, search by meaning on your device, AI edits you review.',
   },
   /** The first-launch note under the hero's and the closing section's download buttons. */
   install: {

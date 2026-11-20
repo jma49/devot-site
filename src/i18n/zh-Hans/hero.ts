@@ -8,7 +8,7 @@ export const heroCopy: typeof en = {
     title: titleLines.join('') + titleAccent,
     titleLines,
     titleAccent,
-    lead: '适用于 Mac 和 iPhone 的本地优先 Markdown 笔记。离线书写，无需账户，再通过你自己的 iCloud 同步。',
+    lead: '适用于 Mac 和 iPhone 的本地优先 Markdown 笔记：端到端加密同步，在设备上按意思搜索，AI 的修改由你审阅。',
   },
   install: {
     note: ['已由 Apple 签名并', { unbroken: '完成公证' }, '，像其他 Mac 应用一样直接打开。'],
