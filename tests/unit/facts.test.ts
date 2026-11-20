@@ -143,9 +143,9 @@ options:
           mv signed/Devot.app.tar.gz "out/Devot_\${VERSION}_universal.app.tar.gz"
 `,
   'README.md': `## Download
-2. Open the dmg and drag Devot to Applications. Releases are signed with Devot's Developer ID and notarised by Apple, so they open without a warning.
-Updates arrive in the app: Devot checks shortly after launch.
-- \`[[\` note links with a link index; each note lists the notes that link to it.
+2. Open the dmg and drag Devot to Applications. Current builds are signed and notarised.
+Devot checks for updates automatically.
+- Connect notes with \`[[\` links and see backlinks.
 Turn on Bring Back Outside Edits to edit the files in other apps too.
 ## Claude and other MCP clients
 Nothing else needs to be installed: clients run a small bridge inside Devot's own binary, which talks to the running app on this Mac only.
@@ -217,7 +217,7 @@ describe('checkFacts', () => {
       'src/renderer/src/i18n/en/commands.ts',
       replace("'command.palette'", "'command.switcher'"),
     ],
-    ['E_FACT_LINKS', 'README.md', replace('`[[` note links', 'Note links')],
+    ['E_FACT_LINKS', 'README.md', replace('`[[` links', 'note links')],
     ['E_FACT_PLACEHOLDER', 'src/core/templates.ts', replace("date: 'YYYY-MM-DD',", '')],
     [
       'E_FACT_UPDATES',
@@ -266,9 +266,12 @@ describe('checkFacts', () => {
       '.github/workflows/release.yml',
       (text) => `${text}          cp "$x64" "out/Devot_\${VERSION}_x86_64.dmg"\n`,
     ],
-    ['E_FACT_SIGNING', 'README.md', replace('notarised by Apple', 'ad-hoc signed')],
-    ['E_FACT_SIGNING', 'README.md', replace('open without a warning', 'ask once')],
-    ['E_FACT_SIGNING', 'README.md', replace('Updates arrive in the app', 'Updates come by email')],
+    ['E_FACT_SIGNING', 'README.md', replace('signed and notarised', 'ad-hoc signed')],
+    [
+      'E_FACT_SIGNING',
+      'README.md',
+      replace('checks for updates automatically', 'never checks for updates'),
+    ],
     ['E_FACT_ANCHOR', 'README.md', replace('## Download', '## Get Devot')],
     ['E_FACT_ANCHOR', 'README.md', replace('## Contributing', '## Helping out')],
     [
