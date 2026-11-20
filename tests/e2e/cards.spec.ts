@@ -20,8 +20,16 @@ const scrollIntoMiddle = (locator: Locator) =>
 const revealAll = async (page: Page) => {
   const count = await cards(page).count()
   for (let i = 0; i < count; i++) {
-    await scrollIntoMiddle(cards(page).nth(i))
-    await expect(cards(page).nth(i)).toHaveAttribute('data-revealed', '')
+    await page.waitForFunction(
+      (index) => {
+        const target = document.querySelectorAll('#cards .card').item(index)
+        if (target === null) return false
+        target.scrollIntoView({ block: 'center' })
+        return target.getAttribute('data-revealed') === ''
+      },
+      i,
+      { timeout: 5000 },
+    )
   }
   await expect
     .poll(() => cards(page).evaluateAll((all) => all.map((c) => getComputedStyle(c).opacity)))
@@ -79,54 +87,22 @@ test.describe('feature cards at 1440', () => {
     await revealAll(page)
 
     for (const card of await cards(page).all()) {
-      const slot = (await card.getAttribute('data-slot')) as keyof typeof en.cards.items
-      const copy = en.cards.items[slot]
-      const label = card.locator('.card-label')
-      await expect(label).toHaveText(copy.label)
-      expect(await label.evaluate((l) => l.tagName)).toBe('P')
-      await expect(label).toHaveCSS('text-transform', 'uppercase')
-      await expect(label).toHaveCSS('font-size', '12px')
-      expect(
-        parseFloat(await label.evaluate((l) => getComputedStyle(l).letterSpacing)),
-      ).toBeCloseTo(0.96, 1)
-
-      const heading = card.getByRole('heading')
-      await expect(heading).toHaveCount(1)
-      await expect(heading).toHaveText(copy.title)
-      expect(await heading.evaluate((h) => h.tagName)).toBe('H3')
-      expect(
-        parseFloat(await heading.evaluate((h) => getComputedStyle(h).fontSize)),
-      ).toBeGreaterThanOrEqual(17)
-      const [labelBox, headingBox] = await Promise.all([box(label), box(heading)])
-      expect(labelBox.y + labelBox.height, `${slot}: label above heading`).toBeLessThanOrEqual(
-        headingBox.y,
-      )
-
-      if ('keys' in copy) {
-        const kbd = card.locator('.card-keys kbd')
-        await expect(kbd).toHaveAttribute('aria-hidden', 'true')
-        await expect(card.locator('.card-keys')).toHaveText(new RegExp(copy.keys.spoken))
-        expect(await kbd.evaluate((k) => k.textContent?.trim()), `${slot} draws its keys`).toBe('')
-        // Each symbol draws something, all of it inside the box its svg shows.
-        const drawn = await kbd.locator('svg > use').evaluateAll((uses) =>
-          uses.map((use) => {
-            const shape = (use as SVGUseElement).getBBox()
-            const shown = (use.parentElement as unknown as SVGSVGElement).viewBox.baseVal
-            return (
-              shape.width > 0 &&
-              shape.x >= shown.x &&
-              shape.y >= shown.y &&
-              shape.x + shape.width <= shown.x + shown.width &&
-              shape.y + shape.height <= shown.y + shown.height
-            )
-          }),
-        )
-        expect(drawn, `${slot}: one whole symbol per glyph`).toEqual(
-          [...copy.keys.glyphs].map(() => true),
-        )
-      }
-
-      const lines = await card.locator('.card-body').evaluate((body) => {
+      const measured = await card.evaluate((element) => {
+        const one = <T extends Element = HTMLElement>(selector: string): T => {
+          const found = element.querySelectorAll<T>(selector)
+          if (found.length !== 1) throw new Error(`E_CARD_ELEMENT ${selector}: ${found.length}`)
+          return found[0]!
+        }
+        const rect = (node: Element) => {
+          const { x, y, width, height } = node.getBoundingClientRect()
+          return { x, y, width, height }
+        }
+        const label = one('.card-label')
+        const heading = one('h1, h2, h3, h4, h5, h6, [role="heading"]')
+        const labelStyle = getComputedStyle(label)
+        const headingStyle = getComputedStyle(heading)
+        const kbd = element.querySelector('.card-keys kbd')
+        const body = one('.card-body')
         const perLine = new Map<number, number>()
         const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT)
         const range = document.createRange()
@@ -138,14 +114,82 @@ test.describe('feature cards at 1440', () => {
             perLine.set(line, (perLine.get(line) ?? 0) + 1)
           }
         }
-        return [...perLine.values()]
+        return {
+          slot: element.getAttribute('data-slot'),
+          label: {
+            text: label.textContent?.replace(/\s+/g, ' ').trim(),
+            tag: label.tagName,
+            transform: labelStyle.textTransform,
+            size: labelStyle.fontSize,
+            spacing: parseFloat(labelStyle.letterSpacing),
+            box: rect(label),
+          },
+          heading: {
+            count: element.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]').length,
+            text: heading.textContent?.replace(/\s+/g, ' ').trim(),
+            tag: heading.tagName,
+            size: parseFloat(headingStyle.fontSize),
+            box: rect(heading),
+          },
+          keys: {
+            hidden: kbd?.getAttribute('aria-hidden'),
+            spoken: element.querySelector('.card-keys')?.textContent,
+            text: kbd?.textContent?.trim(),
+            drawn: [...(kbd?.querySelectorAll<SVGUseElement>('svg > use') ?? [])].map((use) => {
+              const shape = use.getBBox()
+              const shown = (use.parentElement as unknown as SVGSVGElement).viewBox.baseVal
+              return (
+                shape.width > 0 &&
+                shape.x >= shown.x &&
+                shape.y >= shown.y &&
+                shape.x + shape.width <= shown.x + shown.width &&
+                shape.y + shape.height <= shown.y + shown.height
+              )
+            }),
+          },
+          lines: [...perLine.values()],
+          card: rect(element),
+          area: rect(one('.card-media')),
+          frame: rect(one('.card-window')),
+          mask: getComputedStyle(one('.card-crop')).maskImage,
+          shadow: getComputedStyle(one('.card-window')).boxShadow,
+          clips: element.querySelectorAll('.card-window .clip').length,
+        }
       })
+      const slot = measured.slot as keyof typeof en.cards.items
+      const copy = en.cards.items[slot]
+      expect(measured.label.text).toBe(copy.label)
+      expect(measured.label.tag).toBe('P')
+      expect(measured.label.transform).toBe('uppercase')
+      expect(measured.label.size).toBe('12px')
+      expect(measured.label.spacing).toBeCloseTo(0.96, 1)
+
+      expect(measured.heading.count).toBe(1)
+      expect(measured.heading.text).toBe(copy.title)
+      expect(measured.heading.tag).toBe('H3')
+      expect(measured.heading.size).toBeGreaterThanOrEqual(17)
+      const labelBox = measured.label.box
+      const headingBox = measured.heading.box
+      expect(labelBox.y + labelBox.height, `${slot}: label above heading`).toBeLessThanOrEqual(
+        headingBox.y,
+      )
+
+      if ('keys' in copy) {
+        expect(measured.keys.hidden).toBe('true')
+        expect(measured.keys.spoken).toMatch(new RegExp(copy.keys.spoken))
+        expect(measured.keys.text, `${slot} draws its keys`).toBe('')
+        expect(measured.keys.drawn, `${slot}: one whole symbol per glyph`).toEqual(
+          [...copy.keys.glyphs].map(() => true),
+        )
+      }
+
+      const lines = measured.lines
       expect(Math.max(...lines), `${slot}: longest line`).toBeGreaterThanOrEqual(40)
       expect(Math.max(...lines), `${slot}: longest line`).toBeLessThanOrEqual(60)
 
-      const cardBox = await box(card)
-      const area = await box(card.locator('.card-media'))
-      const frame = await box(card.locator('.card-window'))
+      const cardBox = measured.card
+      const area = measured.area
+      const frame = measured.frame
       expect(Math.abs(area.y + area.height - (cardBox.y + cardBox.height))).toBeLessThan(2)
       expect(frame.y + frame.height, `${slot} is cut by the card edge`).toBeGreaterThan(
         cardBox.y + cardBox.height,
@@ -156,11 +200,9 @@ test.describe('feature cards at 1440', () => {
         : frame.x + frame.width - (cardBox.x + cardBox.width)
       expect(overhang, `${slot} is cut by the card's side`).toBeGreaterThanOrEqual(-1)
 
-      const crop = card.locator('.card-crop')
-      expect(await crop.evaluate((c) => getComputedStyle(c).maskImage)).toContain('gradient')
-      const window = card.locator('.card-window')
-      expect(await window.evaluate((w) => getComputedStyle(w).boxShadow)).not.toBe('none')
-      await expect(card.locator('.card-window .clip')).toHaveCount(1)
+      expect(measured.mask).toContain('gradient')
+      expect(measured.shadow).not.toBe('none')
+      expect(measured.clips).toBe(1)
     }
   })
 
