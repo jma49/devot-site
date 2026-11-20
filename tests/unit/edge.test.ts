@@ -11,7 +11,7 @@ it('leads with encrypted sync, then search by meaning, reviewed AI edits and the
 
 it('names the edge in the hero lead and the home description, in both languages', () => {
   for (const words of [en.hero.lead, en.meta.description]) {
-    expect(words).toMatch(/end-to-end encrypted sync/i)
+    expect(words).toMatch(/encrypted sync/i)
     expect(words).toMatch(/search by meaning/i)
   }
   for (const words of [zhHans.hero.lead, zhHans.meta.description]) {
