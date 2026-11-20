@@ -299,9 +299,9 @@ const FACTS: Fact[] = [
     needs: [README],
     check: (devot, copy) => [
       ...says(codesIn(feature(copy, 'find')).join(' '), '[[', 'The Find and connect feature'),
-      ...(devot(README).includes('`[[` note links')
+      ...(devot(README).includes('`[[` links')
         ? []
-        : [problem('E_FACT_LINKS', `${README} no longer lists \`[[\` note links`)]),
+        : [problem('E_FACT_LINKS', `${README} no longer lists \`[[\` links`)]),
     ],
   },
   {
@@ -577,9 +577,11 @@ const FACTS: Fact[] = [
       return [
         ...says(copy.closing.installNote, 'Updates arrive in the app', 'The closing install note'),
         ...says(noteText(copy.install.note), 'notarised by Apple', 'The install note'),
-        ...missing(readme.includes('notarised by Apple'), 'releases are notarised by Apple'),
-        ...missing(readme.includes('open without a warning'), 'releases open without a warning'),
-        ...missing(readme.includes('Updates arrive in the app'), 'updates arrive in the app'),
+        ...missing(readme.includes('signed and notarised'), 'releases are signed and notarised'),
+        ...missing(
+          readme.includes('checks for updates automatically'),
+          'Devot checks for updates automatically',
+        ),
       ]
     },
   },
