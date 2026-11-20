@@ -9,7 +9,7 @@ import {
   STAGGER_STEP,
   staggerDelay,
 } from '../../src/lib/motion.ts'
-import { SCRUB_SNAP, scrubStep } from '../../src/lib/scroll.ts'
+import { SCRUB_MAX_FRAME, SCRUB_SNAP, scrubSeconds, scrubStep } from '../../src/lib/scroll.ts'
 import { FakeElement, fakeEnv, rootOf } from '../support/dom-fakes.ts'
 import { readRepoFile } from '../support/source-files.ts'
 
@@ -155,6 +155,18 @@ describe('scrubStep', () => {
 
   it('does not overshoot a long frame', () => {
     expect(scrubStep(0, 400, 5, 0.45)).toBe(400)
+  })
+})
+
+describe('scrubSeconds', () => {
+  it('counts a 60 Hz frame first, then the time between frames', () => {
+    expect(scrubSeconds(1000, 0)).toBeCloseTo(1 / 60, 9)
+    expect(scrubSeconds(1016, 1000)).toBeCloseTo(0.016, 9)
+  })
+
+  it('caps a stalled frame, so a jump still eases over several frames', () => {
+    expect(scrubSeconds(3000, 1000)).toBe(SCRUB_MAX_FRAME)
+    expect(scrubStep(0, 300, scrubSeconds(3000, 1000), 0.6)).toBeLessThan(300 * 0.6)
   })
 })
 

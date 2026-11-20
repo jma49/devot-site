@@ -1,6 +1,14 @@
 /** Pixels from the target at which a scrubbed value lands on it and stops. */
 export const SCRUB_SNAP = 0.5
 
+/** The longest frame a scrub counts, so a stalled page eases in rather than jumping. */
+export const SCRUB_MAX_FRAME = 0.1
+
+/** Seconds since the last frame at `last` ms, a 60 Hz frame for the first, capped at `SCRUB_MAX_FRAME`. */
+export function scrubSeconds(now: number, last: number): number {
+  return last ? Math.min((now - last) / 1000, SCRUB_MAX_FRAME) : 1 / 60
+}
+
 /**
  * Moves a scrubbed value `seconds` closer to `target`: an exponential approach that closes about
  * 98 % of the gap in `lag` seconds whatever the frame rate, and lands on the target once within
@@ -66,7 +74,7 @@ export function scrubScroll(
   let last = 0
 
   const tick = (now: number) => {
-    const seconds = last ? (now - last) / 1000 : 1 / 60
+    const seconds = scrubSeconds(now, last)
     const target = window.scrollY
     last = now
     current = scrubStep(current, target, seconds, lag)
