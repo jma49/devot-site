@@ -275,6 +275,35 @@ const hero = (page: Page) => page.locator('[data-hero]')
 const sky = (page: Page) => page.locator('[data-page-sky]')
 const canvas = (page: Page) => page.locator('.page-sky__canvas')
 
+test('restores a context lost during initialization', async ({ page, problems }) => {
+  await page.clock.install()
+  await watchWebgl(page, GPU)
+  await buildOnMainThread(page)
+  await page.addInitScript(() => {
+    const proto = WebGLRenderingContext.prototype
+    const link = proto.linkProgram
+    let first = true
+    proto.linkProgram = function (program) {
+      link.call(this, program)
+      if (!first) return
+      first = false
+      const lose = this.getExtension('WEBGL_lose_context')
+      ;(window as unknown as { lose: typeof lose }).lose = lose
+      lose?.loseContext()
+    }
+  })
+  await page.goto('/')
+  await advanceUntil(
+    page,
+    async () => (await sky(page).getAttribute('data-backdrop-reason')) === 'lost',
+  )
+  await restoreContext(page)
+  await advanceUntil(page, backdropIs(page, 'webgl'))
+  await expect(sky(page)).not.toHaveAttribute('data-backdrop-reason')
+  const logged = problems.filter((text) => text !== 'WebGL: context lost.')
+  problems.splice(0, problems.length, ...logged)
+})
+
 /** Runs the page's fake clock a tenth of a second at a time until `check` holds. */
 async function advanceUntil(page: Page, check: () => Promise<boolean>, limit = 20_000) {
   for (let ran = 0; !(await check()); ran += 100) {

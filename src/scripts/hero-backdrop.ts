@@ -552,7 +552,11 @@ function built(
   if (!parallel) return Promise.resolve()
   return new Promise((resolve) => {
     const poll = () => {
-      if (gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) === true) resolve()
+      if (
+        gl.isContextLost() ||
+        gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR) === true
+      )
+        resolve()
       else requestAnimationFrame(poll)
     }
     poll()
@@ -576,7 +580,8 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   }
   const shader = (type: number, source: string) => {
     const created = gl.createShader(type)
-    if (!created) throw new Error('E_HERO_SHADER_CREATE')
+    if (!created)
+      throw new Error(gl.isContextLost() ? 'E_HERO_CONTEXT_LOST' : 'E_HERO_SHADER_CREATE')
     gl.shaderSource(created, source)
     gl.compileShader(created)
     return created
@@ -589,7 +594,9 @@ async function createRenderer(canvas: HTMLCanvasElement): Promise<Renderer | nul
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
   await built(gl, program, parallel)
+  if (gl.isContextLost()) throw new Error('E_HERO_CONTEXT_LOST')
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    if (gl.isContextLost()) throw new Error('E_HERO_CONTEXT_LOST')
     const compiled = [vertex, fragment].every((part) =>
       gl.getShaderParameter(part, gl.COMPILE_STATUS),
     )
@@ -786,6 +793,7 @@ export function startBackdrop({
 
   /** Whether the shader was given up for good: no WebGL here, or a GPU that cannot keep up. */
   let gaveUp = false
+  let generation = 0
 
   const show = (kind: 'webgl' | 'css', reason?: 'none' | 'slow' | 'lost') => {
     stage.dataset['backdrop'] = kind
@@ -955,10 +963,23 @@ export function startBackdrop({
     sync()
   }
   const build = () => {
-    createRenderer(canvas).then(begin, (error: unknown) => {
-      console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
-      begin(null)
-    })
+    const current = ++generation
+    createRenderer(canvas).then(
+      (created) => {
+        if (stopped || current !== generation) return created?.release()
+        begin(created)
+      },
+      (error: unknown) => {
+        if (current !== generation || stopped) return
+        if (error instanceof Error && error.message === 'E_HERO_CONTEXT_LOST') {
+          drop()
+          sync()
+          return
+        }
+        console.warn('W_HERO_WEBGL', error instanceof Error ? error.message : 'unknown')
+        begin(null)
+      },
+    )
   }
   if (webgl) build()
 
@@ -978,7 +999,8 @@ export function startBackdrop({
   // Without preventDefault the browser would not give the context back.
   const onLost = (event: Event) => {
     event.preventDefault()
-    if (renderer) drop()
+    generation++
+    if (!gaveUp) drop()
     sync()
   }
   const onRestored = () => {
