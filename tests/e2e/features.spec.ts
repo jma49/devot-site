@@ -196,17 +196,31 @@ test.describe('beside the media, at 1440', () => {
   })
 
   test('answers Enter and Space like a click', async ({ page }) => {
+    const waitForWell = (index: number) =>
+      page.waitForFunction(
+        ({ i, boundary }) => {
+          const target = document
+            .querySelectorAll('[data-feature]')
+            .item(i)
+            ?.querySelector('[data-feature-well]')
+          return (
+            target !== undefined && target !== null && target.getBoundingClientRect().top < boundary
+          )
+        },
+        { i: index, boundary: line },
+        { timeout: 5000 },
+      )
     await placeWell(page, 0, 120)
 
     await button(page, 1).focus()
     await page.keyboard.press('Enter')
     await expect.poll(() => current(page)).toBe(1)
-    await expect.poll(() => wellTop(page, 1)).toBeLessThan(line)
+    await waitForWell(1)
 
     await button(page, 2).focus()
     await page.keyboard.press('Space')
     await expect.poll(() => current(page)).toBe(2)
-    await expect.poll(() => wellTop(page, 2)).toBeLessThan(line)
+    await waitForWell(2)
   })
 
   test('slides one marker to the active item and spans it once the list settles', async ({
