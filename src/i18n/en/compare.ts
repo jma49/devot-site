@@ -264,7 +264,7 @@ const appleNotes: ComparePage = {
     'An Apple Notes alternative for Markdown: sync, price and what each is for, with a source for every fact about Apple Notes.',
   heading: 'Devot and Apple Notes compared',
   intro:
-    'Pick Apple Notes if you want free notes already on every Mac and iPhone, including drawing and sharing. Pick Devot if you want notes kept as Markdown, with statuses, revision history and encrypted sync.',
+    'Pick Apple Notes if you want free notes already on every Mac and iPhone, including drawings in the note. Pick Devot if you want notes kept as Markdown, with statuses, revision history and encrypted sync.',
   summary: 'Free and built in, or Markdown first with more control.',
   checked: CHECKED,
   checkedLabel: CHECKED_LABEL,
@@ -307,7 +307,7 @@ const appleNotes: ComparePage = {
       blocks: [
         list(
           ['You want quick notes that cost nothing and are already on every device.'],
-          ['You draw or scan documents into notes, or share notes with others.'],
+          ['You can draw in a note.'],
         ),
       ],
     },
