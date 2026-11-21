@@ -130,3 +130,41 @@ test('hides the download pill once the pricing section, with its own buttons, co
   await scrollToY(page, top - VIEWPORTS.phone.height / 2)
   await expect(pill).toBeHidden()
 })
+
+test.describe('licence card', () => {
+  test.use({ viewport: VIEWPORTS.desktop })
+
+  async function hoverCard(page: Page) {
+    await page.goto('/#pricing')
+    await animationsDone(page)
+    const card = page.locator('.pricing__plan--licence')
+    const box = await card.boundingBox()
+    if (!box) throw new Error('E_NO_LICENCE_CARD')
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.2)
+    await page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.1)
+    return card
+  }
+
+  test('leans toward the mouse and lights up, then settles flat when it leaves', async ({
+    page,
+  }) => {
+    const card = await hoverCard(page)
+    await expect(card).toHaveAttribute('data-holo', 'lit')
+    await expect
+      .poll(() =>
+        card.evaluate((element) => parseFloat(element.style.getPropertyValue('--holo-angle'))),
+      )
+      .toBeGreaterThan(3)
+
+    await page.mouse.move(5, 5)
+    await expect(card).toHaveAttribute('data-holo', '')
+    await expect(card).toHaveCSS('rotate', 'none')
+  })
+
+  test('stays flat under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const card = await hoverCard(page)
+    await expect(card).toHaveAttribute('data-holo', '')
+    await expect(card).toHaveCSS('rotate', 'none')
+  })
+})
