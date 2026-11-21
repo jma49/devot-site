@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
-import { DOWNLOAD_URL, LICENCE_PRICE, REPO_URL, SITE_URL } from '../../src/site.ts'
+import { DOWNLOAD_URL, LICENCE_PRICE, PLUGIN_REPO_URL, REPO_URL, SITE_URL } from '../../src/site.ts'
 
 const text = llmsTxt(en)
 const lines = text.split('\n')
@@ -38,10 +38,25 @@ it('links only to absolute https addresses on this site or the Devot repository'
   expect(links.length).toBeGreaterThan(5)
   for (const link of links) {
     expect(new URL(link).protocol, link).toBe('https:')
-    expect(link.startsWith(SITE_URL) || link.startsWith(REPO_URL), link).toBe(true)
+    const official =
+      link.startsWith(SITE_URL) ||
+      link === REPO_URL ||
+      link.startsWith(`${REPO_URL}/`) ||
+      link.startsWith(`${REPO_URL}#`) ||
+      link === PLUGIN_REPO_URL
+    expect(official, link).toBe(true)
   }
   expect(links).toContain(DOWNLOAD_URL)
+  expect(links).toContain(PLUGIN_REPO_URL)
   expect(links).toContain(new URL('/mcp-privacy', SITE_URL).href)
+})
+
+it('quotes each support question so an answer engine can cite it', () => {
+  const questions = en.support.sections.flatMap((section) => section.questions ?? [])
+  expect(questions.length).toBeGreaterThanOrEqual(5)
+  for (const question of questions) {
+    expect(text).toContain(`### ${question.name}`)
+  }
 })
 
 it('links every docs page with its summary', () => {

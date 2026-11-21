@@ -4,13 +4,16 @@ import { zhHans } from '../../src/i18n/zh-Hans.ts'
 import { DOCS_PATH, docPath } from '../../src/lib/links.ts'
 import { jsonLd, LOGO_PATH, structuredData, techArticle } from '../../src/lib/structured-data.ts'
 import {
+  IPHONE_AMOUNT,
   IPHONE_OS,
+  IPHONE_PRICE,
   DOWNLOAD_URL,
   LICENCE_AMOUNT,
   LICENCE_CURRENCY,
   LICENCE_PRICE,
   OG_IMAGE,
   PLATFORM,
+  PLUGIN_REPO_URL,
   REPO_URL,
   SITE_URL,
 } from '../../src/site.ts'
@@ -67,15 +70,36 @@ it('places every docs page under the docs index as a TechArticle', () => {
   }
 })
 
-it('offers the licence at the price the pricing section shows', () => {
-  expect(app?.offers).toEqual({
-    '@type': 'Offer',
-    price: LICENCE_AMOUNT,
-    priceCurrency: LICENCE_CURRENCY,
-    url: new URL('/#pricing', SITE_URL).href,
-  })
+it('offers the Mac licence and Devot Pro at the prices the pricing section shows', () => {
+  const url = new URL('/#pricing', SITE_URL).href
+  expect(app?.offers).toEqual([
+    {
+      '@type': 'Offer',
+      name: en.pricing.licence.name,
+      price: LICENCE_AMOUNT,
+      priceCurrency: LICENCE_CURRENCY,
+      url,
+    },
+    {
+      '@type': 'Offer',
+      name: `${en.siteName} Pro`,
+      price: IPHONE_AMOUNT,
+      priceCurrency: LICENCE_CURRENCY,
+      url,
+    },
+  ])
   expect(LICENCE_PRICE).toBe(`US$${LICENCE_AMOUNT}`)
+  expect(IPHONE_PRICE).toBe(`US$${IPHONE_AMOUNT}`)
+  expect(en.pricing.iphone.body).toContain('Devot Pro')
+  expect(en.pricing.iphone.body).toContain(IPHONE_PRICE)
   expect(LICENCE_CURRENCY).toBe('USD')
+})
+
+it('lists the features the home page names', () => {
+  expect(app?.featureList).toEqual([
+    ...en.features.items.map((item) => item.title),
+    ...Object.values(en.cards.items).map((card) => card.label),
+  ])
 })
 
 it('claims no ratings or reviews the site does not have', () => {
@@ -115,7 +139,7 @@ it('names Devot as the organisation behind the app and the site, tied to its rep
     name: en.siteName,
     url: SITE_URL,
     logo: new URL(LOGO_PATH, SITE_URL).href,
-    sameAs: [REPO_URL],
+    sameAs: [REPO_URL, PLUGIN_REPO_URL],
   })
   const id = organization?.['@id']
   expect(id).toBe(`${SITE_URL}#organization`)

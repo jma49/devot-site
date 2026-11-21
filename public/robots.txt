@@ -1,3 +1,5 @@
+# Answer-engine crawlers are welcome. A default deny would drop Bing, and the
+# answers that read Bing's index, along with OAI-SearchBot, PerplexityBot and ClaudeBot.
 User-agent: *
 Allow: /
 

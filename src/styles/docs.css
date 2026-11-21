@@ -92,6 +92,18 @@
   line-height: var(--site-type-card-leading);
 }
 
+.doc__section h3 {
+  margin: var(--space-8) 0 0;
+  color: var(--site-color-text);
+  font-size: var(--site-type-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--site-type-body-leading);
+}
+
+.doc__faq p {
+  margin-block-start: var(--space-3);
+}
+
 .doc__section p,
 .doc__section li,
 .doc__index p {

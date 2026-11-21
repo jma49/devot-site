@@ -52,6 +52,7 @@ export const pricingCopy = {
       terms: 'Terms of sale',
       refunds: 'Refund policy',
       lostKey: 'Lost your licence key?',
+      compare: 'How Devot compares',
     },
   },
 }

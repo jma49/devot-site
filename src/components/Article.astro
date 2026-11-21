@@ -84,6 +84,18 @@ const isCode = (run: DocRun): run is { code: string } => typeof run === 'object'
               tabindex="0"
             ><code>{code}</code></pre>
           }
+          if (block.kind === 'faq') {
+            return (
+              <div class="doc__faq">
+                {block.items.map((item) => (
+                  <div>
+                    <h3>{item.question}</h3>
+                    <p>{runs(item.answer)}</p>
+                  </div>
+                ))}
+              </div>
+            )
+          }
           if (block.kind === 'table') {
             return (
               <div class="doc__table" role="region" aria-label={block.caption} tabindex="0">

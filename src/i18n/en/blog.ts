@@ -43,6 +43,11 @@ const payOnce: BlogPost = {
           ['Every future version of Devot, on up to three devices at a time.'],
           [`A ${REFUND_DAYS}-day refund, no questions asked.`],
         ),
+        text(
+          'How the one-time price compares with other notes apps is on the ',
+          { text: 'comparison pages', href: '/compare' },
+          '.',
+        ),
       ],
     },
     {
@@ -388,6 +393,11 @@ const sync: BlogPost = {
       title: 'Set it up',
       blocks: [
         text('The short version is in the docs: ', { text: 'Sync', href: '/docs/sync' }, '.'),
+        text(
+          'How this kind of sync compares with other notes apps is on the ',
+          { text: 'comparison pages', href: '/compare' },
+          '.',
+        ),
       ],
     },
   ],
@@ -498,7 +508,7 @@ const tauri: BlogPost = {
 export const blogCopy = {
   blog: {
     index: {
-      title: 'Devot: blog',
+      title: 'Devot: notes on sync, MCP and paying once',
       description:
         'Notes from building Devot: AI tools over MCP, sync without an account, Markdown files and the choices behind a local-first notes app.',
       heading: 'Blog',

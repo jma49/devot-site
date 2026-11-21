@@ -3,7 +3,7 @@ import { PRIVACY_EMAIL, REFUND_DAYS, TRIAL_DAYS } from '../../site.ts'
 import type { LegalPage } from './legal.ts'
 
 const support: LegalPage = {
-  title: 'Devot: support',
+  title: 'Devot support: trial, licences and refunds',
   description:
     'Get help with Devot on Mac and iPhone: restoring purchases, licence keys on both, refunds and common questions.',
   heading: 'Support',
@@ -79,27 +79,45 @@ const support: LegalPage = {
     },
     {
       title: 'Questions',
-      paragraphs: [
-        ['Is Devot Pro a subscription? No. You buy it once, and it unlocks every future version.'],
-        [
-          `How long is the trial? It lasts ${numberWord(TRIAL_DAYS)} days, with everything included. On iPhone it runs once per Apple Account, so reinstalling does not start it again.`,
-        ],
-        [
-          'What happens when the trial ends? Nothing is deleted. Every note stays readable, searchable and exportable; editing, sync and AI need Devot Pro or a licence.',
-        ],
-        [
-          'Do I need an account? No. Devot has no accounts. Sync runs through your own iCloud account or a relay you deploy, end-to-end encrypted.',
-        ],
-        [
-          'I lost my Mac licence key. ',
-          { text: 'Have it sent again', link: 'resend' },
-          ' to the address you bought it with. If it came from an iPhone purchase, tap Get a Mac License Key again.',
-        ],
-        [
-          'Where are my notes? On your devices. The ',
-          { text: 'privacy policy', link: 'privacy' },
-          ' says what Devot sends and where.',
-        ],
+      paragraphs: [],
+      questions: [
+        {
+          name: 'Is Devot Pro a subscription?',
+          answer: ['No. You buy it once, and it unlocks every future version.'],
+        },
+        {
+          name: 'How long is the trial?',
+          answer: [
+            `It lasts ${numberWord(TRIAL_DAYS)} days, with everything included. On iPhone it runs once per Apple Account, so reinstalling does not start it again.`,
+          ],
+        },
+        {
+          name: 'What happens when the trial ends?',
+          answer: [
+            'Nothing is deleted. Every note stays readable, searchable and exportable; editing, sync and AI need Devot Pro or a licence.',
+          ],
+        },
+        {
+          name: 'Do I need an account?',
+          answer: [
+            'No. Devot has no accounts. Sync runs through your own iCloud account or a relay you deploy, end-to-end encrypted.',
+          ],
+        },
+        {
+          name: 'What if I lost my Mac licence key?',
+          answer: [
+            { text: 'Have it sent again', link: 'resend' },
+            ' to the address you bought it with. If it came from an iPhone purchase, tap Get a Mac License Key again.',
+          ],
+        },
+        {
+          name: 'Where are my notes?',
+          answer: [
+            'On your devices. The ',
+            { text: 'privacy policy', link: 'privacy' },
+            ' says what Devot sends and where.',
+          ],
+        },
       ],
     },
   ],

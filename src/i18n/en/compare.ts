@@ -49,6 +49,17 @@ const sourcesSection = (page: {
   ],
 })
 
+const asked = (items: [string, string][]): DocPage['sections'][number] => ({
+  id: 'questions',
+  title: 'Questions',
+  blocks: [
+    {
+      kind: 'faq',
+      items: items.map(([question, answer]) => ({ question, answer: [answer] })),
+    },
+  ],
+})
+
 const moving: DocPage['sections'][number] = {
   id: 'move',
   title: 'Bring your notes',
@@ -73,10 +84,10 @@ const obsidian: ComparePage = {
   other: 'Obsidian',
   title: 'Devot vs Obsidian: local Markdown notes compared · Devot',
   description:
-    'Devot and Obsidian side by side: price, sync, where your notes live, platforms and source code, with a source for every fact about Obsidian.',
+    'An Obsidian alternative on Mac and iPhone: price, sync, where notes live, platforms and source, with a source for every Obsidian fact.',
   heading: 'Devot and Obsidian compared',
   intro:
-    'Both keep Markdown notes on your own device and work offline. Obsidian is free and runs everywhere, with paid sync; Devot is a Mac and iPhone app you pay for once, with encrypted sync and AI access included.',
+    'Pick Obsidian if you want a free app on Windows, Linux and Android, or a large catalogue of community plugins. Pick Devot if you want encrypted sync included on Mac and iPhone, an MCP server and public source.',
   summary: 'Free and everywhere, or paid once with sync included.',
   checked: CHECKED,
   checkedLabel: CHECKED_LABEL,
@@ -137,6 +148,20 @@ const obsidian: ComparePage = {
       ],
     },
     moving,
+    asked([
+      [
+        'Is Obsidian free?',
+        'Obsidian is free for personal and commercial use. Obsidian Sync is separate: US$4 a user a month billed yearly, or US$5 monthly. Devot includes end-to-end encrypted sync through your own iCloud or a relay you deploy.',
+      ],
+      [
+        'Where does Obsidian run that Devot does not?',
+        `Obsidian runs on Windows, macOS, Linux, Android, iPhone and iPad. Devot runs on Mac (${PLATFORM.os}, ${PLATFORM.processor}) and iPhone (${IPHONE_OS}).`,
+      ],
+      [
+        'Can I bring an Obsidian vault into Devot?',
+        'Devot imports Markdown files and a Markdown folder with its images. Export always works, so you can leave as easily.',
+      ],
+    ]),
     sourcesSection({ sources: obsidianSources }),
   ],
 }
@@ -153,10 +178,10 @@ const bear: ComparePage = {
   other: 'Bear',
   title: 'Devot vs Bear: Markdown notes for Mac and iPhone · Devot',
   description:
-    'Devot and Bear side by side: price, subscription or one-time purchase, sync, encryption and platforms, with a source for every fact about Bear.',
+    'A Bear alternative you pay for once: price, sync, encryption and platforms, with a source for every fact about Bear.',
   heading: 'Devot and Bear compared',
   intro:
-    'Both are Markdown notes apps for Apple devices that need no account. Bear Pro is a subscription that adds sync; Devot is paid for once, and sync is end-to-end encrypted.',
+    'Pick Bear if you want Apple Watch, Apple Vision Pro, or DocX and ePub export. Pick Devot if you would rather pay once for end-to-end encrypted sync, with an MCP server and public source.',
   summary: 'A subscription for sync, or one purchase with encrypted sync.',
   checked: CHECKED,
   checkedLabel: CHECKED_LABEL,
@@ -205,6 +230,20 @@ const bear: ComparePage = {
       ],
     },
     moving,
+    asked([
+      [
+        'How do the prices differ?',
+        `${devot.price}. Bear is a free app; Bear Pro is US$2.99 a month or US$29.99 a year, and sync needs Bear Pro.`,
+      ],
+      [
+        'How does sync differ?',
+        'Devot sync is end-to-end encrypted, through your own iCloud or a relay you deploy. Bear syncs through iCloud between iPhone, iPad and Mac, with Bear Pro. Single notes can be locked with a password, with Bear Pro.',
+      ],
+      [
+        'When is Bear the better fit?',
+        'When you want notes on an Apple Watch or Apple Vision Pro, exports such as DocX or ePub, or the app free on one device and no sync.',
+      ],
+    ]),
     sourcesSection({ sources: bearSources }),
   ],
 }
@@ -220,12 +259,12 @@ const appleNotesSources = [
 const appleNotes: ComparePage = {
   slug: 'apple-notes',
   other: 'Apple Notes',
-  title: 'Devot vs Apple Notes: when to use a Markdown notes app · Devot',
+  title: 'Devot vs Apple Notes: Markdown or built-in notes · Devot',
   description:
-    'Devot and Apple Notes side by side: Markdown, sync, price and what each is for, with a source for every fact about Apple Notes.',
+    'An Apple Notes alternative for Markdown: sync, price and what each is for, with a source for every fact about Apple Notes.',
   heading: 'Devot and Apple Notes compared',
   intro:
-    'Apple Notes comes free with every Mac and iPhone and is hard to beat for quick notes. Devot is for notes you write in Markdown and keep for years, with statuses, revision history, plugins and AI access you control.',
+    'Pick Apple Notes if you want free notes already on every Mac and iPhone, including drawing and sharing. Pick Devot if you want notes kept as Markdown, with statuses, revision history and encrypted sync.',
   summary: 'Free and built in, or Markdown first with more control.',
   checked: CHECKED,
   checkedLabel: CHECKED_LABEL,
@@ -273,6 +312,20 @@ const appleNotes: ComparePage = {
       ],
     },
     moving,
+    asked([
+      [
+        'What does Apple Notes cost?',
+        `It is free, built into the Mac, iPhone and iPad. Devot: ${devot.price}.`,
+      ],
+      [
+        'Do both keep notes as Markdown?',
+        'Devot writes and keeps notes as Markdown, with a live preview. Apple Notes imports Markdown files, and exports or copies notes as Markdown.',
+      ],
+      [
+        'How does sync differ?',
+        'Devot syncs end-to-end encrypted through your own iCloud or a relay you deploy. Apple Notes syncs through iCloud or another account, such as Google.',
+      ],
+    ]),
     sourcesSection({ sources: appleNotesSources }),
   ],
 }
@@ -284,10 +337,10 @@ const notion: ComparePage = {
   other: 'Notion',
   title: 'Devot vs Notion: local notes or a cloud workspace · Devot',
   description:
-    'Devot and Notion side by side: where your notes live, accounts, offline use, price and databases, with a source for every fact about Notion.',
+    'A Notion alternative for notes on your device: accounts, offline use and price, with a source for every fact about Notion.',
   heading: 'Devot and Notion compared',
   intro:
-    'Notion is a cloud workspace for teams, with pages and databases. Devot is a personal Markdown notes app that keeps everything on your device, needs no account and works fully offline.',
+    'Pick Notion if you share pages with a team, or need databases on Windows, Android or the web. Pick Devot if your notes stay on your device and you would rather pay once.',
   summary: 'A shared cloud workspace, or private notes on your device.',
   checked: CHECKED,
   checkedLabel: CHECKED_LABEL,
@@ -334,6 +387,20 @@ const notion: ComparePage = {
       ],
     },
     moving,
+    asked([
+      [
+        'Where do the notes live?',
+        'Devot keeps a database on your device, with an optional folder of Markdown files kept in step both ways, and needs no account. Notion keeps pages in your workspace after you sign up.',
+      ],
+      [
+        'What does Notion cost?',
+        `Notion has a free plan; Plus is US$10 a seat a month. Devot: ${devot.price}.`,
+      ],
+      [
+        'When is Notion the better fit?',
+        "When you work with a team in shared pages, build databases with views and relations, or need Windows, Android or the web. Devot's Note Query plugin lists notes by tag, status and dates, but is no database.",
+      ],
+    ]),
     sourcesSection({ sources: notionSources }),
   ],
 }
@@ -343,7 +410,7 @@ export const compareCopy = {
     index: {
       title: 'Devot: how it compares with other notes apps',
       description:
-        'How Devot compares with Obsidian, Bear, Apple Notes and Notion on price, sync, privacy and platforms, each fact with its source.',
+        'Devot compared with Obsidian, Bear, Apple Notes and Notion: price, sync, privacy and platforms, each fact with its source.',
       heading: 'Compare',
       intro:
         'Devot beside other notes apps, fairly: what each does better, from facts their makers publish.',

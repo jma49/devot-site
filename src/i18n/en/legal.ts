@@ -15,7 +15,12 @@ export interface LegalPage {
   intro: string
   /** Replaces the date the legal pages share. */
   updated?: string
-  sections: { title: string; paragraphs: LegalRun[][] }[]
+  sections: {
+    title: string
+    paragraphs: LegalRun[][]
+    /** Questions the section answers, rendered under it and published as FAQ data. */
+    questions?: { name: string; answer: LegalRun[] }[]
+  }[]
 }
 
 const terms: LegalPage = {

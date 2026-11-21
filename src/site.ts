@@ -1,5 +1,7 @@
 export const SITE_URL = 'https://devot.online/'
 export const REPO_URL = 'https://github.com/jma49/devot'
+/** The Claude plugin that launches the MCP server built into the Devot app. */
+export const PLUGIN_REPO_URL = 'https://github.com/jma49/devot-plugin'
 export const SITE_REPO_URL = 'https://github.com/jma49/devot-site'
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
 /**
@@ -28,7 +30,8 @@ export const LICENCE_AMOUNT = '29.90'
 export const LICENCE_CURRENCY = 'USD'
 export const LICENCE_PRICE = `US$${LICENCE_AMOUNT}`
 /** Devot Pro, the one purchase in Devot for iPhone, as the App Store prices it in US dollars. */
-export const IPHONE_PRICE = 'US$29.99'
+export const IPHONE_AMOUNT = '29.99'
+export const IPHONE_PRICE = `US$${IPHONE_AMOUNT}`
 export const REFUND_DAYS = 30
 /** Starts the first time Devot opens; Devot is read-only once it ends without a licence. */
 export const TRIAL_DAYS = 30

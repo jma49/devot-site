@@ -5,23 +5,30 @@ import { FOOTER_GROUPS, LEGAL_LINKS, SUPPORT_PATH } from '../../src/lib/links.ts
 import { DEVICES_URL, PRIVACY_EMAIL } from '../../src/site.ts'
 
 const page = en.support
+const answerText = (runs: LegalPage['sections'][number]['paragraphs'][number]) =>
+  runs.map((run) => (typeof run === 'string' ? run : run.text)).join('')
 const legalText = (copy: LegalPage) =>
   copy.sections
     .flatMap((section) => [
       section.title,
-      ...section.paragraphs.map((runs) =>
-        runs.map((run) => (typeof run === 'string' ? run : run.text)).join(''),
-      ),
+      ...section.paragraphs.map(answerText),
+      ...(section.questions ?? []).flatMap((question) => [
+        question.name,
+        answerText(question.answer),
+      ]),
     ])
     .join('\n')
 const linksOf = (copy: LegalPage) =>
   copy.sections
-    .flatMap((section) => section.paragraphs.flat())
+    .flatMap((section) => [
+      ...section.paragraphs.flat(),
+      ...(section.questions ?? []).flatMap((question) => question.answer),
+    ])
     .flatMap((run) => (typeof run === 'string' ? [] : [run.link]))
 
 describe('the support page', () => {
   it('has a title, a description and its sections in order', () => {
-    expect(page.title).toBe('Devot: support')
+    expect(page.title).toBe('Devot support: trial, licences and refunds')
     expect(page.description.length).toBeGreaterThan(40)
     expect(page.sections.map((section) => section.title)).toEqual([
       'Getting help',
@@ -60,6 +67,22 @@ describe('the support page', () => {
 
   it('warns never to post a licence key', () => {
     expect(legalText(page)).toMatch(/Never post your licence key/)
+  })
+
+  it('answers the questions people ask, as questions', () => {
+    const questions = page.sections.flatMap((section) => section.questions ?? [])
+    expect(questions.map((question) => question.name)).toEqual([
+      'Is Devot Pro a subscription?',
+      'How long is the trial?',
+      'What happens when the trial ends?',
+      'Do I need an account?',
+      'What if I lost my Mac licence key?',
+      'Where are my notes?',
+    ])
+    for (const question of questions) {
+      expect(question.name.endsWith('?')).toBe(true)
+      expect(answerText(question.answer).length).toBeGreaterThan(10)
+    }
   })
 
   it('is served at /support and listed in the footer', () => {

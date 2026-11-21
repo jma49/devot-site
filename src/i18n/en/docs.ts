@@ -13,6 +13,8 @@ export type DocBlock =
   | { kind: 'code'; label: string; lines: string[] }
   /** Each row starts with its header cell; `caption` names the table. */
   | { kind: 'table'; caption: string; head: string[]; rows: DocRun[][][] }
+  /** A question and its answer, quoted together by answer engines. */
+  | { kind: 'faq'; items: { question: string; answer: DocRun[] }[] }
 
 export interface DocSection {
   /** The section's anchor, unique on its page. */
@@ -282,6 +284,11 @@ const importExport: DocPage = {
         ),
         text(
           "Choose File > Import, or Import in a notebook's menu to import straight into it. A note takes its title from its first heading, else its file name; front matter that a Devot export wrote also brings back the title, tags and status. Devot lists every file or image it could not import, with the reason.",
+        ),
+        text(
+          'How Devot compares with other notes apps, and what you can bring across, is on the ',
+          { text: 'comparison pages', href: '/compare' },
+          '.',
         ),
       ],
     },
@@ -671,7 +678,7 @@ const plugins: DocPage = {
 export const docsCopy = {
   docs: {
     index: {
-      title: 'Devot: docs',
+      title: 'Devot: install, sync, MCP and Markdown',
       description:
         'How to install Devot, connect AI tools over MCP, sync without an account, keep a Markdown mirror and move notes in and out.',
       heading: 'Docs',
