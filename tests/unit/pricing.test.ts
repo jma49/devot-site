@@ -106,6 +106,7 @@ describe('the pricing section', () => {
     expect(copy.links.terms).toBe(en.terms.heading)
     expect(copy.links.refunds).toBe(en.refunds.heading)
     expect(copy.links.lostKey).toBe('Lost your licence key?')
+    expect(copy.links.compare).toBe('How Devot compares')
   })
 })
 

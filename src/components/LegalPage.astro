@@ -3,6 +3,9 @@ import '../styles/legal.css'
 import type { LegalPage } from '../i18n/en/legal.ts'
 import { localeOf, localised, messages } from '../i18n/index.ts'
 import { LEGAL_LINKS, PRICING_PATH } from '../lib/links.ts'
+import { pagePath } from '../lib/page-path.ts'
+import { faqNode } from '../lib/structured-data.ts'
+import { SITE_URL } from '../site.ts'
 import Base from '../layouts/Base.astro'
 import Unbroken from './Unbroken.astro'
 
@@ -13,9 +16,17 @@ interface Props {
 const locale = localeOf(Astro.url.pathname)
 const t = messages(locale)
 const { page } = Astro.props
+const questions = page.sections.flatMap((section) => section.questions ?? [])
+const structuredData =
+  questions.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        ...faqNode(locale, new URL(pagePath(Astro.url.pathname), SITE_URL).href, questions),
+      }
+    : undefined
 ---
 
-<Base title={page.title} description={page.description}>
+<Base title={page.title} description={page.description} structuredData={structuredData}>
   <article class="legal">
     <header class="legal__head">
       <h1 class="legal__title">{page.heading}</h1>
@@ -35,6 +46,20 @@ const { page } = Astro.props
               ),
             )}
           </p>
+        ))}
+        {section.questions?.map((question) => (
+          <div class="legal__question">
+            <h3>{question.name}</h3>
+            <p>
+              {question.answer.map((run) =>
+                typeof run === 'string' ? (
+                  <Unbroken text={run} />
+                ) : (
+                  <a href={localised(LEGAL_LINKS[run.link], locale)}>{run.text}</a>
+                ),
+              )}
+            </p>
+          </div>
         ))}
       </section>
     ))}

@@ -52,6 +52,7 @@ export const pricingCopy: typeof en = {
       terms: '销售条款（英文）',
       refunds: '退款政策（英文）',
       lostKey: '许可证密钥丢了？',
+      compare: '和其他笔记应用对比（英文）',
     },
   },
 }

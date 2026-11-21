@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { en } from '../../src/i18n/en.ts'
+import { zhHans } from '../../src/i18n/zh-Hans.ts'
 import { LOCALES, localeOf, messages } from '../../src/i18n/index.ts'
 import { llmsTxt } from '../../src/lib/llms-txt.ts'
 import { blogFeed } from '../../src/lib/feed.ts'
@@ -9,6 +10,7 @@ import {
   blogPosting,
   comparison,
   structuredData,
+  supportData,
   techArticle,
 } from '../../src/lib/structured-data.ts'
 import { comparePath, docPath, FEED_PATH, PRICING_PATH, THEMES_PATH } from '../../src/lib/links.ts'
@@ -318,14 +320,24 @@ describe('structured data', () => {
     }
   })
 
+  it('answers the support questions as FAQPage in each language', () => {
+    expect(ldJson(readRepoFile('dist/support.html'))).toEqual([supportData(en, 'en')])
+    expect(ldJson(readRepoFile('dist/zh/support.html'))).toEqual([supportData(zhHans, 'zh-Hans')])
+  })
+
   it('carries none on the other pages', () => {
     const homes = ['dist/index.html', 'dist/zh.html']
+    const supportPages = ['dist/support.html', 'dist/zh/support.html']
     const articles = [
       ...en.docs.pages.map((page) => `dist${docPath(page.slug)}.html`),
       ...en.compare.pages.map((page) => `dist${comparePath(page.slug)}.html`),
     ]
     const others = pages.filter(
-      (page) => !homes.includes(page) && !posts.includes(page) && !articles.includes(page),
+      (page) =>
+        !homes.includes(page) &&
+        !posts.includes(page) &&
+        !articles.includes(page) &&
+        !supportPages.includes(page),
     )
     expect(others.flatMap((page) => ldJson(readRepoFile(page)))).toEqual([])
   })

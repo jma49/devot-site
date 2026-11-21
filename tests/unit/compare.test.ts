@@ -17,7 +17,9 @@ const runsOf = (page: ComparePage): DocRun[] =>
         ? block.items.flat()
         : block.kind === 'table'
           ? block.rows.flat(2)
-          : [],
+          : block.kind === 'faq'
+            ? block.items.flatMap((item) => [item.question, ...item.answer])
+            : [],
   )
 const hrefsOf = (page: ComparePage) =>
   runsOf(page).flatMap((run) => (typeof run === 'object' && 'href' in run ? [run.href] : []))
@@ -31,7 +33,7 @@ describe.each(pages)('$slug', (page) => {
   it('has a slug, a title and a description sized for search results', () => {
     expect(page.slug).toMatch(/^[a-z]+(-[a-z]+)*$/)
     expect(page.title).toMatch(new RegExp(`^Devot vs ${page.other}: .+ · Devot$`))
-    expect(page.title.length).toBeLessThanOrEqual(70)
+    expect(page.title.length).toBeLessThanOrEqual(60)
     expect(page.description.length).toBeGreaterThanOrEqual(70)
     expect(page.description.length).toBeLessThanOrEqual(160)
   })
@@ -60,8 +62,15 @@ describe.each(pages)('$slug', (page) => {
 
   it('says when the other app fits better, not only when Devot does', () => {
     expect(page.sections.map((section) => section.id)).toEqual(
-      expect.arrayContaining(['glance', 'devot', 'other', 'sources']),
+      expect.arrayContaining(['glance', 'devot', 'other', 'questions', 'sources']),
     )
+    expect(page.intro.startsWith(`Pick ${page.other}`)).toBe(true)
+    expect(page.intro).toContain('Pick Devot')
+    const faqs = blocksOf(page).filter((block) => block.kind === 'faq')
+    expect(faqs).toHaveLength(1)
+    const [faq] = faqs
+    if (faq?.kind !== 'faq') throw new Error('no questions')
+    expect(faq.items.length).toBeGreaterThanOrEqual(3)
   })
 
   it("lists its sources over https, each one in the page's links", () => {
@@ -74,9 +83,13 @@ describe.each(pages)('$slug', (page) => {
 
   it('is an Article about Devot under the comparisons, and listed in llms.txt', () => {
     const url = new URL(comparePath(page.slug), SITE_URL).href
-    const [article, trail] = comparison(en, page)['@graph']
+    const graph = comparison(en, page)['@graph']
+    const [article, trail] = graph
     expect(article).toMatchObject({ '@type': 'Article', url, dateModified: page.checked })
     expect(trail.itemListElement.at(-1)?.item).toBe(url)
+    const faq = graph.find((node) => node['@type'] === 'FAQPage')
+    if (!faq || !('mainEntity' in faq)) throw new Error('no questions')
+    expect(faq.mainEntity.length).toBeGreaterThanOrEqual(3)
     expect(llmsTxt(en)).toContain(url)
   })
 })

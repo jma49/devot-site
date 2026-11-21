@@ -1,6 +1,7 @@
 import type { Messages } from '../i18n/en.ts'
-import { DOWNLOAD_URL, LICENCE_PRICE, REPO_URL, SITE_URL } from '../site.ts'
+import { DOWNLOAD_URL, LICENCE_PRICE, PLUGIN_REPO_URL, REPO_URL, SITE_URL } from '../site.ts'
 import { blogPath, comparePath, docPath, FOOTER_GROUPS, THEMES_PATH } from './links.ts'
+import { plainRuns } from './structured-data.ts'
 
 type Run = string | { code: string }
 
@@ -35,6 +36,7 @@ export function llmsTxt(t: Messages): string {
       }),
   )
   const { trial, licence, after, selfBuild } = t.pricing
+  const questions = t.support.sections.find((section) => section.questions?.length)
   return [
     `# ${t.siteName}`,
     '',
@@ -59,6 +61,8 @@ export function llmsTxt(t: Messages): string {
     '',
     t.llms.ai.body,
     '',
+    link(t.llms.ai.plugin, PLUGIN_REPO_URL),
+    '',
     `## ${t.pricing.label}`,
     '',
     item(trial.name, trial.terms),
@@ -67,6 +71,18 @@ export function llmsTxt(t: Messages): string {
     item(after.title, after.body),
     item(selfBuild.title.replace(/\?$/, ''), selfBuild.body),
     '',
+    ...(questions
+      ? [
+          `## ${questions.title}`,
+          '',
+          ...questions.questions!.flatMap((question) => [
+            `### ${question.name}`,
+            '',
+            plainRuns(question.answer),
+            '',
+          ]),
+        ]
+      : []),
     `## ${t.llms.docs}`,
     '',
     ...t.docs.pages.map((page) => `${link(page.heading, docPath(page.slug))}: ${page.summary}`),

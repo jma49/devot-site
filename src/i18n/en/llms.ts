@@ -11,6 +11,7 @@ export const llmsCopy = {
     ai: {
       title: 'AI tools',
       body: 'Claude Code, Codex, Claude Desktop and other MCP clients can search, read, create and edit notes through Devot, only in the notebooks the owner allows. Before each edit Devot keeps a version of the note, so it can be restored.',
+      plugin: 'Devot for Claude',
     },
     pricing: 'Pricing',
     docs: 'Docs',

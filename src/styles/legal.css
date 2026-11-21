@@ -44,6 +44,18 @@
   line-height: var(--site-type-card-leading);
 }
 
+.legal__section h3 {
+  margin: var(--space-8) 0 0;
+  color: var(--site-color-text);
+  font-size: var(--site-type-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--site-type-body-leading);
+}
+
+.legal__question p {
+  margin-block-start: var(--space-3);
+}
+
 .legal__section p {
   margin: var(--space-6) 0 0;
   color: var(--site-color-text-muted);

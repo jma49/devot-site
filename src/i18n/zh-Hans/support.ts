@@ -3,7 +3,7 @@ import type { LegalPage } from '../en/legal.ts'
 import type { supportCopy as en } from '../en/support.ts'
 
 const support: LegalPage = {
-  title: 'Devot：支持',
+  title: 'Devot 支持：试用、许可证和退款',
   description:
     '获取 Devot Mac 版和 iPhone 版的帮助：恢复购买、在两端使用许可证密钥、退款和常见问题。',
   heading: '支持',
@@ -77,27 +77,45 @@ const support: LegalPage = {
     },
     {
       title: '常见问题',
-      paragraphs: [
-        ['Devot Pro 是订阅吗？不是。一次购买，解锁今后的每个版本。'],
-        [
-          `试用期多长？${TRIAL_DAYS} 天，包含全部功能。在 iPhone 上，每个 Apple 账户只能试用一次，重新安装不会重新开始。`,
-        ],
-        [
-          '试用结束后会怎样？什么都不会被删除。每篇笔记仍可阅读、搜索和导出；编辑、同步和 AI 需要 Devot Pro 或许可证。',
-        ],
-        [
-          '需要账户吗？不需要。Devot 没有账户体系。同步经由你自己的 iCloud 账户或你部署的中继进行，端到端加密。',
-        ],
-        [
-          'Mac 许可证密钥丢了。',
-          { text: '让我们重新发送', link: 'resend' },
-          '到你购买时使用的邮箱。如果密钥来自 iPhone 购买，再点按一次“获取 Mac 许可证密钥”即可。',
-        ],
-        [
-          '我的笔记在哪里？在你的设备上。',
-          { text: '隐私政策（英文）', link: 'privacy' },
-          '说明了 Devot 会发送什么、发送到哪里。',
-        ],
+      paragraphs: [],
+      questions: [
+        {
+          name: 'Devot Pro 是订阅吗？',
+          answer: ['不是。一次购买，解锁今后的每个版本。'],
+        },
+        {
+          name: '试用期多长？',
+          answer: [
+            `${TRIAL_DAYS} 天，包含全部功能。在 iPhone 上，每个 Apple 账户只能试用一次，重新安装不会重新开始。`,
+          ],
+        },
+        {
+          name: '试用结束后会怎样？',
+          answer: [
+            '什么都不会被删除。每篇笔记仍可阅读、搜索和导出；编辑、同步和 AI 需要 Devot Pro 或许可证。',
+          ],
+        },
+        {
+          name: '需要账户吗？',
+          answer: [
+            '不需要。Devot 没有账户体系。同步经由你自己的 iCloud 账户或你部署的中继进行，端到端加密。',
+          ],
+        },
+        {
+          name: 'Mac 许可证密钥丢了怎么办？',
+          answer: [
+            { text: '让我们重新发送', link: 'resend' },
+            '到你购买时使用的邮箱。如果密钥来自 iPhone 购买，再点按一次“获取 Mac 许可证密钥”即可。',
+          ],
+        },
+        {
+          name: '我的笔记在哪里？',
+          answer: [
+            '在你的设备上。',
+            { text: '隐私政策（英文）', link: 'privacy' },
+            '说明了 Devot 会发送什么、发送到哪里。',
+          ],
+        },
       ],
     },
   ],
