@@ -74,6 +74,66 @@
     0 1.5rem 3rem -1rem var(--site-brand-glow);
 }
 
+/* The licence card leans toward a fine pointer and catches a sheen (scripts/licence-card.ts); at rest it is flat and plain. */
+.pricing__plan--licence[data-holo] {
+  --holo-axis-x: 0;
+  --holo-axis-y: 1;
+  --holo-angle: 0deg;
+  --holo-light-x: 50%;
+  --holo-light-y: 30%;
+  position: relative;
+  isolation: isolate;
+  transition:
+    var(--site-reveal-transition),
+    rotate var(--site-dur-media) var(--site-ease-media);
+}
+
+.pricing__plan--licence[data-holo='lit'] {
+  rotate: var(--holo-axis-x) var(--holo-axis-y) 0 var(--holo-angle);
+  transition:
+    var(--site-reveal-transition),
+    rotate var(--site-dur-quick) var(--site-ease-out);
+}
+
+.pricing__plan--licence[data-holo]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      circle at var(--holo-light-x) var(--holo-light-y),
+      color-mix(in oklab, var(--site-brand) 22%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(
+      115deg,
+      transparent 20%,
+      color-mix(in oklab, var(--color-accent-fill) 10%, transparent) 40%,
+      color-mix(in oklab, var(--site-brand) 12%, transparent) 50%,
+      color-mix(in oklab, var(--color-status-active-mark) 10%, transparent) 60%,
+      transparent 80%
+    );
+  background-size:
+    100% 100%,
+    220% 220%;
+  background-position:
+    0 0,
+    var(--holo-light-x) var(--holo-light-y);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--site-dur-reveal) var(--site-ease-out);
+}
+
+.pricing__plan--licence[data-holo='lit']::after {
+  opacity: 1;
+}
+
+.pricing__plans {
+  perspective: 1600px;
+}
+
 .pricing__name {
   margin: 0;
   color: var(--site-color-text-faint);

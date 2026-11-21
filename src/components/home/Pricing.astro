@@ -61,7 +61,7 @@ const links = [
         </p>
       </li>
 
-      <li class="pricing__plan pricing__plan--licence" data-reveal data-reveal-index="4">
+      <li class="pricing__plan pricing__plan--licence" data-reveal data-reveal-index="4" data-holo>
         <h3 class="pricing__name">{copy.licence.name}</h3>
         <p class="pricing__price">{copy.licence.price}</p>
         <p class="pricing__terms">{copy.licence.terms}</p>
@@ -125,3 +125,9 @@ const links = [
     </ul>
   </div>
 </section>
+
+<script>
+  import { tiltLicenceCard } from '../../scripts/licence-card.ts'
+
+  tiltLicenceCard()
+</script>
