@@ -117,7 +117,7 @@ describe('a theme drawn from a palette', () => {
 
   it("leaves every icon in Devot's colors: status marks, settings tiles, tag icons and phone status tiles", () => {
     const icons = [...devotTokens(CSS, 'dark').keys()].filter(isIconColor)
-    expect(icons.length).toBe(31)
+    expect(icons.length).toBe(35)
     for (const token of icons) expect(colors).not.toHaveProperty(token)
   })
 })
