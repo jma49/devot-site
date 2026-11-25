@@ -5,10 +5,11 @@ export const PLUGIN_REPO_URL = 'https://github.com/jma49/devot-plugin'
 export const SITE_REPO_URL = 'https://github.com/jma49/devot-site'
 export const DOWNLOAD_URL = `${REPO_URL}/releases/latest`
 /**
- * The App Store page of Devot for iPhone, once it has one. Until then the page shows no link to
- * the App Store: a guessed address is a dead end for the reader.
+ * The iPhone download page: the TestFlight beta while the App Store listing is not live, or the
+ * App Store page once it is. Until then the page shows no link: a guessed address is a dead end
+ * for the reader.
  */
-export const APP_STORE_URL: string | undefined = undefined
+export const APP_STORE_URL: string | undefined = 'https://testflight.apple.com/join/3QkA8dZh'
 export const ISSUES_URL = `${REPO_URL}/issues`
 export const BUILD_URL = `${REPO_URL}/blob/main/docs/development.md`
 /** The link-preview image `src/pages/og.png.ts` renders at build time. */

@@ -26,7 +26,7 @@ export const en = {
   download: {
     label: 'Download for macOS',
     iphone: 'Get it for iPhone',
-    appStore: 'Get it on the App Store',
+    appStore: 'Get it on TestFlight',
     requirements: `${PLATFORM.os} on ${PLATFORM.processor} · ${IPHONE_OS}`,
     iphoneRequirements: `iPhone, ${IPHONE_OS}`,
   },
