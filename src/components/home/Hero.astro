@@ -4,7 +4,7 @@ import { getImage } from 'astro:assets'
 import notesDark from '../../assets/iphone/p1-notes-dark.png'
 import reading from '../../assets/iphone/p2-read-dark.mp4?url'
 import { localeOf, messages } from '../../i18n/index.ts'
-import { DOWNLOAD_URL } from '../../site.ts'
+import { APP_STORE_URL, DOWNLOAD_URL } from '../../site.ts'
 import Aurora from '../Aurora.astro'
 import Clip from '../Clip.astro'
 import InstallNote from '../InstallNote.astro'
@@ -72,7 +72,7 @@ const phoneSize = { width: phoneStill.attributes.width, height: phoneStill.attri
           </svg>
           {t.download.label}
         </a>
-        <a class="quiet-button" href="#iphone">
+        <a class="quiet-button" href={APP_STORE_URL ?? '#iphone'}>
           {t.download.iphone}
         </a>
       </div>

@@ -5,10 +5,15 @@ import { filesUnder, readRepoFile } from '../support/source-files.ts'
 // A link to the App Store that leads nowhere is worse than none.
 
 describe('the App Store link', () => {
-  it('is an address in the App Store, or nothing', () => {
+  it('is an address in the App Store or TestFlight, or nothing', () => {
     const given = APP_STORE_URL === undefined ? [] : [new URL(APP_STORE_URL)]
     const elsewhere = given.filter(
-      (url) => url.origin !== 'https://apps.apple.com' || !/\/id\d+$/.test(url.pathname),
+      (url) =>
+        !(
+          (url.origin === 'https://apps.apple.com' && /\/id\d+$/.test(url.pathname)) ||
+          (url.origin === 'https://testflight.apple.com' &&
+            /^\/join\/[A-Za-z0-9]+$/.test(url.pathname))
+        ),
     )
     expect(elsewhere).toEqual([])
   })

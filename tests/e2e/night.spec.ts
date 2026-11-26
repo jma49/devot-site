@@ -160,13 +160,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect((await drift()).map(({ state }) => state)).toEqual(['paused', 'paused'])
     })
 
-    test('shows Devot for iPhone one click from the hero, on two phones, with the App Store link once it has one', async ({
+    test('shows Devot for iPhone, on two phones, with the iOS download link once it has one', async ({
       page,
     }) => {
       await page.goto('/')
-      await page.locator('#hero').getByRole('link', { name: en.download.iphone }).click()
+      const heroIphone = page.locator('#hero').getByRole('link', { name: en.download.iphone })
       const section = page.locator('#iphone')
-      await expect(section).toBeInViewport()
+      if (APP_STORE_URL === undefined) {
+        await heroIphone.click()
+        await expect(section).toBeInViewport()
+      } else {
+        await expect(heroIphone).toHaveAttribute('href', APP_STORE_URL)
+        await section.scrollIntoViewIfNeeded()
+      }
       await expect(section.getByRole('heading', { level: 2 })).toHaveText(en.iphone.title.join(' '))
       const store = page.getByRole('link', { name: en.download.appStore })
       if (APP_STORE_URL === undefined) {
