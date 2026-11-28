@@ -49,9 +49,9 @@
     return text
       .replace(
         /\\([cv"'`^~])\s*\{?\\?([A-Za-z])\}?/g,
-        (m, accent, letter) => ACCENTS[accent][letter] ?? letter,
+        (_m, accent, letter) => ACCENTS[accent][letter] ?? letter,
       )
-      .replace(/\\(ss|ae|AE|aa|AA|[oOlLi&%_$#])(?![A-Za-z])\s*/g, (m, name) => SYMBOLS[name])
+      .replace(/\\(ss|ae|AE|aa|AA|[oOlLi&%_$#])(?![A-Za-z])\s*/g, (_m, name) => SYMBOLS[name])
       .replace(/\\[A-Za-z]+\s*/g, '')
       .replace(/[{}]/g, '')
       .replace(/--/g, '–')

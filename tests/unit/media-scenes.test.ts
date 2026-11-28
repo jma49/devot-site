@@ -18,7 +18,7 @@ it('has a scene for every slot', () => {
   expect(scenes.filter(([, scene]) => !scene).map(([slot]) => slot)).toEqual([])
 })
 
-describe.each(scenes)('%s', (slot, scene) => {
+describe.each(scenes)('%s', (_slot, scene) => {
   const { viewport, clip, output, phone, shape } = scene!
 
   it('cuts a region of the window that keeps its top edge', () => {

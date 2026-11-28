@@ -21,7 +21,7 @@
     const colors = theme?.colors ?? {}
     const text = colors.text ?? '#1d1d1f'
     const edge = colors.edge ?? text
-    ready ??= Viz.instance()
+    ready ??= globalThis.Viz.instance()
     const viz = await ready
     const result = viz.render(source, {
       format: 'svg',
