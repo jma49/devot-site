@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test'
 import { en } from '../../src/i18n/en.ts'
-import { animationsDone, scrollToY, steady } from '../support/settle.ts'
 import { expect, test } from './fixtures.ts'
 
 const pill = (page: Page) => page.locator('[data-download-pill]')
@@ -28,6 +27,7 @@ const coverage = (page: Page) =>
     const element = document.querySelector('[data-download-pill]')!
     const style = getComputedStyle(element)
     const shown = style.visibility === 'visible' && Number(style.opacity) > 0
+    const wanted = element.hasAttribute('data-shown') || element.hasAttribute('data-aside')
     const pillBox = element.getBoundingClientRect()
     const view = { left: 0, top: 0, right: innerWidth, bottom: innerHeight }
     const clips = [...document.querySelectorAll<HTMLVideoElement>('video[data-clip]')].flatMap(
@@ -45,24 +45,66 @@ const coverage = (page: Page) =>
         return [{ slot: video.dataset['clip'], share: covered ? area(covered) / area(visible) : 0 }]
       },
     )
-    return { shown, box: pillBox.toJSON() as Box & { width: number; height: number }, clips }
+    return {
+      wanted,
+      shown,
+      box: pillBox.toJSON() as Box & { width: number; height: number },
+      clips,
+    }
   })
 
-/** Scrolls, then waits for the clips' eased movement, the reveals and the pill to settle. */
+/**
+ * Scrolls to `y` and waits inside one in-page `requestAnimationFrame` loop for clip ancestors'
+ * animations, eased clip movement and the pill's own transitions to settle.
+ */
 async function settleAt(page: Page, y: number) {
-  await scrollToY(page, y)
-  await steady(
-    page,
-    () =>
-      page.evaluate(() => [
-        document.querySelector('[data-download-pill]')?.getAttributeNames().sort(),
-        [...document.querySelectorAll('video[data-clip]')].map((video) =>
-          Math.round(video.getBoundingClientRect().top),
-        ),
-      ]),
-    { frames: 6 },
-  )
-  await animationsDone(page)
+  await page.evaluate(async (top) => {
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    const pillEl = document.querySelector('[data-download-pill]')
+    const videos = [...document.querySelectorAll<HTMLElement>('video[data-clip]')]
+    const watchedRoots = new Set<Element>(pillEl ? [pillEl] : [])
+    for (const video of videos) {
+      for (let at: Element | null = video; at && at !== document.body; at = at.parentElement) {
+        watchedRoots.add(at)
+      }
+    }
+    const relevantAnimationsDone = () => {
+      for (const root of watchedRoots) {
+        for (const animation of root.getAnimations()) {
+          if (
+            animation.timeline === document.timeline &&
+            animation.playState === 'running' &&
+            animation.effect?.getComputedTiming().endTime !== Infinity
+          ) {
+            return false
+          }
+        }
+      }
+      return true
+    }
+    const snapshot = () =>
+      JSON.stringify([
+        pillEl?.getAttributeNames().sort(),
+        videos.map((video) => Math.round(video.getBoundingClientRect().top)),
+      ])
+
+    const target = Math.max(0, Math.min(top, document.documentElement.scrollHeight - innerHeight))
+    window.scrollTo(0, target)
+    while (Math.abs(window.scrollY - target) >= 1) await nextFrame()
+    await nextFrame()
+    await nextFrame()
+
+    const deadline = performance.now() + 15_000
+    let last = snapshot()
+    let same = 0
+    while (same < 6 || !relevantAnimationsDone()) {
+      if (performance.now() > deadline) throw new Error(`E_NOT_STEADY at ${target}, last ${last}`)
+      await nextFrame()
+      const current = snapshot()
+      same = current === last && relevantAnimationsDone() ? same + 1 : 0
+      last = current
+    }
+  }, y)
 }
 
 for (const viewport of [
@@ -106,10 +148,7 @@ for (const viewport of [
       for (let y = 0; y <= end; y += STEP) {
         await settleAt(page, y)
         const state = await coverage(page)
-        const wanted = await pill(page).evaluate(
-          (element) => element.hasAttribute('data-shown') || element.hasAttribute('data-aside'),
-        )
-        if (wanted) due++
+        if (state.wanted) due++
         if (!state.shown) continue
         shown++
         for (const clip of state.clips) {
